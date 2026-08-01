@@ -41,11 +41,13 @@ total) — join, pick a color, drop in mid-run, choose level-up boons, all with
 your local keyboard or controller. Guests never simulate: they render the
 host's snapshots, so the host's connection is the room.
 
-**Relay server** — defaults to `ws://localhost:8787`. Override per-URL with
-`?relay=wss://your-worker.workers.dev`, or set a page-global default before
-`net.js` loads: `window.PH_RELAY='wss://...'`. For local play run the dev
-relay: `cd tools && npm install && node relay-local.mjs`. Deploy the real one
-with `cd server && npx wrangler deploy`.
+**Relay server** — served over the web (GitHub Pages) the game defaults to
+the deployed worker `wss://pixel-horde-relay.dsusviela.workers.dev`; opened
+from disk or localhost it defaults to the dev relay `ws://localhost:8787`
+(`cd tools && npm install && node relay-local.mjs`). Override per-URL with
+`?relay=wss://...`, or page-globally with `window.PH_RELAY='wss://...'`
+before `net.js` loads. Redeploy the worker with `cd server && npx wrangler
+deploy`.
 
 v1 limitations: no reconnect (a dropped guest re-joins by reloading; if the
 relay drops, the host keeps playing solo), JSON snapshots (fine on a LAN or

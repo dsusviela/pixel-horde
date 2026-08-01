@@ -44,9 +44,13 @@ if(params.has('host')){
   if(/^[A-Z0-9]{4,8}$/.test(jv)){code=jv;mode='guest';}
   else console.warn('[net] ?join code must be 4-8 chars A-Z 0-9 — staying offline');
 }
+// Default relay: the deployed worker when the game is served over the web
+// (e.g. GitHub Pages), the local dev relay when opened from disk/localhost.
+var LOCAL_PAGE=typeof location!=='undefined'&&
+  (location.protocol==='file:'||location.hostname==='localhost'||location.hostname==='127.0.0.1');
 var RELAY=params.get('relay')
   ||(typeof window!=='undefined'&&window.PH_RELAY)
-  ||'ws://localhost:8787';
+  ||(LOCAL_PAGE?'ws://localhost:8787':'wss://pixel-horde-relay.dsusviela.workers.dev');
 
 // ---------- shared state ----------
 var ws=null;

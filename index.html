@@ -625,7 +625,10 @@ const ES={
   // level up
   'LEVEL UP!  CHOOSE A BOON':'¡SUBES DE NIVEL!  ELIGE UNA MEJORA',
   'D-PAD/STICK/WASD: choose   (A)/SPACE or any button: confirm':'CRUCETA/STICK/WASD: elegir   (A)/ESPACIO o cualquier botón: confirmar',
-  'POULTICE':'EMPLASTO','heal 60 hp':'cura 60 de vida','VITALITY':'VITALIDAD','+25 max hp':'+25 vida máx',
+  'GOLDEN SIGIL':'SELLO DORADO','+12% damage':'+12% de daño',
+  'GOLDEN GREAVES':'GREBAS DORADAS','+8% speed':'+8% de velocidad',
+  'GOLDEN HEART':'CORAZÓN DORADO','+40 max hp':'+40 vida máx',
+  'GOLDEN CHALICE':'CÁLIZ DORADO','full heal':'cura completa',
   'upgrade!':'¡mejora!','OK!':'¡OK!',
   // weapons
   'MAGIC MISSILE':'MISIL MÁGICO','seeks the nearest foe':'busca al enemigo más cercano',
@@ -634,6 +637,13 @@ const ES={
   'CHAIN LIGHTNING':'CADENA DE RAYOS','arcs between foes':'salta entre enemigos',
   'FLAME SIGIL':'SELLO DE FUEGO','scorches nearby foes':'quema a los enemigos cercanos',
   'EMERALD COMET':'COMETA ESMERALDA','explosive falling star':'estrella fugaz explosiva',
+  // evolutions
+  'ARCHMAGE VOLLEY':'ANDANADA DEL ARCHIMAGO','a torrent of seeking bolts':'un torrente de proyectiles buscadores',
+  'PHOENIX WING':'ALA DE FÉNIX','a blazing half-circle':'un semicírculo llameante',
+  'RUNE CROWN':'CORONA DE RUNAS','a fortress of glyphs':'una fortaleza de glifos',
+  'THE STORM':'LA TORMENTA','lightning without end':'relámpagos sin fin',
+  'SOLAR SIGIL':'SELLO SOLAR','a burning halo':'un halo ardiente',
+  'STARFALL':'LLUVIA DE ESTRELLAS','comets without pause':'cometas sin pausa',
   // buffs
   'PARTY CHARMS':'AMULETOS DEL GRUPO',
   '+SPEED':'+VELOCIDAD','+REGEN':'+REGEN','+MAX HP':'+VIDA MÁX','+DAMAGE':'+DAÑO','+MAGNET':'+IMÁN','+35 HP':'+35 VIDA',
@@ -691,6 +701,7 @@ const ES_RX=[
   [/^(.+) AWAKENS$/,m=>tr(m[1])+' DESPIERTA'],
   [/^(.+)  PHASE (\d)$/,m=>tr(m[1])+'  FASE '+m[2]],
   [/^NEW: (.+)$/,m=>'NUEVO: '+tr(m[1])],
+  [/^EVOLVE: (.+)$/,m=>'EVOLUCIONA: '+tr(m[1])],
   [/^(.+) LV(\d+)$/,m=>tr(m[1])+' NV'+m[2]],
   [/^LV (\d+)$/,m=>'NV '+m[1]],
   [/^(\d+) kills$/,m=>m[1]+' bajas'],
@@ -980,14 +991,26 @@ function umbra(bx,by,q){
 
 // ---------- weapons ----------
 const WEAPONS={
-  blaster:{name:'MAGIC MISSILE',col:'#ffe94a',max:6,desc:'seeks the nearest foe'},
-  spread:{name:'EMBER FAN',col:'#ff9040',max:6,desc:'cone of burning sparks'},
-  orbit:{name:'RUNE WARDS',col:'#4cc2ff',max:6,desc:'orbiting glyphs'},
-  tesla:{name:'CHAIN LIGHTNING',col:'#b06bff',max:6,desc:'arcs between foes'},
-  flame:{name:'FLAME SIGIL',col:'#ff5a3d',max:6,desc:'scorches nearby foes'},
-  rocket:{name:'EMERALD COMET',col:'#57e86b',max:6,desc:'explosive falling star'}
+  blaster:{name:'MAGIC MISSILE',col:'#ffe94a',max:6,desc:'seeks the nearest foe',
+    evoName:'ARCHMAGE VOLLEY',evoDesc:'a torrent of seeking bolts'},
+  spread:{name:'EMBER FAN',col:'#ff9040',max:6,desc:'cone of burning sparks',
+    evoName:'PHOENIX WING',evoDesc:'a blazing half-circle'},
+  orbit:{name:'RUNE WARDS',col:'#4cc2ff',max:6,desc:'orbiting glyphs',
+    evoName:'RUNE CROWN',evoDesc:'a fortress of glyphs'},
+  tesla:{name:'CHAIN LIGHTNING',col:'#b06bff',max:6,desc:'arcs between foes',
+    evoName:'THE STORM',evoDesc:'lightning without end'},
+  flame:{name:'FLAME SIGIL',col:'#ff5a3d',max:6,desc:'scorches nearby foes',
+    evoName:'SOLAR SIGIL',evoDesc:'a burning halo'},
+  rocket:{name:'EMERALD COMET',col:'#57e86b',max:6,desc:'explosive falling star',
+    evoName:'STARFALL',evoDesc:'comets without pause'}
 };
 const WEAPON_IDS=Object.keys(WEAPONS);
+// an evolved weapon fights ~3 levels past its cap, plus a signature flourish
+// in fireWeapon. These helpers are shared with the renderer so orbit/flame
+// visuals always match their hitboxes.
+const wlv=w=>w.lv+(w.evo?3:0);
+const orbitGeom=w=>{const lv=wlv(w);return{n:1+lv,rad:30+lv*2+(w.evo?10:0)};};
+const flameRad=w=>28+wlv(w)*5+(w.evo?12:0);
 
 // ---------- state ----------
 const G={
@@ -1007,9 +1030,14 @@ const G={
 function xpNeed(){
   // 0.6+0.4n runs slightly ahead of the wave-quota slope (0.65+0.35n): big
   // parties also bank extra gems from crates, elites and boss levels, so the
-  // need has to outpace the quota or 4p out-levels solo by wave 10
+  // need has to outpace the quota or 4p out-levels solo by wave 10.
+  // The 0.35L² term exists because wave income is superlinear (quota ×
+  // avg-xp × elite share all climb): against a linear need, levels came
+  // FASTER as the run matured and the endgame blurred into constant pings.
+  // Quadratic need holds late levels at ~1.3-1.6 farm waves apart, so each
+  // spike is anticipated; weapon evolutions repay the ~2 picks this costs.
   const n=Math.max(1,G.players.length);
-  if(G.mode==='classic')return Math.floor((8+G.level*9)*(0.6+0.4*n));
+  if(G.mode==='classic')return Math.floor((8+G.level*9+0.35*G.level*G.level)*(0.6+0.4*n));
   return Math.floor((6+G.level*4)*(0.6+0.4*n));
 }
 function hpScale(){
@@ -1327,7 +1355,7 @@ function recordRun(outcome){
       p:p.idx+1,maxhp:Math.round(p.maxhp),dmgMul:+p.dmgMul.toFixed(2),
       speedMul:+p.speedMul.toFixed(2),regen:+p.regen.toFixed(1),magnet:Math.round(p.magnet),
       kills:p.kills,revives:p.revives,
-      weapons:Object.keys(p.weapons).map(id=>id+':'+p.weapons[id].lv).join(' ')
+      weapons:Object.keys(p.weapons).map(id=>id+':'+p.weapons[id].lv+(p.weapons[id].evo?'*':'')).join(' ')
     }))
   };
   try{
@@ -1381,18 +1409,18 @@ function breakCrate(c){
 // ---------- weapon firing ----------
 function fireWeapon(p,id,w,dt){
   w.t-=dt;
-  const lv=w.lv,dm=p.dmgMul;
+  const lv=wlv(w),dm=p.dmgMul;
   switch(id){
     case 'blaster':{
       if(w.t>0)break;
-      const tgt=nearestEnemy(p.x,p.y,340);
+      const tgt=nearestEnemy(p.x,p.y,340+(w.evo?80:0));
       if(!tgt)break;
       w.t=0.72*Math.pow(0.9,lv-1);
       const n=1+Math.floor((lv-1)/2);
       const ang=Math.atan2(tgt.y-p.y,tgt.x-p.x);
       for(let i=0;i<n;i++){
         const a=ang+(i-(n-1)/2)*0.12;
-        G.bullets.push({x:p.x,y:p.y,vx:Math.cos(a)*230,vy:Math.sin(a)*230,r:2,dmg:(10+lv*2)*dm,life:1.6,owner:p,col:'#ffe94a',trail:true,trailCol:'#ffe94a',sparkTrail:true});
+        G.bullets.push({x:p.x,y:p.y,vx:Math.cos(a)*230,vy:Math.sin(a)*230,r:w.evo?3:2,dmg:(10+lv*2)*dm,life:1.6,owner:p,col:'#ffe94a',trail:true,trailCol:'#ffe94a',sparkTrail:true});
       }
       sfx('shoot');break;}
     case 'spread':{
@@ -1401,14 +1429,14 @@ function fireWeapon(p,id,w,dt){
       const n=4+lv;
       const base=Math.atan2(p.faceY,p.faceX);
       for(let i=0;i<n;i++){
-        const a=base+(i-(n-1)/2)*(0.7/(n-1)+0.06);
+        const a=base+(i-(n-1)/2)*((w.evo?1.15:0.7)/(n-1)+0.06);
         const sp=240+Math.random()*40;
         G.bullets.push({x:p.x,y:p.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:2,dmg:(7+lv*1.5)*dm,life:0.38,owner:p,col:'#ff9040'});
       }
       sfx('spread');break;}
     case 'orbit':{
       w.ang=(w.ang||0)+dt*(2.4+lv*0.15);
-      const n=1+lv,rad=30+lv*2;
+      const g=orbitGeom(w),n=g.n,rad=g.rad;
       for(let i=0;i<n;i++){
         const a=w.ang+i*TAU/n;
         const ox=p.x+Math.cos(a)*rad,oy=p.y+Math.sin(a)*rad;
@@ -1423,20 +1451,20 @@ function fireWeapon(p,id,w,dt){
       break;}
     case 'tesla':{
       if(w.t>0)break;
-      const first=nearestEnemy(p.x,p.y,180);
+      const first=nearestEnemy(p.x,p.y,w.evo?240:180);
       if(!first)break;
       w.t=1.5*Math.pow(0.9,lv-1);
       let cur=first,px=p.x,py=p.y;
       const hitSet=new Set();
-      const chains=2+lv;
+      const chains=2+lv,jr=w.evo?150:110;
       for(let i=0;i<chains&&cur;i++){
         G.fx.push({kind:'zap',x1:px,y1:py,x2:cur.x,y2:cur.y,t:0.12,dur:0.12});
         addSparkles(cur.x,cur.y,'#b06bff',2,45);
         damageEnemy(cur,(13+lv*3)*dm,p);
         hitSet.add(cur);
         px=cur.x;py=cur.y;
-        let next=null,bd=110*110;
-        queryEnemies(px,py,110,e=>{
+        let next=null,bd=jr*jr;
+        queryEnemies(px,py,jr,e=>{
           if(hitSet.has(e))return;
           const d=dist2(px,py,e.x,e.y);
           if(d<bd){bd=d;next=e;}
@@ -1447,7 +1475,7 @@ function fireWeapon(p,id,w,dt){
     case 'flame':{
       if(w.t>0)break;
       w.t=0.45*Math.pow(0.94,lv-1);
-      const rad=28+lv*5;
+      const rad=flameRad(w);
       queryEnemies(p.x,p.y,rad,e=>{
         if(dist2(p.x,p.y,e.x,e.y)<(rad+e.r)*(rad+e.r))damageEnemy(e,(6+lv*2)*dm,p);
       });
@@ -1460,9 +1488,9 @@ function fireWeapon(p,id,w,dt){
       if(w.t>0)break;
       const tgt=nearestEnemy(p.x,p.y,320);
       if(!tgt)break;
-      w.t=2.3*Math.pow(0.92,lv-1);
+      w.t=2.3*Math.pow(0.92,lv-1)*(w.evo?0.55:1);
       const ang=Math.atan2(tgt.y-p.y,tgt.x-p.x);
-      G.bullets.push({x:p.x,y:p.y,vx:Math.cos(ang)*150,vy:Math.sin(ang)*150,r:3,dmg:(20+lv*6)*dm,life:2.4,owner:p,col:'#57e86b',rocket:true,aoe:44+lv*4,trail:true,trailCol:'#8fe89b',sparkTrail:true});
+      G.bullets.push({x:p.x,y:p.y,vx:Math.cos(ang)*150,vy:Math.sin(ang)*150,r:3,dmg:(20+lv*6)*dm,life:2.4,owner:p,col:'#57e86b',rocket:true,aoe:44+lv*4+(w.evo?16:0),trail:true,trailCol:'#8fe89b',sparkTrail:true});
       sfx('rocket');break;}
   }
 }
@@ -1472,13 +1500,20 @@ function buildOffers(p){
   const pool=[];
   for(const id of WEAPON_IDS){
     const w=p.weapons[id];
-    if(w){if(w.lv<WEAPONS[id].max)pool.push({kind:'up',id});}
-    else pool.push({kind:'new',id});
+    if(!w)pool.push({kind:'new',id});
+    else if(w.lv<WEAPONS[id].max)pool.push({kind:'up',id});
+    else if(!w.evo)pool.push({kind:'evo',id});
   }
   shuffle(pool);
+  // an evolution is the jackpot purchase — when one is eligible it must be
+  // on the board, not lost to the shuffle
+  const ei=pool.findIndex(o=>o.kind==='evo');
+  if(ei>2)pool.unshift(pool.splice(ei,1)[0]);
   const offers=pool.slice(0,3);
-  // a dead picker gets max-hp fillers instead of heals — healing a corpse is wasted
-  while(offers.length<3)offers.push(offers.length%2&&!p.dead?{kind:'heal'}:{kind:'mhp'});
+  // exhausted pool: golden boons, not heal filler — late income keeps buying
+  // real power (a dead picker gets max hp, healing a corpse is wasted)
+  const gold=[{kind:'gdmg'},p.dead?{kind:'gmhp'}:{kind:'gheal'},{kind:'gspd'}];
+  while(offers.length<3)offers.push(gold[offers.length%3]);
   return offers;
 }
 function startLevelup(){
@@ -1497,8 +1532,15 @@ function startLevelup(){
 function applyOffer(p,o){
   if(o.kind==='new')p.weapons[o.id]={lv:1,t:0,ang:Math.random()*TAU};
   else if(o.kind==='up')p.weapons[o.id].lv++;
-  else if(o.kind==='heal')p.hp=Math.min(p.maxhp,p.hp+60);
-  else if(o.kind==='mhp'){p.maxhp+=25;p.hp+=25;}
+  else if(o.kind==='evo'){
+    p.weapons[o.id].evo=true;
+    addSparkles(p.x,p.y,'#ffd23e',24,70);
+    flash(WEAPONS[o.id].evoName+' AWAKENS');
+  }
+  else if(o.kind==='gdmg')p.dmgMul+=0.12;
+  else if(o.kind==='gspd')p.speedMul=Math.min(1.9,p.speedMul+0.08);
+  else if(o.kind==='gmhp'){p.maxhp+=40;p.hp+=40;}
+  else if(o.kind==='gheal')p.hp=p.maxhp;
 }
 function finishLevelup(){
   G.xp-=xpNeed();
@@ -1528,7 +1570,14 @@ function applyBuff(p,type){
         addText(p.x,p.y-12,'+'+WEAPONS[id].name,WEAPONS[id].col);
       }else{
         const owned=Object.keys(p.weapons).filter(id=>p.weapons[id].lv<WEAPONS[id].max);
+        const evolvable=Object.keys(p.weapons).filter(id=>!p.weapons[id].evo);
         if(owned.length){const id=owned[(Math.random()*owned.length)|0];p.weapons[id].lv++;addText(p.x,p.y-12,WEAPONS[id].name+' UP!',WEAPONS[id].col);}
+        else if(evolvable.length){
+          const id=evolvable[(Math.random()*evolvable.length)|0];
+          p.weapons[id].evo=true;
+          addText(p.x,p.y-12,WEAPONS[id].evoName,'#ffd23e');
+          addSparkles(p.x,p.y,'#ffd23e',24,70);
+        }
         else{p.dmgMul+=0.15;addText(p.x,p.y-12,'+DAMAGE','#ff8b3d');}
       }
       sfx('levelup');return;}
@@ -3761,18 +3810,18 @@ function render(){
     drawSpriteC(ctx,playerSprites[p.col],x,y-2+bobY);
     const fw=p.weapons.flame;
     if(fw){
-      ctx.strokeStyle='rgba(255,90,61,'+(0.25+0.1*Math.sin(G.time*6))+')';ctx.lineWidth=1;
-      ctx.beginPath();ctx.arc(x,y,28+fw.lv*5,0,TAU);ctx.stroke();
+      ctx.strokeStyle=(fw.evo?'rgba(255,210,62,':'rgba(255,90,61,')+(0.25+0.1*Math.sin(G.time*6))+')';ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(x,y,flameRad(fw),0,TAU);ctx.stroke();
     }
     const ow=p.weapons.orbit;
     if(ow){
-      const n=1+ow.lv,rad=30+ow.lv*2;
+      const g=orbitGeom(ow),n=g.n,rad=g.rad;
       for(let i=0;i<n;i++){
         const a=(ow.ang||0)+i*TAU/n;
         const gx=Math.round(x+Math.cos(a)*rad),gy=Math.round(y+Math.sin(a)*rad);
-        ctx.fillStyle='#4cc2ff';
+        ctx.fillStyle=ow.evo?'#ffd23e':'#4cc2ff';
         ctx.fillRect(gx-1,gy-2,2,4);ctx.fillRect(gx-2,gy-1,4,2);
-        ctx.fillStyle='#d8f8ff';ctx.fillRect(gx,gy-1,1,2);
+        ctx.fillStyle=ow.evo?'#fff6c8':'#d8f8ff';ctx.fillRect(gx,gy-1,1,2);
       }
     }
   }
@@ -3995,19 +4044,23 @@ function renderLevelup(vw,vh){
     pick.offers.forEach((o,ci)=>{
       const x=34*k+ci*(cardW+8*k);
       const selected=pick.sel===ci;
-      ctx.fillStyle=selected?'rgba(255,233,74,0.14)':'rgba(255,255,255,0.05)';
-      ctx.fillRect(x,y,cardW,rowH-8*k);
-      ctx.strokeStyle=pick.done?(selected?'#57e86b':'#333'):(selected?PCOLORS[p.col]:'#333c46');
-      ctx.lineWidth=selected?2:1;
-      ctx.strokeRect(x+0.5,y+0.5,cardW-1,rowH-8*k-1);
       let name,desc,col;
-      if(o.kind==='heal'){name='POULTICE';desc='heal 60 hp';col='#ff4d6d';}
-      else if(o.kind==='mhp'){name='VITALITY';desc='+25 max hp';col='#ff4d6d';}
+      if(o.kind==='gdmg'){name='GOLDEN SIGIL';desc='+12% damage';col='#ffd23e';}
+      else if(o.kind==='gspd'){name='GOLDEN GREAVES';desc='+8% speed';col='#ffd23e';}
+      else if(o.kind==='gmhp'){name='GOLDEN HEART';desc='+40 max hp';col='#ffd23e';}
+      else if(o.kind==='gheal'){name='GOLDEN CHALICE';desc='full heal';col='#ffd23e';}
+      else if(o.kind==='evo'){const wd=WEAPONS[o.id];name='EVOLVE: '+wd.evoName;desc=wd.evoDesc;col='#ffd23e';}
       else{
         const wd=WEAPONS[o.id];col=wd.col;
         if(o.kind==='new'){name='NEW: '+wd.name;desc=wd.desc;}
         else{name=wd.name+' LV'+(p.weapons[o.id].lv+1);desc='upgrade!';}
       }
+      ctx.fillStyle=selected?'rgba(255,233,74,0.14)':'rgba(255,255,255,0.05)';
+      ctx.fillRect(x,y,cardW,rowH-8*k);
+      // an evolution card glints gold even when the cursor is elsewhere
+      ctx.strokeStyle=pick.done?(selected?'#57e86b':'#333'):(selected?PCOLORS[p.col]:(o.kind==='evo'?'#a8842a':'#333c46'));
+      ctx.lineWidth=selected?2:1;
+      ctx.strokeRect(x+0.5,y+0.5,cardW-1,rowH-8*k-1);
       ctx.fillStyle=col;ctx.fillRect(x+5*k,y+6*k,6*k,6*k);
       text(ctx,name,x+15*k,y+5*k,F(7),col);
       text(ctx,desc,x+15*k,y+15*k,F(6),'#b3a184');

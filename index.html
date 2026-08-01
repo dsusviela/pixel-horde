@@ -1431,11 +1431,11 @@ function rushPace(nextWave){
 // Kept lean: charms are party-wide and permanent, and stacked regen/max-hp is
 // exactly what made idling through the roster survivable.
 const RUSH_CHARMS=1;
-// target fight length: ~3 minutes for the opening boss, climbing to ~5 for the
+// target fight length: ~2 minutes for the opening boss, climbing to ~5 for the
 // capstones. Boss hp is derived from the party's measured output on the
 // previous kill (see spawnClassicBoss), so this curve — not the roster's hp
 // column — is what decides how long each fight runs.
-const RUSH_TTK0=180,RUSH_TTK1=300;
+const RUSH_TTK0=120,RUSH_TTK1=300;
 const rushTTK=w=>RUSH_TTK0+(RUSH_TTK1-RUSH_TTK0)*(clamp(w,1,waveCount())-1)/Math.max(1,waveCount()-1);
 // expected party-dps growth from one kill's payout (levels, a charm, weapon
 // picks) — plus the jump on the boss right after a capstone hands out its
@@ -3642,7 +3642,9 @@ const hulkRageSprite=makeSprite([
 'RFSSFFFFSSFR','RFFFFMMFFFFR','.RFMMMMMMFR.','.RFFSFFSFFR.','..RFFFFFFR..',
 '..RR.FF.RR..','.DD..DD..DD.'],{F:'#c9a48b',S:'#8a5f4a',R:'#ff4d6d',Y:'#ffe94a',M:'#7a1020',D:'#4a3328'});
 const SLAUGHTERHULK={
- id:'hulk',mus:'slagmaw',name:'SLAUGHTERHULK',hp:9800,r:18,sp:30,dmg:18,xp:90,dur:75,
+ // seed hp for the whole adaptive chain: the draft party deals ~60 dps, so
+ // this is what a ~2 minute opening fight costs
+ id:'hulk',mus:'slagmaw',name:'SLAUGHTERHULK',hp:7400,r:18,sp:30,dmg:18,xp:90,dur:75,
  spr:hulkSprite,scale:2,barCol:'#c9a48b',phaseCount:2,gates:[0.50],minCasts:2,
  transName:'IT STOPS FEELING PAIN',
  // the soft enrage rides the fight-length target, not a fixed 80s

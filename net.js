@@ -116,7 +116,9 @@ function encPlayer(p){
     dead:p.dead?1:0,reviveP:r2(p.reviveP||0),invuln:r2(p.invuln||0),flash:r2(p.flash||0),
     anim:r2(p.anim||0),kills:p.kills,revives:p.revives,
     arrow:p.arrow?[r2(p.arrow[0]),r2(p.arrow[1])]:null,
-    weapons:encWeapons(p.weapons)};
+    weapons:encWeapons(p.weapons),
+    // relic ids only — the guest just draws the HUD pips, the host casts them
+    relics:p.relics?Object.keys(p.relics):[]};
 }
 function encEnemy(e){
   if(e.nid===undefined)e.nid=nidNext++;
@@ -153,7 +155,9 @@ function encEnemy(e){
 // fx carry live refs (boss/p), canvases (icon), Sets (hit) and closures
 // (onPop) — encode only what drawFx reads, as plain data.
 var FX_SCALARS=['x','y','r','t','dur','w','gapA','gaps','gapW','spd','dir',
-  'x1','y1','x2','y2','heal','locked','fizzled','active'];
+  'x1','y1','x2','y2','heal','locked','fizzled','active',
+  // the BOSS RUSH mechanic and relic fx (sweep/line/cone/pole/orbit/beam/defile)
+  'a','ang','len','half','n','rad','sign','rmax','r0','r1'];
 function encFx(f){
   var o={kind:f.kind};
   if(f.ground)o.ground=1;
@@ -170,6 +174,8 @@ function encFx(f){
   if(f.mode)o.mode=f.mode;
   if(f.icon){var ik=SPRREV.get(f.icon);if(ik)o.icon=ik;}
   if(f.p&&f.p.idx!==undefined)o.pIdx=f.p.idx;
+  // relic fx are drawn around their caster, so the guest needs that link too
+  if(f.own&&f.own.idx!==undefined)o.ownIdx=f.own.idx;
   if(f.kind==='shadow'&&f.boss){
     if(f.boss.nid===undefined)f.boss.nid=nidNext++;
     o.bossNid=f.boss.nid;
@@ -284,6 +290,9 @@ function applySnapshot(snap){
     var w={};
     for(var id in sp.weapons){var sw=sp.weapons[id];w[id]={lv:sw.lv,evo:!!sw.evo,ang:sw.ang};}
     p.weapons=w;
+    var rl={};
+    if(sp.relics)for(var ri=0;ri<sp.relics.length;ri++)rl[sp.relics[ri]]={t:0};
+    p.relics=rl;
     seenP.add(sp.idx);
     return p;
   });
@@ -330,6 +339,7 @@ function applySnapshot(snap){
     for(var k in sf)f[k]=sf[k];
     if(sf.icon)f.icon=SPR[sf.icon]||null;
     if(sf.pIdx!==undefined)f.p=gPlayers.get(sf.pIdx)||null;
+    if(sf.ownIdx!==undefined)f.own=gPlayers.get(sf.ownIdx)||null;
     if(sf.bossNid!==undefined)f.boss=gEnemies.get(sf.bossNid)||null;
     return f;
   });

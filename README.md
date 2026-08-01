@@ -7,6 +7,10 @@ Single self-contained HTML file — no build, no assets, no dependencies.
 
 - **CLASSIC** — 20 waves, 4 phased raid bosses. Clear wave 20 to win.
 - **ENDLESS** — survive as the clock ramps the horde.
+- **BOSS RUSH** — 24 raid bosses back to back, no trash. Every kill drops that
+  boss's signature spell for the party, so each fight starts stronger than the
+  last. The party carries the six most recent signatures (auras are free), and
+  levels/charms are paid out between fights instead of farmed.
 
 Keyboard: WASD/arrows move, SPACE = (A), ESC = START. Gamepads: press any
 button so the browser detects the pad, then (A) to join. Drop-in mid-run is
@@ -17,7 +21,7 @@ supported.
 - `index.html` — the whole game.
 - `net.js` — online multiplayer client layer (inert unless activated by URL).
 - `server/` — Cloudflare Worker relay for online multiplayer.
-- `tools/` — local dev relay + headless protocol/net tests.
+- `tools/` — local dev relay + headless protocol/net/game tests.
 
 ## Online multiplayer
 
@@ -53,5 +57,25 @@ v1 limitations: no reconnect (a dropped guest re-joins by reloading; if the
 relay drops, the host keeps playing solo), JSON snapshots (fine on a LAN or
 decent broadband), guest-side interpolation only (no prediction).
 
-Tests: `node tools/test-protocol.mjs` (relay protocol) and
-`node tools/test-net.mjs` (net.js serialization + end-to-end over the relay).
+## Boss roster
+
+The BOSS RUSH order climbs from single-mechanic checks to the full encounters:
+
+    SLAUGHTERHULK  ROTGRUB  STONEFATHER  EMBERWYRM  VOLTHARN  SLAGMAW
+    HIVELORD  GEARWRIGHT XI  ARCANOMAGUS  THE FOUR MARSHALS  RIMEFANG  GEMINOX
+    THE UNBLINKING  DOOMBRINGER  EARTHBREAKER  WYRMTIDE  PRISMWARDEN  PYRAXIS
+    STARCALLER  FROSTBOUND LICH  WARDEN OF ASH  THE PALE KING  BLADEDANCER
+    THE WORLDEATER
+
+Each is a two- or three-phase fight adapted from a classic MMO raid encounter —
+a lane dance, a polarity check, a soak, a shielded burn, a snatch-and-carry —
+built out of the shared mechanic primitives in `index.html` (`pushSweep`,
+`pushLine`, `pushCone`, `pushWander`, `pushEdge`, `pushPole`, `prisonPlayer`,
+`shieldBoss`). All text is English/Spanish.
+
+Tests: `node tools/test-protocol.mjs` (relay protocol), `node tools/test-net.mjs`
+(net.js serialization + end-to-end over the relay), `node tools/test-rush.mjs
+[seed]` (a full headless BOSS RUSH clear) and `node tools/test-modes.mjs`
+(CLASSIC/ENDLESS smoke + every screen in both languages). The game itself runs
+headless via `tools/headless.mjs`, which boots `index.html` in a vm with stub
+canvas/audio and a seeded RNG.

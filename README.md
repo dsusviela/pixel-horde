@@ -15,11 +15,41 @@ supported.
 ## Repo layout
 
 - `index.html` — the whole game.
-- `server/` — Cloudflare Worker relay for online multiplayer (in progress).
-- `tools/` — local dev relay + headless protocol tests.
+- `net.js` — online multiplayer client layer (inert unless activated by URL).
+- `server/` — Cloudflare Worker relay for online multiplayer.
+- `tools/` — local dev relay + headless protocol/net tests.
 
-## Online multiplayer (work in progress)
+## Online multiplayer
 
 Host-authoritative over WebSockets: the host browser runs the simulation,
-guests send gamepad input and render streamed snapshots. The relay is a dumb
-room server (Cloudflare Durable Object) — no game logic server-side.
+guests send gamepad input and render streamed snapshots (~15Hz). The relay is
+a dumb room server (Cloudflare Durable Object) — no game logic server-side.
+With no URL params the game is exactly the offline couch co-op build.
+
+**Host a room** — open the game with `?host`:
+
+    index.html?host            generates a 4-letter room code (shown on screen
+                               and logged to the devtools console)
+    index.html?host=ABCD       host with a code of your choosing (4-8 chars A-Z 0-9)
+
+**Join a friend** — open the game with their code:
+
+    index.html?join=ABCD
+
+Each guest shows up on the host as one more gamepad (max 3 guests, 4 players
+total) — join, pick a color, drop in mid-run, choose level-up boons, all with
+your local keyboard or controller. Guests never simulate: they render the
+host's snapshots, so the host's connection is the room.
+
+**Relay server** — defaults to `ws://localhost:8787`. Override per-URL with
+`?relay=wss://your-worker.workers.dev`, or set a page-global default before
+`net.js` loads: `window.PH_RELAY='wss://...'`. For local play run the dev
+relay: `cd tools && npm install && node relay-local.mjs`. Deploy the real one
+with `cd server && npx wrangler deploy`.
+
+v1 limitations: no reconnect (a dropped guest re-joins by reloading; if the
+relay drops, the host keeps playing solo), JSON snapshots (fine on a LAN or
+decent broadband), guest-side interpolation only (no prediction).
+
+Tests: `node tools/test-protocol.mjs` (relay protocol) and
+`node tools/test-net.mjs` (net.js serialization + end-to-end over the relay).

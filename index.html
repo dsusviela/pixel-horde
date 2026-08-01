@@ -771,6 +771,8 @@ function pollPads(){
   const out=[];
   for(const p of pads){if(p&&p.connected)out.push(p);}
   out.push(keyboardPad());
+  // online guests appear as one virtual pad each (net.js; inert when NET is off)
+  if(typeof NET!=='undefined'&&NET.virtualPads)for(const vp of NET.virtualPads())out.push(vp);
   return out;
 }
 function padPrev(i){return padState[i]||(padState[i]={buttons:[],ax:0,ay:0});}
@@ -4277,6 +4279,8 @@ function frame(now){
   let dt=Math.min(0.033,(now-last)/1000);
   last=now;
   if(slowT>0){slowT-=dt;dt*=0.30;}
+  // online guests never simulate: net.js patches G from host snapshots (inert when NET is off)
+  if(typeof NET!=='undefined'&&NET.guestFrame&&NET.guestFrame(dt)){render();requestAnimationFrame(frame);return;}
   update(dt);
   if(G.state!=='title'&&G.state!=='modesel')updateCamera(dt);
   render();
@@ -4285,5 +4289,6 @@ function frame(now){
 requestAnimationFrame(frame);
 
 </script>
+<script src="net.js"></script>
 </body>
 </html>

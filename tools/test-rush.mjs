@@ -14,7 +14,7 @@ g.ev('startRun')('rush');
 
 let t=0,levelups=0,seenRelics=[],lastWave=0,stuck=0,lastPos={x:0,y:0},detour=0,side=1,lock=null;
 const dt=1/60;
-for(let i=0;i<60*60*75&&g.G.state!=='victory'&&g.G.state!=='gameover';i++){
+for(let i=0;i<60*60*200&&g.G.state!=='victory'&&g.G.state!=='gameover';i++){
   const G=g.G;
   // auto-confirm level-up picks and keep the party alive
   if(G.state==='levelup'){
@@ -40,8 +40,24 @@ for(let i=0;i<60*60*75&&g.G.state!=='victory'&&g.G.state!=='gameover';i++){
       if(d<bd2){bd2=d;lock=e;}
     }
   }
+  // mechanics that matter even to an immortal bot: an unsoaked CONVERGENCE
+  // heals the twins, and sparks left on the floor heal the magus — walk to
+  // them or the fight never ends
+  let goal=null;
+  for(const f of G.fx)if(f.kind==='stack'){goal=f;break;}
+  if(!goal){
+    let sd=1e9;
+    for(const pk of G.pickups)if(pk.type==='spark'){
+      const d=(pk.x-me.x)**2+(pk.y-me.y)**2;
+      if(d<sd){sd=d;goal=pk;}
+    }
+  }
   let dx=0,dy=0,bd=1e9;
-  if(lock){
+  if(goal){
+    const tx=goal.x-me.x,ty=goal.y-me.y;
+    const len=Math.hypot(tx,ty)||1;
+    if(tx*tx+ty*ty>8*8){dx=tx/len;dy=ty/len;}
+  }else if(lock){
     const tx=lock.x-me.x,ty=lock.y-me.y;
     bd=tx*tx+ty*ty;
     const len=Math.hypot(tx,ty)||1;
@@ -74,8 +90,9 @@ console.log('p1 weapons ',Object.entries(g.G.players[0].weapons).map(([k,w])=>k+
 console.log('p1 relics  ',Object.keys(g.G.players[0].relics).join(', '));
 const n=g.ev('waveCount()');
 console.log('boss times ',G.bossTimes.map((t,i)=>g.ev('RUSH_ROSTER')[i].name+' '+Math.round(t)+'s').join('\n            '));
-// auras never occupy a casting slot, so the cap counts only the spells that fire
-const casting=G.relics.filter(r=>g.ev('RELICS')[r].fx!=='aura').length;
-const ok=G.state==='victory'&&G.bossKills===n&&casting===Math.min(n,g.ev('RELIC_CAP'));
+// only the four capstone raid bosses leave their signature behind
+const wantRelics=['slagmaw','geminox','pyraxis','worldeater'];
+const ok=G.state==='victory'&&G.bossKills===n&&
+  wantRelics.every(r=>G.relics.indexOf(r)>=0)&&G.relics.length===wantRelics.length;
 console.log(ok?'\nPASS':'\nFAIL');
 process.exit(ok?0:1);

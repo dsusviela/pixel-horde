@@ -7,10 +7,12 @@ Single self-contained HTML file — no build, no assets, no dependencies.
 
 - **CLASSIC** — 20 waves, 4 phased raid bosses. Clear wave 20 to win.
 - **ENDLESS** — survive as the clock ramps the horde.
-- **BOSS RUSH** — 24 raid bosses back to back, no trash. Every kill drops that
-  boss's signature spell for the party, so each fight starts stronger than the
-  last. The party carries the six most recent signatures (auras are free), and
-  levels/charms are paid out between fights instead of farmed.
+- **BOSS RUSH** — 24 raid bosses back to back, no trash. The four tier
+  capstones (Slagmaw, Geminox, Pyraxis, the Worldeater) drop their signature
+  spell for the party; levels/charms are paid out between fights instead of
+  farmed. Boss hp is derived from the party's measured damage on the previous
+  kill, targeting ~3-minute fights early and ~5 for the capstones, and boss
+  damage reads as a percentage of the party's max hp — idling is lethal.
 
 Keyboard: WASD/arrows move, SPACE = (A), ESC = START. Gamepads: press any
 button so the browser detects the pad, then (A) to join. Drop-in mid-run is

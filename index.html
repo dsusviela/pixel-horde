@@ -788,6 +788,21 @@ const ES={
   'FLAMES OF THE BLADE':'LLAMAS DE LA HOJA','KITE THEM — THEY NEVER STOP':'ATRAEDLAS — NUNCA PARAN',
   'UNTOUCHABLE — JUST SURVIVE IT':'INTOCABLE — SOBREVIVID','THE DANCE ENDS':'LA DANZA TERMINA',
   'SPREAD OUT — IT SPLASHES':'SEPARAOS — SALPICA',
+  'CLOSEST PLAYER TAKES THE HIT':'EL MÁS CERCANO RECIBE EL GOLPE',
+  'OUT OF THE RED LINE':'FUERA DE LA LÍNEA ROJA',
+  'NOBODY IN REACH — IT HITS HARDER NOW':'NADIE A SU ALCANCE — AHORA PEGA MÁS FUERTE',
+  'THE FLOOR ERUPTS LANE BY LANE — KEEP WALKING':'EL SUELO ESTALLA CARRIL A CARRIL — SIGUE ANDANDO',
+  'THE DANCE TURNS AROUND — FASTER NOW':'LA DANZA SE INVIERTE — AHORA MÁS RÁPIDA',
+  'MOVE OFF THE MARKS — THE ROT LINGERS':'SAL DE LAS MARCAS — LA PODREDUMBRE PERDURA',
+  'DODGE THE RING':'ESQUIVA EL ANILLO',
+  'BACK AWAY FROM IT':'ALÉJATE DE ÉL',
+  'SPREAD OUT — TOGETHER IT HITS HARDER':'SEPARAOS — JUNTOS GOLPEA MÁS FUERTE',
+  'SHATTER IS COMING — BRACE':'AÑICOS INMINENTE — AGUANTA',
+  'THE TAIL SWEEPS BEHIND IT':'LA COLA BARRE POR DETRÁS',
+  'IT PULLS YOU IN — RUN OUT BEFORE THE RING':'OS ATRAE — SALID ANTES DEL ANILLO',
+  'RUN TO THE DRAGON':'CORRED HACIA EL DRAGÓN',
+  'GET AWAY FROM IT':'ALEJAOS DE ÉL',
+  'STAND APART — THE FROST CHAINS':'SEPARAOS — LA ESCARCHA SALTA EN CADENA',
   // floating combat text
   'HATEFUL!':'¡ODIOSO!','TOO CLOSE!':'¡DEMASIADO CERCA!','THROWN!':'¡LANZADO!',
   'PULLED!':'¡ARRASTRADO!','FALLING!':'¡CAYENDO!','FROZEN!':'¡CONGELADO!',
@@ -850,6 +865,7 @@ const ES_RX=[
   [/^NEXT WAVE IN (\d+)$/,m=>'SIGUIENTE OLEADA EN '+m[1]],
   [/^(\d+) LEFT$/,m=>'QUEDAN '+m[1]],
   [/^!! (.+) !!$/,m=>'¡¡ '+tr(m[1])+' !!'],
+  [/^UNMADE — (\d+) SECONDS$/,m=>'DESHECHO — '+m[1]+' SEGUNDOS'],
   [/^(.+) AWAKENS$/,m=>tr(m[1])+' DESPIERTA'],
   [/^(.+)  PHASE (\d)$/,m=>tr(m[1])+'  FASE '+m[2]],
   [/^NEW: (.+)$/,m=>'NUEVO: '+tr(m[1])],
@@ -1161,9 +1177,11 @@ const WEAPONS={
 const WEAPON_IDS=Object.keys(WEAPONS);
 
 // ---------- signature spells (BOSS RUSH) ----------
-// each raid boss leaves its signature behind: kill it and the whole party
-// learns the spell, so every fight in the rush opens with more firepower than
-// the last. They auto-cast like weapons and are tuned for single huge targets.
+// the four raid-tier capstones (Slagmaw, Geminox, Pyraxis, the Worldeater)
+// leave their signature behind: kill one and the whole party learns the
+// spell. They auto-cast like weapons and are tuned for single huge targets.
+// The rest of the table is the roster's full spellbook, kept for the day a
+// mode wants to hand more of them out.
 const RELICS={
   slagmaw:{name:'FORGEHEART',col:'#ffd23e',desc:'a molten slam that leaves burning ground',
     cd:4.5,fx:'nova',r:74,dmg:58,burn:{r:59,dps:26,dur:4},range:240},
@@ -1246,7 +1264,8 @@ const G={
   wave:0, waveState:'fight', waveT:0, interLen:8,
   waveQuota:0, waveSpawned:0, waveSpawnT:0, waveSpawnGap:0, wavePulses:[], cleanT:0,
   arena:null, tileOverride:new Map(), creep:null,
-  deaths:0, bossKills:0, bossTimes:[], buffTally:{}
+  deaths:0, bossKills:0, bossTimes:[], buffTally:{},
+  bossDmgAcc:0, bossVulnT:0, lastBossDPS:0
 };
 function xpNeed(){
   // 0.6+0.4n runs slightly ahead of the wave-quota slope (0.65+0.35n): big
@@ -1313,7 +1332,11 @@ function joinPlayer(padIndex,joinBtn){
   G.players.push(p);
   // a late joiner inherits every relic the party has already claimed —
   // a rush latecomer with no signature spells is dead weight against boss 3
-  for(const id of G.relics)p.relics[id]={t:1.0};
+  for(const id of G.relics){
+    p.relics[id]={t:1.0};
+    // an aura's entire effect is the stat grant at claim time — hand it over
+    if(RELICS[id].fx==='aura')applyAura(p,RELICS[id]);
+  }
   if(isCampaign()&&G.state==='play'&&G.level>2){
     p.maxhp=Math.min(280,100+15*(G.level-1));p.hp=p.maxhp;
     p.dmgMul=1+0.04*(G.level-1);p.speedMul=Math.min(1.5,1+0.012*(G.level-1));
@@ -1345,6 +1368,7 @@ function startRun(mode){
   G.cam={x:0,y:0,w:680,h:400,tw:680};
   G.mode=mode;
   G.deaths=0;G.bossKills=0;G.bossTimes=[];G.buffTally={};G.runLogged=false;
+  G.bossDmgAcc=0;G.bossVulnT=0;G.lastBossDPS=0;
   G.arena=null;G.creep=null;G.cleanT=0;
   G.flashMsg=null;G.flashT=0;G.subFlash=null;G.subFlashT=0;
   G.tileOverride.clear();chunkCanvases.clear();
@@ -1403,8 +1427,20 @@ function rushPace(nextWave){
   const need=rushTargetLevel(nextWave)-G.level-G.freeLevels;
   grantLevels(Math.max(1,need));
 }
-// charm income for the farm waves the rush skips, paid at each intermission
-const RUSH_CHARMS=2;
+// charm income for the farm waves the rush skips, paid at each intermission.
+// Kept lean: charms are party-wide and permanent, and stacked regen/max-hp is
+// exactly what made idling through the roster survivable.
+const RUSH_CHARMS=1;
+// target fight length: ~3 minutes for the opening boss, climbing to ~5 for the
+// capstones. Boss hp is derived from the party's measured output on the
+// previous kill (see spawnClassicBoss), so this curve — not the roster's hp
+// column — is what decides how long each fight runs.
+const RUSH_TTK0=180,RUSH_TTK1=300;
+const rushTTK=w=>RUSH_TTK0+(RUSH_TTK1-RUSH_TTK0)*(clamp(w,1,waveCount())-1)/Math.max(1,waveCount()-1);
+// expected party-dps growth from one kill's payout (levels, a charm, weapon
+// picks) — plus the jump on the boss right after a capstone hands out its
+// signature spell. Fitted against headless runs (tools/test-rush.mjs).
+const rushGrowth=w=>((w-1)%6===0&&w>1)?1.28:1.12;
 // classic and rush share the wave machine, the arena and the boss roster
 const isCampaign=()=>G.mode!=='endless';
 const waveTable=()=>G.mode==='rush'?RUSH_WAVES:CLASSIC_WAVES;
@@ -1516,7 +1552,9 @@ function queryEnemies(x,y,r,cb){
 function nearestEnemy(x,y,maxR){
   let best=null,bd=maxR*maxR;
   for(const e of G.enemies){
-    if(e.dead)continue;
+    // vulnMul 0 = shielded/airborne/burrowed: there is no manual aim, so an
+    // untouchable target would soak the whole party's auto-fire for nothing
+    if(e.dead||e.vulnMul===0)continue;
     const d=dist2(x,y,e.x,e.y)*(e.boss?0.36:1); // players can't aim: bias toward the boss
     if(d<bd){bd=d;best=e;}
   }
@@ -1551,8 +1589,9 @@ function dropLoot(e){
   if(e.boss){
     const n=isCampaign()?Math.max(1,G.players.length):1;
     // charms buff the WHOLE party, so the drop count must not scale with the
-    // roster — n players hoovering n-scaled drops is n² stat growth
-    for(let i=0;i<(isCampaign()?Math.min(3,1+n):3);i++)
+    // roster — n players hoovering n-scaled drops is n² stat growth. The rush
+    // pays one per kill: 24 boss kills is already a long charm income.
+    for(let i=0;i<(G.mode==='rush'?1:(isCampaign()?Math.min(3,1+n):3));i++)
       G.pickups.push({x:e.x+(Math.random()*56-28),y:e.y+(Math.random()*40-20),type:types[(Math.random()*5)|0],t:0});
     for(let i=0;i<(isCampaign()?n:1);i++)
       G.pickups.push({x:e.x+(Math.random()*30-15),y:e.y+(Math.random()*24-12),type:'heart',t:0});
@@ -1564,7 +1603,10 @@ function dropLoot(e){
 }
 function damageEnemy(e,dmg,owner){
   if(e.dead)return;
-  dmg*=(e.vulnMul||1);
+  dmg*=(e.vulnMul??1); // ?? not ||: vulnMul 0 means shielded/airborne/burrowed, not "default to 1"
+  // the rush prices the next boss off the party's measured output on this one
+  // (overkill excluded, adds excluded — only the health bar that gates the wave)
+  if(e.boss&&G.mode==='rush')G.bossDmgAcc+=Math.min(dmg,Math.max(0,e.hp));
   e.hp-=dmg;e.flash=0.08;
   addText(e.x,e.y-e.r-3,Math.round(dmg),'#ffd23e');
   sfx('hit');
@@ -1580,7 +1622,17 @@ function damageEnemy(e,dmg,owner){
       if(isCampaign()&&e.def){
         if(e.def.onDeath)e.def.onDeath(e);
         G.bossKills++;G.bossTimes.push(G.time);
-        if(G.mode==='rush'){grantRelic(e.def.id);rushPace(G.wave+1);}
+        if(G.mode==='rush'){
+          // dps over time the boss could actually be hurt: shield/burrow/flight
+          // windows don't count, so a mechanic-heavy fight doesn't read as a
+          // weak party and soften the next boss
+          G.lastBossDPS=G.bossDmgAcc/Math.max(15,G.bossVulnT);
+          // only the four raid-tier capstones leave their signature behind —
+          // a relic per kill compounded party dps ~1.4x a boss and boss hp
+          // had to balloon to keep up
+          if(MUS_BOSS_IDS.indexOf(e.def.id)>=0)grantRelic(e.def.id);
+          rushPace(G.wave+1);
+        }
         for(const o of G.enemies)if(o!==e&&!o.dead){o.dead=true;addParticles(o.x,o.y,'#d84343',6,60);}
         G.ebullets.length=0;G.fx=G.fx.filter(f=>!f.boss);
         G.waveState='clear';G.waveT=0;
@@ -1649,9 +1701,19 @@ function hurtPlayer(p,dmg){
   G.shake=Math.max(G.shake,2);
   if(p.hp<=0)killPlayer(p);
 }
+// boss adds speak the same percentage language as their masters: base reads as
+// % of the party's average max hp, so a grubling stays a threat at boss 20.
+// Endless bosses keep the old flat curve — their fights stay short by design.
+function addDmg(base){
+  if(!isCampaign())return base*dmgScale();
+  const n=Math.max(1,G.players.length);
+  return (base/100)*(G.players.reduce((s,p)=>s+p.maxhp,0)/n);
+}
 // scripted boss mechanics: damage as a fraction of maxhp, ignores the 0.5s hurt throttle
 function bossHit(p,pct){
-  if(p.dead||p.invuln>0)return;
+  // pct 0 telegraphs (armSlam/armLeap let the boss resolve the hit itself)
+  // must not fire the hurt flash/sfx as a phantom hit
+  if(pct<=0||p.dead||p.invuln>0)return;
   p.hp-=p.maxhp*pct;p.flash=0.15;sfx('hurt');
   G.shake=Math.max(G.shake,2);
   if(p.hp<=0)killPlayer(p);
@@ -1732,7 +1794,7 @@ function fireWeapon(p,id,w,dt){
         px=cur.x;py=cur.y;
         let next=null,bd=jr*jr;
         queryEnemies(px,py,jr,e=>{
-          if(hitSet.has(e))return;
+          if(hitSet.has(e)||e.vulnMul===0)return;
           const d=dist2(px,py,e.x,e.y);
           if(d<bd){bd=d;next=e;}
         });
@@ -1767,7 +1829,7 @@ function fireWeapon(p,id,w,dt){
 // range instead of at whatever add wandered closest
 function relicTarget(p,range){
   const b=G.boss;
-  if(b&&!b.dead&&dist2(p.x,p.y,b.x,b.y)<range*range)return b;
+  if(b&&!b.dead&&b.vulnMul!==0&&dist2(p.x,p.y,b.x,b.y)<range*range)return b;
   return nearestEnemy(p.x,p.y,range);
 }
 // A run through the whole roster would end with two dozen spells casting at
@@ -1895,7 +1957,7 @@ function fireRelic(p,id,r,dt){
         hit.add(cur);px=cur.x;py=cur.y;
         let next=null,bd=(d.jump||150)**2;
         queryEnemies(px,py,d.jump||150,e=>{
-          if(hit.has(e)||e.dead)return;
+          if(hit.has(e)||e.dead||e.vulnMul===0)return;
           const dd=dist2(px,py,e.x,e.y);
           if(dd<bd){bd=dd;next=e;}
         });
@@ -2376,7 +2438,7 @@ function tickBossFx(dt,alive){
         f.t-=dt;f.tick-=dt;
         let tg=null,bd=1e9;
         for(const e of G.enemies){
-          if(e.dead)continue;
+          if(e.dead||e.vulnMul===0)continue;
           const d=dist2(e.x,e.y,f.x,f.y);
           if(d<bd){bd=d;tg=e;}
         }
@@ -2392,6 +2454,14 @@ function tickBossFx(dt,alive){
           });
         }
         break;}
+      case 'slagwarn':
+        f.t-=dt;
+        if(f.t<=0&&!f.spawned){
+          f.spawned=1;
+          pushPool(f.boss,f.x,f.y,9,5,0.04,'#ff6a2a','tile');
+          sfx('slag');
+        }
+        break;
       default: f.t-=dt;
     }
   }
@@ -2405,7 +2475,7 @@ function tickBossFx(dt,alive){
 function spawnSlagPup(x,y){
   const e=spawnEnemy('swarm',x,y);
   e.spr=slagPupSprite;e.r=4;e.hp=16*hpScale();e.maxhp=e.hp;
-  e.sp=58+Math.random()*10;e.dmg=7*dmgScale();e.xp=2;e.life=26;
+  e.sp=58+Math.random()*10;e.dmg=addDmg(7);e.xp=2;e.life=26;
   return e;
 }
 // Slag offering (Ragnaros' Sons of Flame): crawls from the arena edge straight
@@ -2424,6 +2494,15 @@ function spawnSlagOffering(){
   e.sp=24;e.dmg=0;e.xp=3;e.noTouch=true;e.offering=true;e.life=45;
   addParticles(x,y,'#ffd85a',10,80);
   return e;
+}
+// A boss self-heal written as % of maxhp was tuned when maxhp meant roughly
+// d.dur seconds of party dps. Under rush pacing maxhp means rushTTK() seconds,
+// so the same pct would heal several times the fight-time it was designed to
+// cost — Geminox's siphon regen alone out-healed the whole party. Rescale so
+// a heal always costs the seconds it originally cost.
+function bossHeal(e,pct){
+  const mul=G.mode==='rush'&&e.def?clamp((e.def.dur||100)/rushTTK(G.wave),0,1):1;
+  e.hp=Math.min(e.maxhp,e.hp+e.maxhp*pct*mul);
 }
 function armSlam(e,dur,r){
   bossCast(e,'slam','MOLTEN SLAM',dur);
@@ -2469,7 +2548,7 @@ const SLAGMAW={
      if(Math.random()<dt*8)addSparkles(o.x,o.y-3,'#ffd85a',1,20);
      if(d<e.r+8){
        o.dead=true;
-       e.hp=Math.min(e.maxhp,e.hp+e.maxhp*0.035);
+       bossHeal(e,0.035);
        addText(e.x,e.y-e.r-10,'FED!','#ffd23e');
        addParticles(o.x,o.y,'#ffd85a',14,110);
        ringVolley(e,6,'#ff9040',80,Math.random()*TAU);
@@ -2627,7 +2706,7 @@ function spawnSiphonPylon(x,y){
   return e;
 }
 const GEMINOX={
- id:'geminox',name:'GEMINOX',hp:12000,r:17,sp:32,dmg:22,xp:240,
+ id:'geminox',name:'GEMINOX',hp:12000,r:17,sp:32,dmg:22,xp:240,ttkMul:0.7,
  spr:geminoxSprite,scale:2,barCol:'#7fd8ff',phaseCount:3,gates:[0.65,0.33],minCasts:2,
  transName:'THE TWINS TURN',
  aiInit:()=>({mode:'intro',t:2.5,cast:null,castT:0,castLen:0,mechT:4,mechGap:6.0,slagT:4.0,slagGap:4.0,boltT:1.8,boltGap:1.8,addT:11,cyc:0,next:'converge',pylT:9,pylons:[]}),
@@ -2656,7 +2735,9 @@ const GEMINOX={
        G.shake=Math.max(G.shake,3);sfx('crack');
        continue;
      }
-     e.hp=Math.min(e.maxhp,e.hp+e.maxhp*0.006*dt);
+     // rush pacing: the drain was tuned against a ~100s fight; against the
+     // bigger pools it out-raced a party that split off to break pylons
+     bossHeal(e,(G.mode==='rush'?0.004:0.006)*dt);
      py.beamT=(py.beamT||0)-dt;
      if(py.beamT<=0){
        py.beamT=0.22;
@@ -2693,13 +2774,15 @@ const GEMINOX={
  },
  pick(e,dt,alive){
    const a=e.ai;
-   // walk, but stop at 70px
+   // walk, but stop at 70px — and plant for the phase-3 finale (bossWalk takes
+   // a literal speed, so e.sp=0 alone never actually rooted it)
+   const rooted=e.phase===3&&e.hp/e.maxhp<=0.10;
+   if(rooted)e.sp=0;
    const t=nearestPlayer(e,alive);
-   if(t){
+   if(t&&!rooted){
      const d=Math.hypot(t.x-e.x,t.y-e.y);
      if(d>70)bossWalk(e,t.x,t.y,e.phase===3?26:32);
    }
-   if(e.phase===3&&e.hp/e.maxhp<=0.10)e.sp=0;
    // slag tiles under everyone
    a.slagT-=dt;
    if(a.slagT<=0){
@@ -2770,7 +2853,7 @@ const GEMINOX={
        sfx('stackpop');
      }else{
        for(const p of alive){bossHit(p,0.35);addText(p.x,p.y-14,'UNSOAKED!','#ff4d6d');}
-       e.hp=Math.min(e.maxhp,e.hp+e.maxhp*0.06);
+       bossHeal(e,0.06);
        flash('THE TWINS FEED!');G.shake=9;
        ringVolley(e,10,'#ffb62e',90,0);
      }
@@ -3029,7 +3112,7 @@ const PYRAXIS={
        const y=q?q.y+(Math.random()*20-10):e.y+(Math.random()*60-30);
        const s=spawnEnemy('swarm',x,y);
        s.spr=emberlingSprite;s.r=4;s.hp=26*hpScale();s.maxhp=s.hp;
-       s.sp=68;s.dmg=9*dmgScale();s.xp=3;s.life=18;s.dripT=1.2;s.ember=1;
+       s.sp=68;s.dmg=addDmg(9);s.xp=3;s.life=18;s.dripT=1.2;s.ember=1;
      }
      sfx('emberpop');
    }
@@ -3151,11 +3234,14 @@ const WORLDEATER={
    if(ph===2){e.sp=22;a.mechT=1.5;a.ringT=3.2;a.addT=4;sfx('crack');}
    else if(ph===3){e.sp=22;a.gazeT=6;a.fallT=5;a.addT=9;sfx('gazeopen');}
    else if(ph===4){
-     G.shake=12;sfx('shatter');flash('UNMADE — 30 SECONDS');
+     // the doom clock rides the fight-length target: at rush pacing the last
+     // 20% is ~a minute of honest dps, so a fixed 30s guaranteed the wipe
+     const doom=G.mode==='rush'?Math.round(rushTTK(G.wave)*0.22):30;
+     G.shake=12;sfx('shatter');flash('UNMADE — '+doom+' SECONDS');
      for(const f of G.fx)if(f.kind==='pool')f.t=Math.min(f.t,0.3);
      G.ebullets.length=0;
      e.vulnMul=1.45;e.sp=0;
-     a.enrageT=30;a.cycT=2.0;a.charge='none';
+     a.enrageT=doom;a.cycT=2.0;a.charge='none';
      const A=G.arena;
      const liv=G.players.filter(p=>!p.dead);
      liv.forEach((p,i)=>{
@@ -3477,7 +3563,7 @@ function knockPlayer(p,ang,dist){
 function spawnAdd(o){
   const hp=(o.hp||120)*hpScale();
   const e={type:o.type||'add',def:o.def||null,spr:o.spr,x:o.x,y:o.y,r:o.r||6,
-    hp,maxhp:hp,sp:o.sp||0,dmg:(o.dmg||0)*dmgScale(),xp:o.xp||4,
+    hp,maxhp:hp,sp:o.sp||0,dmg:addDmg(o.dmg||0),xp:o.xp||4,
     flash:0,fuse:-1,shootT:o.shootT===undefined?999:o.shootT,orbCd:{},slow:1,boss:false,
     noTouch:!!o.noTouch,huntLv:0,hunted:false,life:o.life===undefined?-1:o.life,
     scale:o.scale||1,barCol:o.barCol||null};
@@ -3556,10 +3642,12 @@ const hulkRageSprite=makeSprite([
 'RFSSFFFFSSFR','RFFFFMMFFFFR','.RFMMMMMMFR.','.RFFSFFSFFR.','..RFFFFFFR..',
 '..RR.FF.RR..','.DD..DD..DD.'],{F:'#c9a48b',S:'#8a5f4a',R:'#ff4d6d',Y:'#ffe94a',M:'#7a1020',D:'#4a3328'});
 const SLAUGHTERHULK={
- id:'hulk',mus:'slagmaw',name:'SLAUGHTERHULK',hp:5200,r:18,sp:30,dmg:18,xp:90,dur:75,
+ id:'hulk',mus:'slagmaw',name:'SLAUGHTERHULK',hp:9800,r:18,sp:30,dmg:18,xp:90,dur:75,
  spr:hulkSprite,scale:2,barCol:'#c9a48b',phaseCount:2,gates:[0.50],minCasts:2,
  transName:'IT STOPS FEELING PAIN',
- aiInit:()=>({mode:'intro',t:2.2,cast:null,castT:0,castLen:0,walk:1.2,step:0,enr:80,raged:0}),
+ // the soft enrage rides the fight-length target, not a fixed 80s
+ aiInit:()=>({mode:'intro',t:2.2,cast:null,castT:0,castLen:0,walk:1.2,step:0,
+   enr:G.mode==='rush'?rushTTK(G.wave)*0.9:80,raged:0}),
  onPhase(e,ph){
    if(ph!==2)return;
    e.spr=hulkRageSprite;e.barCol='#ff4d6d';G.bossTint='#ff8b7a';
@@ -3574,6 +3662,16 @@ const SLAUGHTERHULK={
      a.raged=1;e.dmg*=1.8;e.sp+=10;
      flash('SLAUGHTERHULK ENRAGES');subFlash('KILL IT NOW',3);sfx('boss');
    }
+   // while HATEFUL STRIKE winds up, a beam pins whoever is currently closest —
+   // the party can see exactly who eats it and trade places before it lands
+   if(e.castName==='HATEFUL STRIKE'){
+     const t=nearestPlayer(e,alive);
+     a.hbT=(a.hbT||0)-dt;
+     if(t&&a.hbT<=0){
+       a.hbT=0.18;
+       G.fx.push({kind:'beam',x1:e.x,y1:e.y,x2:t.x,y2:t.y,t:0.2,dur:0.2,col:'rgba(255,77,109,0.65)'});
+     }
+   }
  },
  pick(e,dt,alive){
    const a=e.ai;
@@ -3582,8 +3680,13 @@ const SLAUGHTERHULK={
    a.walk-=dt;
    if(a.walk>0)return;
    const s=(a.step++)%3;
-   if(s===2)bossCast(e,'cleave','MEAT CLEAVER',1.3);
-   else bossCast(e,'hateful','HATEFUL STRIKE',1.1);
+   if(s===2){
+     bossCast(e,'cleave','MEAT CLEAVER',1.3);
+     subFlash('OUT OF THE RED LINE',2.4);
+   }else{
+     bossCast(e,'hateful','HATEFUL STRIKE',1.4);
+     subFlash('CLOSEST PLAYER TAKES THE HIT',1.4);
+   }
  },
  resolve(e,k,alive){
    const a=e.ai;
@@ -3600,7 +3703,8 @@ const SLAUGHTERHULK={
        sfx('slam');G.shake=Math.max(G.shake,6);
      }else{
        // nobody in reach: it works itself up instead
-       e.dmg*=1.12;flash('IT GROWS IMPATIENT');addParticles(e.x,e.y,'#ff4d6d',18,120);
+       e.dmg*=1.12;flash('IT GROWS IMPATIENT');subFlash('NOBODY IN REACH — IT HITS HARDER NOW',2.4);
+       addParticles(e.x,e.y,'#ff4d6d',18,120);
      }
      a.walk=e.phase===2?1.0:1.5;
    }
@@ -3651,6 +3755,11 @@ const ROTGRUB={
    a.danceT=ph2?1.5:2.1;
    const ar=G.arena;
    if(!ar)return;
+   // say the rule out loud the first time each phase asks for it
+   if(!a.hinted||(ph2&&a.hinted<2)){
+     a.hinted=ph2?2:1;
+     subFlash(ph2?'THE DANCE TURNS AROUND — FASTER NOW':'THE FLOOR ERUPTS LANE BY LANE — KEEP WALKING',3);
+   }
    const lanes=4,lw=ar.w/lanes;
    const lx=ar.x-ar.w/2+lw*(a.lane+0.5);
    // a lane is just a very fat line rotated to run the height of the arena
@@ -3675,9 +3784,11 @@ const ROTGRUB={
    const a=e.ai;
    if(k==='spit'){
      for(const p of alive)pushTel(e,p.x,p.y,34,1.2,0.12,'#8fbf3a',null,{r:30,life:8,pct:0.04,col:'#6f9c3a'});
+     subFlash('MOVE OFF THE MARKS — THE ROT LINGERS',2.2);
      a.walk=1.8;sfx('slag');
    }
    if(k==='burst'){
+     subFlash('DODGE THE RING',2.0);
      ringVolley(e,e.phase===2?16:12,'#b6d94a',85,Math.random()*TAU);
      for(let i=0;i<3;i++){
        const an=Math.random()*TAU,rr=40+Math.random()*70;
@@ -3724,7 +3835,9 @@ const STONEFATHER={
    const a=e.ai;
    a.growT-=dt;
    if(a.growT<=0&&a.stacks<8){
-     a.growT=e.phase===2?9:13;
+     // the growth arc was written for a ~90s fight; stretch the cadence with
+     // the rush's fight-length target so it still caps out near the end
+     a.growT=(e.phase===2?9:13)*(G.mode==='rush'?rushTTK(G.wave)/90:1);
      a.stacks++;e.dmg*=1.12;e.scale=2+a.stacks*0.06;
      flash('GROWTH  x'+a.stacks);
      addParticles(e.x,e.y,'#ffd23e',18,110);sfx('levelup');
@@ -3737,9 +3850,13 @@ const STONEFATHER={
    a.walk-=dt;
    if(a.walk>0)return;
    const s=(a.step++)%3;
-   if(s===0)bossCast(e,'slam','GROUND SLAM',1.6);
-   else if(s===1)bossCast(e,'shatter','SHATTER',2.6);
-   else bossCast(e,'boulders','BOULDER FALL',1.8);
+   if(s===0){
+     bossCast(e,'slam','GROUND SLAM',1.6);
+     subFlash('BACK AWAY FROM IT',1.6);
+   }else if(s===1){
+     bossCast(e,'shatter','SHATTER',2.6);
+     subFlash(alive.length>1?'SPREAD OUT — TOGETHER IT HITS HARDER':'SHATTER IS COMING — BRACE',2.6);
+   }else bossCast(e,'boulders','BOULDER FALL',1.8);
  },
  resolve(e,k,alive){
    const a=e.ai;
@@ -3831,6 +3948,9 @@ const EMBERWYRM={
    const whelps=G.enemies.filter(q=>q.type==='whelp'&&!q.dead).length;
    if(a.flyT<=0||(a.flyT<18&&whelps===0)){
      e.gates=[];e.phase=3;e.ai.applied=null;
+     // a DEEP BREATH channeling at touchdown must die with the flight phase,
+     // or it resolves after the transition, in phase 3
+     e.ai.cast=null;e.ai.castT=0;
      e.ai.mode='transition';e.ai.t=2.0;e.castName=null;e.castP=0;e.frozen=1;
    }
  },
@@ -3848,7 +3968,10 @@ const EMBERWYRM={
    if(a.walk>0)return;
    const s=(a.step++)%3;
    if(s===0)bossCast(e,'breath','FLAME BREATH',1.7);
-   else if(s===1)bossCast(e,'tail','TAIL SWEEP',1.4);
+   else if(s===1){
+     bossCast(e,'tail','TAIL SWEEP',1.4);
+     subFlash('THE TAIL SWEEPS BEHIND IT',1.4);
+   }
    else bossCast(e,'volley','EMBER VOLLEY',1.2);
  },
  resolve(e,k,alive){
@@ -4206,7 +4329,7 @@ const ARCANOMAGUS={
      sp.life=(sp.life||0)-dt;
      if(sp.life<=0){
        sp.dead=true;a.sparks.splice(i,1);
-       e.hp=Math.min(e.maxhp,e.hp+e.maxhp*0.03);
+       bossHeal(e,0.03);
        addText(e.x,e.y-e.r-10,'DRAINED!','#c9a4ff');
        addParticles(e.x,e.y,'#7a3ad0',16,110);sfx('slag');
      }
@@ -4233,7 +4356,10 @@ const ARCANOMAGUS={
    const s=(a.step++)%3;
    if(s===0)bossCast(e,'beam','ARCANE BEAM',1.8);
    else if(s===1)bossCast(e,'storm','ARCANE STORM',1.6);
-   else bossCast(e,'vortex','VORTEX',2.2);
+   else{
+     bossCast(e,'vortex','VORTEX',2.2);
+     subFlash('IT PULLS YOU IN — RUN OUT BEFORE THE RING',2.2);
+   }
  },
  resolve(e,k,alive){
    const a=e.ai;
@@ -4397,7 +4523,10 @@ const RIMEFANG={
      bossCast(e,'tomb','FROST BEACON',2.8);
      subFlash('THE BEACON WILL ENTOMB — BE READY TO CUT THEM OUT',2.8);
    }
-   else if(s===1)bossCast(e,'cold','BLISTERING COLD',2.6);
+   else if(s===1){
+     bossCast(e,'cold','BLISTERING COLD',2.6);
+     subFlash('RUN TO THE DRAGON',2.6);
+   }
    else bossCast(e,'breath','FROST BREATH',1.6);
  },
  resolve(e,k,alive){
@@ -4567,7 +4696,10 @@ const DOOMBRINGER={
    a.walk-=dt;
    if(a.walk>0)return;
    const s=(a.step++)%3;
-   if(s===0)bossCast(e,'burst','AIR BURST',1.8);
+   if(s===0){
+     bossCast(e,'burst','AIR BURST',1.8);
+     subFlash('GET AWAY FROM IT',1.8);
+   }
    else if(s===1)bossCast(e,'grip','GRIP OF THE LEGION',2.2);
    else bossCast(e,'rain','FEL RAIN',1.6);
  },
@@ -4900,7 +5032,10 @@ const STARCALLER={
      bossCast(e,'flare','MEGAFLARE',3.0);
      subFlash('SOAK EVERY FLARE OR THE WHOLE PARTY EATS IT',3.0);
    }
-   else if(s===1)bossCast(e,'beak','RAVEN BEAK',1.5);
+   else if(s===1){
+     bossCast(e,'beak','RAVEN BEAK',1.5);
+     subFlash('CLOSEST PLAYER TAKES THE HIT',1.5);
+   }
    else bossCast(e,'stream','METEOR STREAM',1.8);
  },
  resolve(e,k,alive){
@@ -4993,7 +5128,10 @@ const FROSTLICH={
    if(a.walk>0)return;
    const s=(a.step++)%3;
    if(s===0)bossCast(e,'tomb','FROST TOMB',2.4);
-   else if(s===1)bossCast(e,'blast','FROST BLAST',2.0);
+   else if(s===1){
+     bossCast(e,'blast','FROST BLAST',2.0);
+     if(alive.length>1)subFlash('STAND APART — THE FROST CHAINS',2.0);
+   }
    else bossCast(e,'shards','SHARD VOLLEY',1.4);
  },
  resolve(e,k,alive){
@@ -5066,7 +5204,9 @@ const WARDENOFASH={
    tickShield(e);
    a.wardT-=dt;
    if(a.wardT<=0&&!e.shieldAdds){
-     a.wardT=e.phase===2?18:24;
+     // ward cadence rides the fight-length target: at 18/24s a rush fight
+     // spent half its length shielded — keep the ward COUNT the design had
+     a.wardT=(e.phase===2?18:24)*(G.mode==='rush'?rushTTK(G.wave)/(e.def.dur||100):1);
      const k=e.phase===2?3:2,adds=[];
      for(let i=0;i<k;i++){
        const an=Math.random()*TAU,rr=120+Math.random()*60;
@@ -5259,7 +5399,7 @@ const flameElemSprite=makeSprite([
 '...YY...','..YRRY..','.YRRRRY.','YRRWWRRY','YRRWWRRY','.YRRRRY.','..YRRY..','...DD...'],
 {Y:'#ffe94a',R:'#ff5a3d',W:'#fff2c0',D:'#7a2010'});
 const BLADEDANCER={
- id:'blade',mus:'pyraxis',name:'BLADEDANCER',hp:14000,r:18,sp:32,dmg:24,xp:220,dur:125,
+ id:'blade',mus:'pyraxis',name:'BLADEDANCER',hp:14000,r:18,sp:32,dmg:24,xp:220,dur:125,ttkMul:0.85,
  spr:bladeSprite,scale:2,barCol:'#57e86b',phaseCount:2,gates:[0.42],minCasts:3,
  transName:'THE DEMON WINS',
  aiInit:()=>({mode:'intro',t:2.6,cast:null,castT:0,castLen:0,walk:1.5,step:0,elemT:12,danceT:0}),
@@ -5298,7 +5438,10 @@ const BLADEDANCER={
    if(a.walk>0)return;
    const s=(a.step++)%3;
    if(s===0)bossCast(e,'dance','BLADE DANCE',2.0);
-   else if(s===1)bossCast(e,'shear','SHEAR',1.4);
+   else if(s===1){
+     bossCast(e,'shear','SHEAR',1.4);
+     subFlash('CLOSEST PLAYER TAKES THE HIT',1.4);
+   }
    else bossCast(e,'parasite','PARASITIC SHADOW',1.8);
  },
  resolve(e,k,alive){
@@ -5375,10 +5518,27 @@ function spawnClassicBoss(i){
   // power outruns the roster's own hp curve — this keeps late fights from
   // melting in twenty seconds while the opening ones drag
   const rushMul=G.mode==='rush'?1+0.10*(G.wave-1):1;
-  const hp=d.hp*rushMul*((4*n-1)/3)*(1+0.06*Math.max(0,G.level-(2+effWave())));
+  let hp=d.hp*rushMul*((4*n-1)/3)*(1+0.06*Math.max(0,G.level-(2+effWave())));
+  // BOSS RUSH pacing: the previous kill measured what the party actually
+  // deals; the next boss gets the hp that output — grown by the payout it
+  // just banked — needs rushTTK() seconds to chew through. Measured dps
+  // already contains the whole roster, so no party multiplier here. The
+  // formula above survives as a floor: sandbagging one fight cannot
+  // trivialize the next.
+  // ttkMul: bosses whose own mechanics stretch the clock (Geminox spends the
+  // fight healing through pylons and phase gates) get a smaller pool so the
+  // wall-clock fight still lands inside the target band
+  if(G.mode==='rush'&&G.lastBossDPS>0)
+    hp=Math.max(hp,G.lastBossDPS*rushGrowth(G.wave)*rushTTK(G.wave)*(d.ttkMul||1));
+  G.bossDmgAcc=0;G.bossVulnT=0;
+  // the roster's dmg column reads as % of the party's max hp: flat damage was
+  // obsolete within a few bosses of charm/rally hp growth, and the 12%/6%
+  // floors it fell back on erased each boss's identity. bossHit() mechanics
+  // were always percentages; now touch and bullets speak the same language.
+  const avgMax=G.players.reduce((s,p)=>s+p.maxhp,0)/n;
   const e={
     type:'cboss'+i,def:d,spr:d.spr,x:a?a.x:0,y:a?a.y-a.h*0.22:0,r:d.r,
-    hp,maxhp:hp,sp:d.sp,dmg:d.dmg*dmgScale(),xp:d.xp,vulnMul:1,
+    hp,maxhp:hp,sp:d.sp,dmg:(d.dmg/100)*avgMax,xp:d.xp,vulnMul:1,
     flash:0,fuse:-1,shootT:2,orbCd:{},slow:1,boss:true,scale:d.scale,
     name:d.name,barCol:d.barCol,phase:1,phaseCount:d.phaseCount,gates:d.gates.slice(),
     castName:null,castP:0,frozen:0,casts:0,huntLv:0,life:-1,ai:d.aiInit()
@@ -5721,6 +5881,7 @@ function update(dt){
 
     if(e.boss&&e.def){
       const a=e.ai,d=e.def;
+      if(G.mode==='rush'&&e===G.boss&&e.vulnMul!==0)G.bossVulnT+=dt;
       if(d.tick&&a.mode==='active')d.tick(e,dt,alive);
       if(a.mode!=='transition'&&e.gates.length&&e.hp/e.maxhp<=e.gates[0]&&e.casts>=d.minCasts){
         e.gates.shift();e.phase++;
@@ -6340,7 +6501,6 @@ function drawFx(f,W2V,g){
       const s=16;
       g.strokeStyle=k<0.3?'#fff':'rgba(255,255,255,0.7)';g.lineWidth=1;
       g.strokeRect(Math.round(x-s/2)+0.5,Math.round(y-s/2)+0.5,s-1,s-1);
-      if(f.t<=0.02&&!f.spawned){f.spawned=1;}
       break;}
     case 'boom':{
       g.strokeStyle='rgba(255,182,46,'+k.toFixed(3)+')';g.lineWidth=2;

@@ -5,10 +5,7 @@ Single-file, no-assets canvas game — couch co-op survival for 1–4 gamepads (
 > **Note:** This is *local* couch co-op. Hosting it gives you a public URL to open on any device; it is **not** networked multiplayer between remote players.
 
 ## Play
-Just open the hosted URL, or open `index.html` locally.
 
-## Deploy to Render (one click)
+Live: https://dsusviela.github.io/pixel-horde/
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/dsusviela/pixel-horde)
-
-This uses `render.yaml` to provision a free static site.
+Or open `index.html` locally.

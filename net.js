@@ -194,7 +194,8 @@ function encodeSnapshot(){
     bossNid=G.boss.nid;
   }
   var snap={t:'snap',
-    state:G.state,mode:G.mode,modeSel:G.modeSel,time:r2(G.time),shake:r1(G.shake),
+    state:G.state,mode:G.mode,modeSel:G.modeSel,rushStart:G.rushStart,startWave:G.startWave,
+    time:r2(G.time),shake:r1(G.shake),
     xp:r1(G.xp),level:G.level,kills:G.kills,
     wave:G.wave,waveState:G.waveState,waveT:r2(G.waveT),interLen:G.interLen,
     waveQuota:G.waveQuota,waveSpawned:G.waveSpawned,
@@ -255,6 +256,7 @@ function applySnapshot(snap){
   sprInit();defsInit();
   // ---- plain scalars ----
   G.state=snap.state;G.mode=snap.mode;G.modeSel=snap.modeSel;
+  G.rushStart=snap.rushStart||1;G.startWave=snap.startWave||1;
   G.time=snap.time;G.shake=snap.shake;
   G.xp=snap.xp;G.level=snap.level;G.kills=snap.kills;
   G.wave=snap.wave;G.waveState=snap.waveState;G.waveT=snap.waveT;G.interLen=snap.interLen;

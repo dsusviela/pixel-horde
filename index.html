@@ -702,6 +702,7 @@ const ES={
   'THE HEART CRACKS':'EL CORAZÓN SE AGRIETA','IT REMEMBERS':'ÉL RECUERDA',
   // boss rush
   'ARM YOURSELVES':'ARMAOS','EVERY BOSS PUT DOWN':'TODOS LOS JEFES ABATIDOS',
+  'LB/RB OR Q/E: START DEEPER IN THE ROSTER':'LB/RB O Q/E: EMPIEZA MÁS ADENTRO DE LA LISTA',
   'FORGEHEART':'CORAZÓN DE FORJA','TWIN LANCE':'LANZA GEMELA',
   'CINDER CROWN':'CORONA DE BRASAS','VOID MAW':'FAUCE DEL VACÍO',
   'a molten slam that leaves burning ground':'un golpe fundido que deja suelo ardiendo',
@@ -850,6 +851,8 @@ const ES_RX=[
   [/^MARK x(\d+)$/,m=>'MARCA x'+m[1]],
   [/^SOUL REAPER TAKES P(\d)$/,m=>'EL SEGADOR SE LLEVA A P'+m[1]],
   [/^(.+) FADES$/,m=>tr(m[1])+' SE DESVANECE'],
+  [/^START AT BOSS  < (\d+)\/(\d+) — (.+) >$/,m=>'EMPEZAR EN EL JEFE  < '+m[1]+'/'+m[2]+' — '+tr(m[3])+' >'],
+  [/^GEARED AS IF THE FIRST (\d+) WERE ALREADY DOWN$/,m=>'EQUIPADOS COMO SI LOS '+m[1]+' PRIMEROS YA HUBIERAN CAÍDO'],
   [/^BOSS (\d+) \/ (\d+)$/,m=>'JEFE '+m[1]+' / '+m[2]],
   [/^BOSS (\d+)\/(\d+)$/,m=>'JEFE '+m[1]+'/'+m[2]],
   [/^BOSS (\d+) DOWN$/,m=>'JEFE '+m[1]+' ABATIDO'],
@@ -915,6 +918,7 @@ const KB_MAP={
   Space:[0],Enter:[0],
   Backspace:[1,8],
   Escape:[9],KeyP:[9],
+  KeyQ:[4],KeyE:[5], // shoulder buttons: the starting-boss picker on mode select
   KeyL:[20] // synthetic button: language toggle on the title screen
 };
 const kbDown={};
@@ -1252,7 +1256,7 @@ const flameRad=w=>28+wlv(w)*5+(w.evo?12:0);
 
 // ---------- state ----------
 const G={
-  state:'title', mode:'endless', modeSel:0, time:0, shake:0,
+  state:'title', mode:'endless', modeSel:0, rushStart:1, time:0, shake:0,
   players:[], enemies:[], bullets:[], ebullets:[], gems:[], pickups:[], crates:[],
   particles:[], texts:[], fx:[], timers:[],
   xp:0, level:1, kills:0,
@@ -1261,12 +1265,15 @@ const G={
   levelupPicks:null, levelupT:0, levelupFree:false, freeLevels:0, relics:[],
   spawnedChunks:new Set(),
   overSince:0, flashMsg:null, flashT:0, subFlash:null, subFlashT:0,
-  wave:0, waveState:'fight', waveT:0, interLen:8,
+  wave:0, startWave:1, waveState:'fight', waveT:0, interLen:8,
   waveQuota:0, waveSpawned:0, waveSpawnT:0, waveSpawnGap:0, wavePulses:[], cleanT:0,
   arena:null, tileOverride:new Map(), creep:null,
   deaths:0, bossKills:0, bossTimes:[], buffTally:{},
   bossDmgAcc:0, bossVulnT:0, lastBossDPS:0
 };
+// the starting-boss pick survives sessions, like controller colours do
+// (clamped against the roster at use time — RUSH_WAVES fills in later)
+try{const v=Math.floor(+localStorage.getItem('ph_rushstart'));if(v>=1)G.rushStart=v;}catch(e){}
 function xpNeed(){
   // 0.6+0.4n runs slightly ahead of the wave-quota slope (0.65+0.35n): big
   // parties also bank extra gems from crates, elites and boss levels, so the
@@ -1373,14 +1380,37 @@ function startRun(mode){
   G.flashMsg=null;G.flashT=0;G.subFlash=null;G.subFlashT=0;
   G.tileOverride.clear();chunkCanvases.clear();
   pads.forEach((pi,i)=>{G.players.push(makePlayer(i,pi,(i%2)*30-15,Math.floor(i/2)*30-15));});
-  if(isCampaign()){G.wave=0;nextWave();}
+  G.startWave=mode==='rush'?clamp(G.rushStart||1,1,RUSH_WAVES.length):1;
+  if(isCampaign()){G.wave=G.startWave-1;nextWave();}
   else{G.wave=0;G.waveState='fight';}
   G.state='play';
   // BOSS RUSH has no trash to farm, so the run opens with the loadout draft
   // that classic waves 1-4 would have paid for: 6 picks, i.e. party level 7,
   // which is what spawnClassicBoss expects at the first boss (effWave 5 + 2)
   if(mode==='rush'){
-    rushPace(1);
+    const S=G.startWave;
+    // a skip start back-pays everything the missed fights would have banked:
+    // each cleared boss dropped one charm on the kill (dropLoot) plus one at
+    // its intermission (RUSH_CHARMS), the party rallied +20 max hp per boss
+    // (startIntermission), and capstone kills taught their signature spells.
+    // rushPace(S) below settles the level gap on its own. The first fight
+    // has no measured party dps to price from (G.lastBossDPS is 0), so it
+    // falls back to spawnClassicBoss's static hp curve until the first kill.
+    if(S>1){
+      const bt=['speed','regen','maxhp','damage','magnet'];
+      for(let i=0;i<2*(S-1);i++){
+        const ty=bt[i%5];
+        for(const p of G.players)applyBuff(p,ty);
+        G.buffTally[ty]=(G.buffTally[ty]||0)+1;
+      }
+      for(const p of G.players){p.maxhp+=20*(S-1);p.hp=p.maxhp;}
+      for(let w=1;w<S;w++){
+        const d=RUSH_ROSTER[w-1];
+        if(MUS_BOSS_IDS.indexOf(d.id)>=0)grantRelic(d.id);
+      }
+      G.texts.length=0; // applyBuff pings — dozens of them stacked on spawn
+    }
+    rushPace(S);
     const t=['speed','regen','maxhp','damage','magnet'];
     for(let i=0;i<RUSH_CHARMS;i++)
       G.pickups.push({x:(Math.random()*120-60),y:(Math.random()*80-40),type:t[i%5],t:0});
@@ -5724,6 +5754,17 @@ function update(dt){
         try{localStorage.setItem('ph_col_'+pad.index,c);}catch(err){}
         sfx('select');
       }
+      // BOSS RUSH only: LB/RB (Q/E on the keyboard) picks the starting boss.
+      // startRun back-pays the skipped fights' levels, charms, rallies and
+      // signature spells so the party arrives as if it had cleared them.
+      if(G.modeSel===2){
+        const db=(pressed(pad,5)?1:0)-(pressed(pad,4)?1:0);
+        if(db){
+          G.rushStart=clamp((G.rushStart||1)+db,1,RUSH_WAVES.length);
+          try{localStorage.setItem('ph_rushstart',G.rushStart);}catch(err){}
+          sfx('select');
+        }
+      }
       // the button that joined this pad stays ACCEPT here — on a Switch-layout
       // pad that's button 1, which would otherwise read as B/back below
       if(pressed(pad,0)||pressed(pad,pl.joinBtn)){storePadStates(pads);startRun(['classic','endless','rush'][G.modeSel]);return;}
@@ -6981,7 +7022,8 @@ function renderVictory(vw,vh){
     const col=Math.floor(i/Math.max(1,perCol)),row=i%Math.max(1,perCol);
     const bx=vw/2+18*k+col*colW,by=y0+row*(G.mode==='rush'?9:11)*k;
     const fs=G.mode==='rush'?6:7;
-    text(ctx,(roster[i]||{name:'?'}).name,bx,by,F(fs),'#e33');
+    // a skip start means bossTimes[0] is the starting boss, not the roster's first
+    text(ctx,(roster[i+(G.startWave||1)-1]||{name:'?'}).name,bx,by,F(fs),'#e33');
     text(ctx,fmtTime(bt),bx+(G.mode==='rush'?106:122)*k,by,F(fs),'#b3a184','right');
   });
   // own column right of the boss times — the player rows' weapon dots reach
@@ -7129,6 +7171,13 @@ function renderModeSelect(vw,vh){
     d.lines.forEach((l,j)=>text(ctx,'- '+l,x+8*k,y+54*k+j*8*k,F(6),'#d8c9a3'));
     if(sel&&Math.floor(performance.now()/300)%2===0)text(ctx,'>',x-9*k,y+ch/2-6*k,F(12),d.col,'center');
   });
+  // BOSS RUSH: the starting-boss picker sits under the cards
+  if(G.modeSel===2){
+    const S=clamp(G.rushStart||1,1,RUSH_WAVES.length),bd=RUSH_ROSTER[S-1],yb=y+ch+10*k;
+    text(ctx,'START AT BOSS  < '+S+'/'+RUSH_WAVES.length+' — '+bd.name+' >',vw/2,yb,F(8),S>1?'#ff4d6d':'#d8c9a3','center');
+    text(ctx,S>1?'GEARED AS IF THE FIRST '+(S-1)+' WERE ALREADY DOWN':'LB/RB OR Q/E: START DEEPER IN THE ROSTER',
+      vw/2,yb+11*k,F(6),'#b3a184','center');
+  }
   // the party, wearing their chosen colours
   const t=performance.now()/1000,n=G.players.length;
   G.players.forEach((p,i)=>{

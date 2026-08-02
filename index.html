@@ -1262,7 +1262,7 @@ const G={
   xp:0, level:1, kills:0,
   cam:{x:0,y:0,w:680,h:400,tw:680},
   spawnT:1, surgeT:45, bossT:150, bossIdx:0, boss:null, bossTint:'#e33',
-  levelupPicks:null, levelupT:0, levelupFree:false, freeLevels:0, relics:[],
+  levelupPicks:null, levelupT:0, levelupFree:false, freeLevels:0, podDebt:0, podEvery:1, relics:[],
   spawnedChunks:new Set(),
   overSince:0, flashMsg:null, flashT:0, subFlash:null, subFlashT:0,
   wave:0, startWave:1, waveState:'fight', waveT:0, interLen:8,
@@ -1370,7 +1370,7 @@ function startRun(mode){
   G.crates=[];G.particles=[];G.texts=[];G.fx=[];G.timers=[];
   G.xp=0;G.level=1;G.kills=0;G.time=0;G.shake=0;
   G.spawnT=1;G.surgeT=45;G.bossT=150;G.bossIdx=0;G.boss=null;G.bossTint='#e33';
-  G.levelupPicks=null;G.levelupT=0;G.levelupFree=false;G.freeLevels=0;G.relics=[];
+  G.levelupPicks=null;G.levelupT=0;G.levelupFree=false;G.freeLevels=0;G.podDebt=0;G.podEvery=1;G.relics=[];
   G.spawnedChunks=new Set();
   G.cam={x:0,y:0,w:680,h:400,tw:680};
   G.mode=mode;
@@ -1385,32 +1385,47 @@ function startRun(mode){
   else{G.wave=0;G.waveState='fight';}
   G.state='play';
   // BOSS RUSH has no trash to farm, so the run opens with the loadout draft
-  // that classic waves 1-4 would have paid for: 6 picks, i.e. party level 7,
-  // which is what spawnClassicBoss expects at the first boss (effWave 5 + 2)
+  // that classic waves 1-4 would have paid for — party level 5, what
+  // spawnClassicBoss expects at the first boss (effWave 3 + 2) — and, when the
+  // rush starts partway down the roster, everything the skipped bosses owed
   if(mode==='rush'){
     const S=G.startWave;
-    // a skip start back-pays everything the missed fights would have banked:
-    // each cleared boss dropped one charm on the kill (dropLoot) plus one at
-    // its intermission (RUSH_CHARMS), the party rallied +20 max hp per boss
-    // (startIntermission), and capstone kills taught their signature spells.
-    // rushPace(S) below settles the level gap on its own. The first fight
-    // has no measured party dps to price from (G.lastBossDPS is 0), so it
-    // falls back to spawnClassicBoss's static hp curve until the first kill.
+    // a skip start back-pays, per boss it skipped, exactly what clearing that
+    // boss pays: dropLoot's random charm and the intermission's (always speed,
+    // RUSH_CHARMS=1), the personal weapon pod every boss drops, the +20 max hp
+    // rally, and the capstones' signature spells. The pod is the one that
+    // decides how hard you hit — seven missed pods is seven weapon levels.
     if(S>1){
       const bt=['speed','regen','maxhp','damage','magnet'];
-      for(let i=0;i<2*(S-1);i++){
-        const ty=bt[i%5];
-        for(const p of G.players)applyBuff(p,ty);
-        G.buffTally[ty]=(G.buffTally[ty]||0)+1;
-      }
-      for(const p of G.players){p.maxhp+=20*(S-1);p.hp=p.maxhp;}
       for(let w=1;w<S;w++){
+        for(const ty of [bt[(Math.random()*5)|0],'speed']){
+          for(const p of G.players)applyBuff(p,ty);
+          G.buffTally[ty]=(G.buffTally[ty]||0)+1;
+        }
+        // the pod is paid out interleaved with the draft below, not here: a pod
+        // is worth a new weapon early and raw damage once the loadout is maxed,
+        // so paying the whole stack up front sinks it into weapon levels the
+        // draft would have bought anyway, and paying it all afterwards turns
+        // every one into damage. A real run banked them a boss at a time.
+        G.podDebt++;
+        for(const p of G.players){p.maxhp+=20;p.hp=p.maxhp;}
         const d=RUSH_ROSTER[w-1];
         if(MUS_BOSS_IDS.indexOf(d.id)>=0)grantRelic(d.id);
       }
+      // no fight has been measured yet, so price the opening boss off the dps
+      // curve real runs walk (rushSkipDPS). The 0.6: a back-paid party lands a
+      // little under one that earned its way here (its picks bought weapon
+      // levels where a real run also banked damage charms), and a skip start
+      // should err toward a short first fight rather than an unkillable one.
+      // The next boss prices off what the party actually did here, as usual.
+      G.lastBossDPS=rushSkipDPS(S)*Math.max(1,G.players.length)*0.6;
       G.texts.length=0; // applyBuff pings — dozens of them stacked on spawn
+      G.flashMsg=null;G.flashT=0;G.subFlash=null;G.subFlashT=0; // relic banners
     }
-    rushPace(S);
+    // the levels a real run would have banked on the way here, paid as picks:
+    // the party drafts them before the boss walks in
+    grantLevels(Math.max(1,rushSkipLevel(S)-G.level-G.freeLevels));
+    G.podEvery=G.freeLevels/Math.max(1,G.podDebt);
     const t=['speed','regen','maxhp','damage','magnet'];
     for(let i=0;i<RUSH_CHARMS;i++)
       G.pickups.push({x:(Math.random()*120-60),y:(Math.random()*80-40),type:t[i%5],t:0});
@@ -1457,6 +1472,24 @@ function rushPace(nextWave){
   const need=rushTargetLevel(nextWave)-G.level-G.freeLevels;
   grantLevels(Math.max(1,need));
 }
+// A real run arrives at a boss FAR above rushTargetLevel: that curve only ever
+// describes the opening draft. From boss 2 on, rushPace's max(1,...) floor is
+// what actually pays out, and the fights' own xp (boss gems, adds) banks about
+// as much again. Measured over full headless runs (tools/test-rush.mjs, seeds
+// 1/3/7) the party gains ~1.9 levels per boss early, tapering to ~1.1 at the
+// end: level 18 at boss 8, 41 at boss 24, within a level across seeds.
+// A skip start pays the integral of that instead of rushTargetLevel, which left
+// it 7 levels — and a dozen weapon levels with them — short by boss 8.
+const RUSH_LVL0=1.9,RUSH_LVL1=1.1;
+const rushSkipLevel=w=>{
+  const n=Math.max(2,waveCount()),k=clamp(w,1,n)-1;
+  return Math.round(rushTargetLevel(1)+RUSH_LVL0*k+(RUSH_LVL1-RUSH_LVL0)*k*Math.max(0,k-1)/(2*(n-1)));
+};
+// Party dps through those same runs tracks ~w^1.84. A skip start has no
+// measured output to price its first boss from, and the static hp curve it
+// falls back on is several times too soft for a party this far in, so the
+// opening fight melts in seconds — seed the measurement from this curve.
+const rushSkipDPS=w=>14.6*Math.pow(clamp(w,1,waveCount()),1.84);
 // charm income for the farm waves the rush skips, paid at each intermission.
 // Kept lean: charms are party-wide and permanent, and stacked regen/max-hp is
 // exactly what made idling through the roster survivable.
@@ -6162,7 +6195,13 @@ function update(dt){
 
   // level-ups never interrupt a boss fight, and never resurrect a finished run
   const canLevel=G.state==='play'&&!(isCampaign()&&G.waveState==='boss');
-  if(canLevel&&G.freeLevels>0){G.freeLevels--;startLevelup(true);}
+  // back-paid boss pods (a skip start in BOSS RUSH), spent between the levels
+  // those same kills owed the party so both run out together
+  if(canLevel&&G.podDebt>0&&(G.freeLevels===0||G.freeLevels<=G.podDebt*G.podEvery)){
+    G.podDebt--;
+    for(const p of G.players)applyBuff(p,'pod');
+  }
+  else if(canLevel&&G.freeLevels>0){G.freeLevels--;startLevelup(true);}
   else if(canLevel&&G.xp>=xpNeed())startLevelup();
 
   storePadStates(pads);

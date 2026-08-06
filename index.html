@@ -297,7 +297,8 @@ function noiseHit(dur,vol,freq){
 function seq(list,gap,dur,type,vol,slide){
   list.forEach((f,i)=>setTimeout(()=>beep(f,dur,type||'square',slide||0,vol||0.12),i*gap));
 }
-const SFX_GAP={shoot:60,hit:40,gem:50,zap:90,boom:120,die:70,hurt:110,emberpop:70,slag:120,telegraph:90,crate:80,pickup:60};
+const SFX_GAP={shoot:60,hit:40,gem:50,zap:90,boom:120,die:70,hurt:110,emberpop:70,slag:120,telegraph:90,crate:80,pickup:60,
+  arcbolt:70,shadowbolt:70,ablast:110,lavaray:110,plaguecast:100,mirage:160,inflict:120};
 function sfx(name){
   if(!AC)return;
   const now=performance.now();
@@ -346,6 +347,17 @@ function sfx(name){
     case 'oblivion':noiseHit(1.4,0.4,180);beep(55,1.4,'sawtooth',-20,0.3);seq([110,82,55],180,0.9,'triangle',0.20,-20);break;
     case 'wehorn':beep(55,2.4,'sawtooth',0,0.26);beep(82.4,2.4,'sawtooth',0,0.18);setTimeout(()=>beep(110,1.8,'triangle',0,0.14),300);noiseHit(1.2,0.12,240);break;
     case 'wefall':seq([880,659,440,330,220,165,110],170,0.55,'sawtooth',0.18,-40);noiseHit(2.0,0.34,300);beep(55,2.4,'sine',-15,0.26);break;
+    // ---- school spells: fire growls low, arcana chimes high, necromancy croaks ----
+    case 'lavaray':beep(160,0.28,'sawtooth',-90,0.13);noiseHit(0.22,0.11,900);break;
+    case 'evocation':beep(90,0.8,'sawtooth',60,0.2);noiseHit(0.6,0.2,400);break;
+    case 'arcbolt':beep(880,0.07,'square',-320,0.05);beep(1320,0.05,'sine',-200,0.03);break;
+    case 'ablast':noiseHit(0.16,0.14,2600);beep(720,0.14,'triangle',-380,0.10);break;
+    case 'mirage':seq([1040,1560,1240],60,0.12,'sine',0.07,120);break;
+    case 'phantomup':seq([440,330,550],80,0.16,'sawtooth',0.10,-120);break;
+    case 'shadowbolt':beep(320,0.09,'sawtooth',-180,0.05);noiseHit(0.05,0.05,500);break;
+    case 'plaguecast':noiseHit(0.12,0.10,700);beep(240,0.14,'triangle',-90,0.07);break;
+    case 'inflict':beep(140,0.3,'sawtooth',-70,0.13);beep(520,0.12,'square',-260,0.06);break;
+    case 'souls':beep(70,0.9,'sine',240,0.16);noiseHit(0.5,0.12,800);break;
   }
 }
 
@@ -713,7 +725,7 @@ const ES={
   'SLAUGHTERHULK':'MOLEDOR DE CARNE','ROTGRUB THE UNCLEAN':'LARVAPODRE EL INMUNDO',
   'STONEFATHER':'PADRE DE PIEDRA','EMBERWYRM':'DRACO DE BRASAS','VOLTHARN':'VOLTHARN',
   'HIVELORD':'SEÑOR DEL ENJAMBRE','GEARWRIGHT XI':'ENGRANARIO XI','ARCANOMAGUS':'ARCANOMAGO',
-  'THE FOUR MARSHALS':'LOS CUATRO MARISCALES','RIMEFANG':'COLMILLO DE ESCARCHA',
+  'THE TALLYMAN':'EL RECAUDADOR','RIMEFANG':'COLMILLO DE ESCARCHA',
   'THE UNBLINKING':'EL QUE NO PARPADEA','DOOMBRINGER':'PORTADOR DEL FIN',
   'EARTHBREAKER':'ROMPETIERRAS','WYRMTIDE':'MAREA SERPIENTE','PRISMWARDEN':'GUARDIÁN PRISMA',
   'STARCALLER':'LLAMAESTRELLAS','FROSTBOUND LICH':'LICH DE ESCARCHA','WARDEN OF ASH':'CENTINELA DE CENIZA',
@@ -728,16 +740,16 @@ const ES={
   'IMPALE':'EMPALAR','SUBMERGE':'INMERSIÓN','LASER BARRAGE':'BARRIDO LÁSER',
   'ROCKET STRIKE':'ANDANADA DE COHETES','SHOCK BLAST':'DESCARGA DE CHOQUE',
   'ARCANE BEAM':'RAYO ARCANO','ARCANE STORM':'TORMENTA ARCANA','VORTEX':'VÓRTICE',
-  'MARK OF THE MARSHAL':'MARCA DEL MARISCAL','VOID ZONE':'ZONA DE VACÍO',
+  'RISING TALLY':'CUENTA CRECIENTE','VOID ZONE':'ZONA DE VACÍO',
   'FROST BEACON':'BALIZA DE ESCARCHA','BLISTERING COLD':'FRÍO ABRASADOR','FROST BREATH':'ALIENTO GÉLIDO',
   'EYE BEAM':'RAYO OCULAR','MIND PULSE':'PULSO MENTAL','DARK GLARE':'MIRADA OSCURA',
   'AIR BURST':'ESTALLIDO DE AIRE','GRIP OF THE LEGION':'GARRA DE LA LEGIÓN','FEL RAIN':'LLUVIA VIL',
-  'DOOMFIRE':'FUEGO FATAL','LANDSLIDE':'DESPRENDIMIENTO','WEIGHT OF THE LAND':'PESO DE LA TIERRA',
+  'CINDERHOUND':'SABUESO DE CENIZA','LANDSLIDE':'DESPRENDIMIENTO','WEIGHT OF THE LAND':'PESO DE LA TIERRA',
   'UPHEAVAL':'LEVANTAMIENTO','DEATH SENTENCE':'SENTENCIA DE MUERTE','GALE SWEEP':'VENDAVAL',
   'LIQUID HELL':'INFIERNO LÍQUIDO','TWISTERS':'TORNADOS',
   'PRISMATIC SPLIT':'ESCISIÓN PRISMÁTICA','REFRACTION':'REFRACCIÓN','BLINDING FLASH':'DESTELLO CEGADOR',
-  'MEGAFLARE':'MEGAFULGOR','RAVEN BEAK':'PICO DE CUERVO','METEOR STREAM':'TORRENTE DE METEOROS',
-  'FROST TOMB':'TUMBA DE HIELO','FROST BLAST':'RÁFAGA GÉLIDA','SHARD VOLLEY':'ANDANADA DE ESQUIRLAS',
+  'DEADSTAR':'ESTRELLA MUERTA','RAVEN BEAK':'PICO DE CUERVO','METEOR STREAM':'TORRENTE DE METEOROS',
+  'ICEBIND':'ATADURA GÉLIDA','FROST BLAST':'RÁFAGA GÉLIDA','SHARD VOLLEY':'ANDANADA DE ESQUIRLAS',
   'SEARING LIGHT':'LUZ ABRASADORA','TWILIGHT FADE':'OCASO','CINDER FALL':'CAÍDA DE BRASAS',
   'DEFILE':'PROFANACIÓN','SOUL REAPER':'SEGADOR DE ALMAS','NECROTIC PLAGUE':'PLAGA NECRÓTICA',
   'REMORSELESS WINTER':'INVIERNO IMPLACABLE','BLADE DANCE':'DANZA DE HOJAS','SHEAR':'CIZALLA',
@@ -749,7 +761,7 @@ const ES={
   'THE MOUNTAIN CRACKS':'LA MONTAÑA SE PARTE','IT TAKES WING':'ALZA EL VUELO',
   'POLARITY INVERTS':'LA POLARIDAD SE INVIERTE','THE SWARM ANSWERS':'EL ENJAMBRE RESPONDE',
   'OVERDRIVE ENGAGED':'SOBREMARCHA ACTIVADA','THE LEY LINES SNAP':'LAS LÍNEAS LEY SE ROMPEN',
-  'THE SECOND RANK RIDES':'CABALGA LA SEGUNDA FILA','THE AIR TURNS TO GLASS':'EL AIRE SE VUELVE CRISTAL',
+  'THE LEDGER OPENS':'EL LIBRO SE ABRE','THE AIR TURNS TO GLASS':'EL AIRE SE VUELVE CRISTAL',
   'IT OPENS COMPLETELY':'SE ABRE POR COMPLETO','IT DRAWS ON THE WELL':'BEBE DEL POZO',
   'THE HEART SHOWS ITSELF':'EL CORAZÓN SE MUESTRA','IT RISES ON THE GALE':'SE ALZA CON EL VENDAVAL',
   'THE COLOURS BLEED TOGETHER':'LOS COLORES SE MEZCLAN','THE SKY GOES OUT':'EL CIELO SE APAGA',
@@ -778,7 +790,7 @@ const ES={
   'THE DIVE LANDS WHERE THE MARK LOCKS':'LA PICADA CAE DONDE SE FIJA LA MARCA',
   'EVERY WARD NEEDS A BODY':'CADA GUARDA NECESITA A ALGUIEN',
   'SOAK EVERY FLARE OR THE WHOLE PARTY EATS IT':'ABSORBED CADA FULGOR O LO PAGA TODO EL GRUPO',
-  'MEGAFLARE UNANSWERED':'MEGAFULGOR SIN ABSORBER',
+  'DEADSTAR UNANSWERED':'ESTRELLA MUERTA SIN ABSORBER',
   'BREAK THE TOMB — THEY CANNOT MOVE':'ROMPED LA TUMBA — NO PUEDE MOVERSE',
   'KILL THE CHANNELERS':'MATAD A LOS CANALIZADORES','THE WARD BREAKS':'LA GUARDA SE ROMPE',
   'SHIELDED!':'¡ESCUDADO!','THE RIM IS GONE — CLOSE IN':'EL BORDE YA NO ESTÁ — ACERCAOS',
@@ -818,7 +830,7 @@ const ES={
   'THE CLEAVER':'LA CUCHILLA','PLAGUE FONT':'FUENTE DE PLAGA','GRANITE FIST':'PUÑO DE GRANITO',
   'DRAKE BREATH':'ALIENTO DE DRACO','CHARGED CORE':'NÚCLEO CARGADO','SWARM CALL':'LLAMADA DEL ENJAMBRE',
   'SENTRY DRONE':'DRON CENTINELA','ARCANE SPARK':'CHISPA ARCANA','RUNE OF WRATH':'RUNA DE IRA',
-  'RIME NOVA':'NOVA DE ESCARCHA','EYE OF RUIN':'OJO DE RUINA',
+  'RIMEBURST':'ESTALLIDO DE ESCARCHA','EYE OF RUIN':'OJO DE RUINA',
   'TWISTER':'TORNADO','PRISM BEAM':'RAYO PRISMÁTICO','PALE EDGE':'FILO PÁLIDO','TWIN BLADES':'HOJAS GEMELAS',
   "a butcher\u2019s swing that throws the horde back":'un tajo de carnicero que lanza a la horda',
   'a rotting mote that hunts on its own':'una mota putrefacta que caza sola',
@@ -1180,6 +1192,117 @@ const WEAPONS={
 };
 const WEAPON_IDS=Object.keys(WEAPONS);
 
+// ---------- schools of wizardry (CLASSIC / ENDLESS) ----------
+// v0.1 of the school spell system (docs/SKILL_SCHOOLS.md in the production
+// repo). First level-up picks a school; every later card comes from that
+// school plus Magic Missile. Numbers follow the workbook model:
+//   damage = a + b*lv   cooldown = c*r^(lv-1)   hits = h + floor(hp*(lv-1))
+// Evolution here is +2 effective levels and cd x0.8 (softer than the OG
+// weapons' +3 — these spells are individually fatter).
+// Each school owns a palette: Destruction is molten reds and embers,
+// Illusion is blue arcana and sparks, Necromancy is rot-green and grave
+// violet. Every projectile, burst and passive glow keys off these.
+const SCHOOL_SPELLS={
+  // -- DESTRUCTION: molten reds, embers, smoke --
+  lavaray:{name:'LAVA RAY',col:'#ff5a3d',max:6,school:'destro',
+    desc:'a molten ray that burns through the rank',
+    evoName:'CORE LANCE',evoDesc:'a ray from the world’s heart',
+    sp:{a:23,b:12,c:2.4,r:0.90,h:2,hp:0.4,fx:'lance'}},
+  meteor:{name:'METEOR SHOWER',col:'#ff9040',max:6,school:'destro',
+    desc:'stones of fire fall on the horde',
+    evoName:'EXTINCTION RAIN',evoDesc:'the sky simply falls',
+    sp:{a:14,b:6,c:2.0,r:0.92,h:4,hp:0.4,fx:'meteor'}},
+  cflame:{name:'CONSTANT FLAME',col:'#ffb62e',max:6,school:'destro',
+    desc:'a ring of fire that never gutters',
+    evoName:'WILDFIRE MANTLE',evoDesc:'you are the bonfire now',
+    sp:{a:2.5,b:2.2,c:0.45,r:0.94,h:4,hp:0.4,fx:'aura'}},
+  evocation:{name:'INFERNAL EVOCATION',col:'#ff3c1e',max:4,ult:1,school:'destro',
+    desc:'your steps leave rivers of lava',
+    evoName:'',evoDesc:'',
+    sp:{a:38,b:11,c:10,r:0.92,h:12,hp:0,fx:'trail'}},
+  // -- ILLUSION: blue hues, arcane sparks, afterimages --
+  arcmissile:{name:'ARCANE MISSILE',col:'#39d5ff',max:6,school:'illusion',
+    desc:'seeking bolts of pure blue arcana',
+    evoName:'PRISMATIC SWARM',evoDesc:'a sky full of seeking light',
+    sp:{a:12,b:2.6,c:0.72,r:0.90,h:1,hp:0.5,fx:'seek'}},
+  eblast:{name:'ENERGY BLAST',col:'#7fd8ff',max:6,school:'illusion',
+    desc:'a burst of raw mana at the thickest knot',
+    evoName:'MANA DETONATION',evoDesc:'the burst becomes a detonation',
+    sp:{a:7,b:1.8,c:1.5,r:0.93,h:5,hp:0.8,fx:'blast'}},
+  shocking:{name:'SHOCKING CURRENT',col:'#4c9aff',max:6,school:'illusion',
+    desc:'blue lightning that leaps foe to foe',
+    evoName:'TEMPEST COIL',evoDesc:'the current never grounds',
+    sp:{a:14,b:3.6,c:1.5,r:0.90,h:3,hp:0.5,fx:'chain'}},
+  mirage:{name:'BIZARRE MIRAGE',col:'#9fb8ff',max:6,school:'illusion',
+    desc:'dazes the horde — dazed foes take +30% from EVERYONE',
+    evoName:'ENDLESS MIRAGE',evoDesc:'the dream widens and lingers',
+    sp:{a:8,b:2,c:6.0,r:0.92,h:5,hp:0,fx:'mirage'}},
+  assassin:{name:'PHANTASMAL ASSASSIN',col:'#6a8dff',max:4,ult:1,school:'illusion',
+    desc:'a copied foe turned on its own kind',
+    evoName:'',evoDesc:'',
+    sp:{a:32,b:10,c:8.0,r:0.92,h:8,hp:0,fx:'phantom'}},
+  // -- NECROMANCY: rot green, grave violet, wisps --
+  shadowb:{name:'SHADOW BULLETS',col:'#8a5cff',max:6,school:'necro',
+    desc:'bolts of grave-cold shadow',
+    evoName:'GRAVE VOLLEY',evoDesc:'the dead lend their fingers',
+    sp:{a:10,b:2.6,c:0.72,r:0.90,h:1,hp:0.5,fx:'seek'}},
+  decay:{name:'DECAYING PRESENCE',col:'#9fe84a',max:6,school:'necro',
+    desc:'everything near you rots',
+    evoName:'ENTROPIC FIELD',evoDesc:'rot becomes law',
+    sp:{a:6,b:3,c:0.55,r:0.94,h:3,hp:0.4,fx:'aura'}},
+  plague:{name:'PLAGUE',col:'#b6d94a',max:6,school:'necro',
+    desc:'infected foes burst when they die',
+    evoName:'BLACK PLAGUE',evoDesc:'one death is never the last',
+    sp:{a:15,b:5,c:3.0,r:0.90,h:4,hp:0.6,fx:'plague'}},
+  inflict:{name:'INFLICT PAIN',col:'#c04aff',max:6,school:'necro',
+    desc:'a lance of agony for the biggest foe',
+    evoName:'AGONY',evoDesc:'pain beyond language',
+    sp:{a:30,b:14,c:2.4,r:0.90,h:1,hp:0,fx:'pain'}},
+  diseases:{name:'SPREAD DISEASES',col:'#6fe84a',max:6,school:'necro',
+    desc:'a wasting sickness that gnaws and gnaws',
+    evoName:'PANDEMIC',evoDesc:'the sickness learns to travel',
+    sp:{a:7,b:3,c:5.0,r:0.92,h:4,hp:0,fx:'disease'}},
+  souls:{name:'VACUUMING SOULS',col:'#8ef0a0',max:4,ult:1,school:'necro',
+    desc:'a maw that drinks the horde and feeds the party',
+    evoName:'',evoDesc:'',
+    sp:{a:36,b:10,c:9.0,r:0.93,h:12,hp:0,fx:'soulvoid'}}
+};
+Object.assign(WEAPONS,SCHOOL_SPELLS); // draft cards, HUD dots and run records reuse the weapon plumbing
+const SCHOOLS={
+  destro:{name:'PATH OF DESTRUCTION',col:'#ff5a3d',
+    desc:'heavy fire — easy to start, hard to stop',
+    actives:['lavaray','meteor','cflame'],first:['lavaray','meteor','cflame'],
+    passives:['ba','hh','cr'],ult:'evocation'},
+  illusion:{name:'PATH OF ILLUSION',col:'#39d5ff',
+    desc:'blue arcana, mirrors and stolen time',
+    actives:['arcmissile','eblast','shocking','mirage'],first:['arcmissile','eblast','shocking'],
+    passives:['mirror','ka'],ult:'assassin'},
+  necro:{name:'PATH OF NECROMANCY',col:'#9fe84a',
+    desc:'rot and souls — damage that sustains',
+    actives:['shadowb','decay','plague','inflict','diseases'],first:['shadowb','decay','plague'],
+    passives:['leech'],ult:'souls'}
+};
+const SCHOOL_IDS=Object.keys(SCHOOLS);
+const PASSIVES={
+  ba:{name:'BURNING AFFLICTION',school:'destro',col:'#ff7a1a',ranks:3,vals:[1.18,1.32,1.45],
+    desc:['your spells set foes ablaze: +18% spell damage','deeper burns: +32% spell damage','everything burns: +45% spell damage']},
+  hh:{name:'HOT HEADED',school:'destro',col:'#ffd23e',ranks:3,vals:[0.08,0.16,0.25],
+    desc:['8% chance a cast CRITS for double damage','16% chance to crit for double','25% chance to crit for double']},
+  cr:{name:'CINDER RUSH',school:'destro',col:'#ff3c1e',ranks:3,vals:[5,3.5,2.5],
+    desc:['a kill makes your next spell instant (every 5s)','a kill makes your next spell instant (every 3.5s)','a kill makes your next spell instant (every 2.5s)']},
+  mirror:{name:'MIRROR FRIEND',school:'illusion',col:'#7fd8ff',ranks:4,vals:[0.30,0.42,0.54,0.54],
+    desc:['a mirror of you casts your spells at 30% power','your mirror grows: 42% power','your mirror grows: 54% power','a second, dimmer mirror joins in']},
+  ka:{name:'KNOWLEDGE AURA',school:'illusion',col:'#4cc2ff',ranks:2,vals:[0.12,0.20],
+    desc:['a ring of insight: you and allies inside cast 12% faster','the ring sharpens: 20% faster']},
+  leech:{name:'LEECHED GIFT',school:'necro',col:'#8ef0a0',ranks:3,vals:[0.04,0.06,0.08],
+    desc:['heal you + nearby allies for 4% of your damage','heal for 6% of damage dealt','heal for 8% of damage dealt']}
+};
+// schools run in every mode — BOSS RUSH included: its opening "ARM
+// YOURSELVES" draft starts with the school choice, and since the rush prices
+// each boss off the party's measured dps, the school kits self-balance there
+const schoolsOn=()=>true;
+const KA_RADIUS=80;
+
 // ---------- signature spells (BOSS RUSH) ----------
 // the four raid-tier capstones (Slagmaw, Geminox, Pyraxis, the Worldeater)
 // leave their signature behind: kill one and the whole party learns the
@@ -1217,13 +1340,13 @@ const RELICS={
     cd:3.0,fx:'bolt',range:300,spread:0.14,
     shots:[{spd:300,dmg:26,r:3,aoe:26,life:1.6},{spd:300,dmg:26,r:3,aoe:26,life:1.6},
            {spd:300,dmg:26,r:3,aoe:26,life:1.6}],sfx:'zap'},
-  marshals:{name:'RUNE OF WRATH',col:'#57e86b',desc:'a rune that burns everything standing on it',
+  tallyman:{name:'RUNE OF WRATH',col:'#57e86b',desc:'a rune that burns everything standing on it',
     cd:6.5,fx:'zone',r:80,dps:40,dur:4,range:280,sfx:'brand'},
-  rime:{name:'RIME NOVA',col:'#7fd8ff',desc:'a burst of cold that freezes the horde in place',
+  rime:{name:'RIMEBURST',col:'#7fd8ff',desc:'a burst of cold that freezes the horde in place',
     cd:5.0,fx:'nova',r:96,dmg:44,chill:{mul:0.35,dur:2.5},range:240,sfx:'shatter'},
   eye:{name:'EYE OF RUIN',col:'#8a5cff',desc:'a beam that sweeps out of you and keeps turning',
     cd:9.0,fx:'beam',len:300,half:0.15,dps:120,dur:5,spin:1.5,range:400,sfx:'gazeopen'},
-  doom:{name:'DOOMFIRE',col:'#ff7a1f',desc:'a walking fire that never loses the scent',
+  doom:{name:'CINDERHOUND',col:'#ff7a1f',desc:'a walking fire that never loses the scent',
     cd:8.0,fx:'chase',r:34,dps:44,dur:8,spd:80,range:360,sfx:'cinder'},
   earth:{name:'LANDSLIDE',col:'#8a7250',desc:'a fixed lance of broken ground',
     cd:5.0,fx:'beam',len:260,half:0.10,dps:150,dur:2.2,spin:0,range:300,sfx:'slam'},
@@ -1231,9 +1354,9 @@ const RELICS={
     cd:7.0,fx:'chase',r:26,dps:52,dur:7,spd:135,range:360,sfx:'vent'},
   prism:{name:'PRISM BEAM',col:'#57e86b',desc:'a wide, slow fan of refracted light',
     cd:8.0,fx:'beam',len:230,half:0.40,dps:96,dur:5,spin:0.9,range:340,sfx:'zap'},
-  star:{name:'MEGAFLARE',col:'#ffd23e',desc:'one enormous star, dropped where it hurts',
+  star:{name:'DEADSTAR',col:'#ffd23e',desc:'one enormous star, dropped where it hurts',
     cd:6.5,fx:'rain',n:2,gap:0.5,dmg:120,r:74,spread:14,range:340,sfx:'cinder'},
-  lich:{name:'FROST TOMB',col:'#cfe8ff',desc:'a field of ice that holds the horde still',
+  lich:{name:'ICEBIND',col:'#cfe8ff',desc:'a field of ice that holds the horde still',
     cd:7.0,fx:'nova',r:104,dmg:40,chill:{mul:0.2,dur:3.5},range:250,sfx:'shatter'},
   warden:{name:'ASHEN WARD',col:'#a86bff',desc:'the ward it wore, now yours: tougher and quicker',
     fx:'aura',maxhp:60,regen:1.0,speed:0.06},
@@ -1319,6 +1442,7 @@ function makePlayer(idx,padIndex,x,y){
     hurtCd:0, invuln:2, acidT:0, faceX:1, faceY:0, anim:0,
     weapons:{blaster:{lv:1,t:0.3,ang:Math.random()*TAU}},
     relics:{},
+    school:null, pas:{}, crReady:0, leechWin:0, leechAcc:0,
     kills:0, revives:0, flash:0,
     brandT:0, stillT:0, stillX:0, stillY:0, poolT:0, mark:null, arrow:null,
     prison:null, pole:0
@@ -1350,10 +1474,14 @@ function joinPlayer(padIndex,joinBtn){
     p.magnet+=Math.min(30,2*G.level);
     const wlv=clamp(Math.floor(G.level/5),1,4),extra=clamp(Math.floor(G.level/6),0,3);
     p.weapons.blaster.lv=wlv;
-    const pool=WEAPON_IDS.filter(id=>id!=='blaster');
-    for(let i=0;i<extra;i++){
-      const id=pool.splice((Math.random()*pool.length)|0,1)[0];
-      p.weapons[id]={lv:wlv,t:0,ang:Math.random()*TAU};
+    // schools: a latecomer arrives with a levelled Missile only — their first
+    // draft is the school choice, so the catch-up gear can't pre-empt the lock
+    if(!schoolsOn()){
+      const pool=WEAPON_IDS.filter(id=>id!=='blaster');
+      for(let i=0;i<extra;i++){
+        const id=pool.splice((Math.random()*pool.length)|0,1)[0];
+        p.weapons[id]={lv:wlv,t:0,ang:Math.random()*TAU};
+      }
     }
     p.invuln=4;
     if(G.arena){p.x=G.arena.x;p.y=G.arena.y+G.arena.h*0.3;}
@@ -1667,21 +1795,75 @@ function dropLoot(e){
 function damageEnemy(e,dmg,owner){
   if(e.dead)return;
   dmg*=(e.vulnMul??1); // ?? not ||: vulnMul 0 means shielded/airborne/burrowed, not "default to 1"
+  // Bizarre Mirage: a dazed foe takes +30% from the WHOLE party — the
+  // Illusion school's collaboration window
+  if(e.stunT>0)dmg*=1.3;
   // the rush prices the next boss off the party's measured output on this one
   // (overkill excluded, adds excluded — only the health bar that gates the wave)
   if(e.boss&&G.mode==='rush')G.bossDmgAcc+=Math.min(dmg,Math.max(0,e.hp));
   e.hp-=dmg;e.flash=0.08;
   addText(e.x,e.y-e.r-3,Math.round(dmg),'#ffd23e');
   sfx('hit');
+  // Leeched Gift: the caster and anyone standing close share a sip of the
+  // damage — hard cap 8 hp/s so it rewards proximity, not immortality
+  if(owner&&owner.pas&&owner.pas.leech&&!owner.dead){
+    if(G.time>owner.leechWin){owner.leechWin=G.time+1;owner.leechAcc=0;}
+    const heal=Math.min(dmg*PASSIVES.leech.vals[owner.pas.leech-1],8-owner.leechAcc);
+    if(heal>0){
+      owner.leechAcc+=heal;
+      for(const q of G.players){
+        if(q.dead)continue;
+        if(q===owner||dist2(q.x,q.y,owner.x,owner.y)<90*90)q.hp=Math.min(q.maxhp,q.hp+heal);
+      }
+      if(Math.random()<0.25)addSparkles(owner.x,owner.y-6,'#8ef0a0',1,26);
+    }
+  }
   if(e.hp<=0){
     e.dead=true;
     if(owner)owner.kills++;
+    // Cinder Rush: a kill hands back the spell you were waiting on — the
+    // longest-cooling spell casts instantly. Does nothing on a bossless lull.
+    if(owner&&owner.pas&&owner.pas.cr&&G.time>=owner.crReady&&!e.boss){
+      owner.crReady=G.time+PASSIVES.cr.vals[owner.pas.cr-1];
+      let best=null;
+      for(const id in owner.weapons){
+        const w=owner.weapons[id];
+        if((WEAPONS[id].sp||id==='blaster')&&w.t>0.3&&(!best||w.t>best.t))best=w;
+      }
+      if(best){
+        best.t=0;
+        addText(owner.x,owner.y-14,'CINDER RUSH!','#ff7a1a');
+        addSparkles(owner.x,owner.y-4,'#ff7a1a',10,70);
+        sfx('emberpop');
+      }
+    }
+    // Plague: the infected burst on death and pass the sickness on — the
+    // chain reaction is the whole point of the spell
+    if(e.plagued){
+      const pl=e.plagued;
+      addParticles(e.x,e.y,'#b6d94a',14,110);
+      addSparkles(e.x,e.y,'#6fe84a',6,60);
+      G.fx.push({kind:'boom',col:'#b6d94a',x:e.x,y:e.y,r:pl.r,t:0.25,dur:0.25});
+      sfx('slag');
+      queryEnemies(e.x,e.y,pl.r,o=>{
+        if(o===e||o.dead)return;
+        damageEnemy(o,pl.dmg,pl.owner);
+        if(!o.dead&&!o.plagued&&!o.boss)o.plagued=pl;
+      });
+    }
     G.kills++;
     addParticles(e.x,e.y,e.boss?(e.barCol||'#d84343'):'#d84343',e.boss?40:8,e.boss?140:70);
     dropLoot(e);
     if(e.boss){
       if(G.boss===e)G.boss=null;
       sfx('boom');G.shake=8;flash('BOSS DOWN!');
+      // endless bosses have no def and never counted — the schools' ultimate
+      // gate needs every mode's boss kills on the same ledger
+      if(!isCampaign())G.bossKills++;
+      // classic and rush increment bossKills further down (def bosses) — at
+      // this line their first kill still reads 0; endless just counted to 1
+      if(schoolsOn()&&G.bossKills===(G.mode==='endless'?1:0))
+        after(1.4,()=>{flash('ULTIMATE SPELLS UNLOCKED');subFlash('they will appear in your next drafts',3);sfx('levelup');});
       if(isCampaign()&&e.def){
         if(e.def.onDeath)e.def.onDeath(e);
         G.bossKills++;G.bossTimes.push(G.time);
@@ -1736,6 +1918,8 @@ function recordRun(outcome){
       p:p.idx+1,maxhp:Math.round(p.maxhp),dmgMul:+p.dmgMul.toFixed(2),
       speedMul:+p.speedMul.toFixed(2),regen:+p.regen.toFixed(1),magnet:Math.round(p.magnet),
       kills:p.kills,revives:p.revives,
+      school:p.school||undefined,
+      passives:Object.keys(p.pas).length?Object.keys(p.pas).map(id=>id+':'+p.pas[id]).join(' '):undefined,
       weapons:Object.keys(p.weapons).map(id=>id+':'+p.weapons[id].lv+(p.weapons[id].evo?'*':'')).join(' ')
     }))
   };
@@ -1800,6 +1984,10 @@ function breakCrate(c){
 
 // ---------- weapon firing ----------
 function fireWeapon(p,id,w,dt){
+  // school spells cast through their own data-driven path; Magic Missile
+  // joins them in school modes so the passives (crits, burns, mirrors,
+  // haste) reach the one spell everyone shares
+  if(WEAPONS[id].sp||(schoolsOn()&&id==='blaster'))return fireSpell(p,id,w,dt);
   w.t-=dt;
   const lv=wlv(w),dm=p.dmgMul;
   switch(id){
@@ -1885,6 +2073,229 @@ function fireWeapon(p,id,w,dt){
       G.bullets.push({x:p.x,y:p.y,vx:Math.cos(ang)*150,vy:Math.sin(ang)*150,r:3,dmg:(20+lv*6)*dm,life:2.4,owner:p,col:'#57e86b',rocket:true,aoe:44+lv*4+(w.evo?16:0),trail:true,trailCol:'#8fe89b',sparkTrail:true});
       sfx('rocket');break;}
   }
+}
+
+// ---------- school spellcasting ----------
+// One data-driven caster for all sixteen school spells (Magic Missile
+// included in school modes). castSpell() does the actual throw so a Mirror
+// Friend can echo any cast from the clone's spot at reduced power.
+const BLASTER_SP={a:10,b:2,c:0.72,r:0.90,h:1,hp:0.5,fx:'seek'};
+const spellDef=id=>id==='blaster'?BLASTER_SP:WEAPONS[id].sp;
+// Knowledge Aura: the best ring covering you wins — deliberately no stacking
+function kaHaste(p){
+  let best=0;
+  for(const q of G.players){
+    if(q.dead||!q.pas.ka)continue;
+    if(q===p||dist2(p.x,p.y,q.x,q.y)<KA_RADIUS*KA_RADIUS)
+      best=Math.max(best,PASSIVES.ka.vals[Math.min(q.pas.ka,2)-1]);
+  }
+  return best;
+}
+function spellHits(id,lv){const d=spellDef(id);return d.h+Math.floor((d.hp||0)*(lv-1));}
+function spellDmg(p,id,lv,mul){
+  const d=spellDef(id);
+  let dmg=(d.a+d.b*lv)*p.dmgMul*mul;
+  if(p.pas.ba)dmg*=PASSIVES.ba.vals[p.pas.ba-1];
+  let crit=false;
+  if(p.pas.hh&&Math.random()<PASSIVES.hh.vals[p.pas.hh-1]){dmg*=2;crit=true;}
+  return {dmg,crit};
+}
+function fireSpell(p,id,w,dt){
+  w.t-=dt;
+  if(w.t>0)return;
+  const cap=WEAPONS[id]?WEAPONS[id].max:6;
+  const lv=Math.min(w.lv,cap)+(w.evo?2:0);
+  const d=spellDef(id);
+  let cd=d.c*Math.pow(d.r,lv-1)*(w.evo?0.8:1);
+  cd*=1-kaHaste(p);
+  if(!castSpell(p,id,lv,p.x,p.y,1,false)){w.t=0.22;return;} // nothing in reach — re-check soon, keep the cooldown
+  w.t=cd;
+  // the mirror learned the spell, not your mastery: clones echo the
+  // UN-evolved version — the rule that keeps clone x evolution bounded
+  const mr=p.pas.mirror;
+  if(mr){
+    const base=Math.min(w.lv,cap);
+    const m1=PASSIVES.mirror.vals[Math.min(mr,3)-1];
+    after(0.13,()=>{if(!p.dead)castSpell(p,id,base,p.x-13,p.y-5,m1,true);});
+    if(mr>=4)after(0.26,()=>{if(!p.dead)castSpell(p,id,base,p.x+13,p.y-5,m1*0.5,true);});
+  }
+}
+// Returns false when a spell that needs a target found none (the cooldown is
+// then held). ox/oy is the cast origin — the player, or their mirror.
+function castSpell(p,id,lv,ox,oy,mul,echo){
+  const d=spellDef(id),col=id==='blaster'?'#ffe94a':WEAPONS[id].col;
+  const {dmg,crit}=spellDmg(p,id,lv,mul);
+  const crText=(x,y)=>{if(crit&&!echo)addText(x,y-12,'CRIT!','#ffd23e');};
+  switch(d.fx){
+    case 'seek':{ // blaster / arcane missile / shadow bullets
+      const tgt=nearestEnemy(ox,oy,340);
+      if(!tgt)return false;
+      const n=spellHits(id,lv);
+      const ang=Math.atan2(tgt.y-oy,tgt.x-ox);
+      for(let i=0;i<n;i++){
+        const a=ang+(i-(n-1)/2)*0.13;
+        G.bullets.push({x:ox,y:oy,vx:Math.cos(a)*230,vy:Math.sin(a)*230,r:crit?3:2,dmg,
+          life:1.6,owner:p,col,trail:true,trailCol:col,sparkTrail:true});
+      }
+      sfx(id==='blaster'?'shoot':(id==='arcmissile'?'arcbolt':'shadowbolt'));
+      crText(ox,oy);
+      break;}
+    case 'lance':{ // lava ray: a molten line through the rank
+      const tgt=nearestEnemy(ox,oy,300);
+      if(!tgt)return false;
+      const a=Math.atan2(tgt.y-oy,tgt.x-ox);
+      const len=90+spellHits(id,lv)*24;
+      const ex=ox+Math.cos(a)*len,ey=oy+Math.sin(a)*len;
+      G.fx.push({kind:'lance',x1:ox,y1:oy,x2:ex,y2:ey,col:'#ff5a3d',col2:'#ffb62e',t:0.22,dur:0.22});
+      queryEnemies((ox+ex)/2,(oy+ey)/2,len/2+30,e=>{
+        const dx=ex-ox,dy=ey-oy,L2=dx*dx+dy*dy||1;
+        let t=((e.x-ox)*dx+(e.y-oy)*dy)/L2;t=clamp(t,0,1);
+        const px=ox+dx*t,py=oy+dy*t;
+        if(dist2(e.x,e.y,px,py)<(9+e.r)*(9+e.r)){
+          damageEnemy(e,dmg,p);
+          addParticles(e.x,e.y,Math.random()<0.5?'#ff5a3d':'#ffb62e',3,60);
+        }
+      });
+      addParticles(ox+Math.cos(a)*14,oy+Math.sin(a)*14,'#ff5a3d',6,70);
+      sfx('lavaray');crText(tgt.x,tgt.y);
+      break;}
+    case 'meteor':{ // meteor shower: staggered falling impacts
+      const tgt=nearestEnemy(ox,oy,320);
+      if(!tgt)return false;
+      const n=spellHits(id,lv);
+      sfx('cinder');
+      for(let i=0;i<n;i++)after(i*0.14,()=>{
+        if(p.dead)return;
+        const tg=nearestEnemy(tgt.x,tgt.y,120)||tgt;
+        G.fx.push({kind:'rmet',ground:1,own:p,
+          x:tg.x+(Math.random()*2-1)*46,y:tg.y+(Math.random()*2-1)*46,
+          r:26+lv*2,dmg,t:0.5,dur:0.5,col});
+      });
+      crText(tgt.x,tgt.y);
+      break;}
+    case 'aura':{ // constant flame / decaying presence: the caster IS the weapon
+      const rad=(id==='decay'?30:24)+lv*4;
+      queryEnemies(ox,oy,rad,e=>{
+        if(dist2(ox,oy,e.x,e.y)<(rad+e.r)*(rad+e.r))damageEnemy(e,dmg,p);
+      });
+      for(let i=0;i<2;i++){
+        const a=Math.random()*TAU;
+        if(id==='decay') // rot wisps drift UP out of the ground
+          G.particles.push({x:ox+Math.cos(a)*rad*0.8,y:oy+Math.sin(a)*rad*0.8,vx:0,vy:-14,
+            t:0.5,col:Math.random()<0.6?'#9fe84a':'#5a7a3a',size:1});
+        else // embers spit outward
+          G.particles.push({x:ox+Math.cos(a)*rad,y:oy+Math.sin(a)*rad,
+            vx:Math.cos(a)*8,vy:Math.sin(a)*8-16,t:0.3,
+            col:Math.random()<0.5?'#ff5a3d':'#ffb62e',size:1});
+      }
+      break;}
+    case 'blast':{ // energy blast: blue mana burst with arcane sparks
+      const tgt=nearestEnemy(ox,oy,300);
+      if(!tgt)return false;
+      const R=32+lv*5;
+      G.fx.push({kind:'boom',col:'#7fd8ff',x:tgt.x,y:tgt.y,r:R,t:0.3,dur:0.3});
+      addParticles(tgt.x,tgt.y,'#39d5ff',14,120);
+      addSparkles(tgt.x,tgt.y,'#bfe9ff',8,90);
+      queryEnemies(tgt.x,tgt.y,R,e=>{
+        if(dist2(tgt.x,tgt.y,e.x,e.y)<(R+e.r)*(R+e.r))damageEnemy(e,dmg,p);
+      });
+      sfx('ablast');crText(tgt.x,tgt.y);
+      break;}
+    case 'chain':{ // shocking current: blue lightning, foe to foe
+      const first=nearestEnemy(ox,oy,200);
+      if(!first)return false;
+      let cur=first,px=ox,py=oy;
+      const hitSet=new Set(),jumps=spellHits(id,lv),jr=125;
+      for(let i=0;i<jumps&&cur;i++){
+        G.fx.push({kind:'zap',col:'#4c9aff',x1:px,y1:py,x2:cur.x,y2:cur.y,t:0.12,dur:0.12});
+        addSparkles(cur.x,cur.y,'#7fd8ff',2,50);
+        damageEnemy(cur,dmg,p);
+        hitSet.add(cur);px=cur.x;py=cur.y;
+        let next=null,bd=jr*jr;
+        queryEnemies(px,py,jr,e=>{
+          if(hitSet.has(e)||e.dead||e.vulnMul===0)return;
+          const dd2=dist2(px,py,e.x,e.y);
+          if(dd2<bd){bd=dd2;next=e;}
+        });
+        cur=next;
+      }
+      sfx('zap');crText(first.x,first.y);
+      break;}
+    case 'mirage':{ // bizarre mirage: pale-blue daze, tiny damage — the stun is the payload
+      const tgt=nearestEnemy(ox,oy,300);
+      if(!tgt)return false;
+      const R=44+lv*4,stunDur=lv>6?2.0:1.5;
+      G.fx.push({kind:'boom',col:'#9fb8ff',x:tgt.x,y:tgt.y,r:R,t:0.35,dur:0.35});
+      addSparkles(tgt.x,tgt.y,'#dfe8ff',10,80);
+      let n=0;
+      queryEnemies(tgt.x,tgt.y,R,e=>{
+        if(dist2(tgt.x,tgt.y,e.x,e.y)>=(R+e.r)*(R+e.r))return;
+        damageEnemy(e,dmg,p);
+        if(e.dead)return;
+        // bosses only stagger — their scripts must not desync — but the
+        // vulnerability window still opens for everyone
+        e.stunT=Math.max(e.stunT||0,e.boss?0.4:stunDur);n++;
+        addSparkles(e.x,e.y-e.r,'#bfd0ff',3,40);
+      });
+      if(n&&!echo)addText(tgt.x,tgt.y-14,'DAZED!','#9fb8ff');
+      sfx('mirage');
+      break;}
+    case 'phantom':{ // phantasmal assassin: a stolen silhouette hunting its own kind
+      const tgt=relicTarget(p,340);
+      if(!tgt)return false;
+      G.fx.push({kind:'phantom',own:p,x:ox,y:oy,r:22,dmg,spd:150,tick:0,
+        t:4,dur:4,col,spr:tgt.spr,scale:tgt.scale||1});
+      addSparkles(ox,oy,'#6a8dff',14,90);
+      sfx('phantomup');
+      if(!echo)addText(ox,oy-16,'ASSASSIN!','#6a8dff');
+      break;}
+    case 'pain':{ // inflict pain: one lance of agony for the biggest thing alive
+      const tgt=relicTarget(p,340);
+      if(!tgt)return false;
+      const mult=1+Math.floor(0.4*(lv-1));
+      G.fx.push({kind:'lance',x1:ox,y1:oy,x2:tgt.x,y2:tgt.y,col:'#c04aff',col2:'#2a1030',t:0.25,dur:0.25});
+      addParticles(tgt.x,tgt.y,'#c04aff',10,90);
+      damageEnemy(tgt,dmg*mult,p);
+      sfx('inflict');crText(tgt.x,tgt.y);
+      break;}
+    case 'plague':{ // plague: a rotting mote that arms its victim to burst
+      const tgt=nearestEnemy(ox,oy,300);
+      if(!tgt)return false;
+      const a=Math.atan2(tgt.y-oy,tgt.x-ox);
+      G.bullets.push({x:ox,y:oy,vx:Math.cos(a)*190,vy:Math.sin(a)*190,r:3,dmg,
+        life:2.0,owner:p,col,trail:true,trailCol:'#6fe84a',
+        plague:{dmg:dmg*0.9,r:40+lv*3,owner:p}});
+      sfx('plaguecast');
+      break;}
+    case 'disease':{ // spread diseases: a wasting DoT on the nearest few
+      const marks=[];
+      queryEnemies(ox,oy,240,e=>{if(!e.dead&&!e.boss)marks.push(e);});
+      if(!marks.length)return false;
+      marks.sort((a,b)=>dist2(ox,oy,a.x,a.y)-dist2(ox,oy,b.x,b.y));
+      const n=Math.min(lv>6?6:4,marks.length);
+      for(let i=0;i<n;i++){
+        const e=marks[i];
+        e.disT=4;e.disDps=Math.max(e.disDps||0,dmg);e.disOwner=p;
+        addSparkles(e.x,e.y-e.r,'#6fe84a',4,40);
+      }
+      sfx('plaguecast');
+      break;}
+    case 'trail':{ // infernal evocation: rivers of lava behind your steps
+      G.fx.push({kind:'strail',own:p,gap:0,t:4,dur:4,dps:dmg,col:'#ff3c1e'});
+      addParticles(ox,oy,'#ff5a3d',16,110);
+      G.shake=Math.max(G.shake,3);
+      sfx('evocation');
+      if(!echo)addText(ox,oy-16,'THE GROUND MELTS','#ff5a3d');
+      break;}
+    case 'soulvoid':{ // vacuuming souls: the maw pulls, eats, and feeds the party
+      const tgt=nearestEnemy(ox,oy,280);
+      if(!tgt)return false;
+      G.fx.push({kind:'soulvoid',ground:1,own:p,x:tgt.x,y:tgt.y,r:74,dps:dmg,
+        pull:95,healed:0,tick:0,t:3,dur:3,col:'#8ef0a0'});
+      sfx('souls');
+      break;}
+  }
+  return true;
 }
 
 // ---------- signature spell casting ----------
@@ -2033,8 +2444,25 @@ function fireRelic(p,id,r,dt){
 
 // ---------- level up ----------
 function buildOffers(p){
+  // the first draft of a school run IS the school choice — one card per path
+  if(schoolsOn()&&!p.school)return SCHOOL_IDS.map(id=>({kind:'school',id}));
   const pool=[];
-  for(const id of WEAPON_IDS){
+  if(schoolsOn()){
+    // hard lock: your school's spells plus Magic Missile, nothing else.
+    // The ultimate joins the pool only after the party's first boss kill.
+    const sc=SCHOOLS[p.school];
+    const ids=['blaster',...sc.actives];
+    if(G.bossKills>0)ids.push(sc.ult);
+    for(const id of ids){
+      const w=p.weapons[id];
+      if(!w)pool.push({kind:'new',id});
+      else if(w.lv<WEAPONS[id].max)pool.push({kind:'up',id});
+      else if(!w.evo&&!WEAPONS[id].ult)pool.push({kind:'evo',id});
+    }
+    for(const pid of sc.passives){
+      if((p.pas[pid]||0)<PASSIVES[pid].ranks)pool.push({kind:'pas',id:pid});
+    }
+  }else for(const id of WEAPON_IDS){
     const w=p.weapons[id];
     if(!w)pool.push({kind:'new',id});
     else if(w.lv<WEAPONS[id].max)pool.push({kind:'up',id});
@@ -2067,7 +2495,28 @@ function startLevelup(free){
   sfx('levelup');
 }
 function applyOffer(p,o){
-  if(o.kind==='new')p.weapons[o.id]={lv:1,t:0,ang:Math.random()*TAU};
+  if(o.kind==='school'){
+    p.school=o.id;
+    const sc=SCHOOLS[o.id];
+    flash('P'+(p.idx+1)+' WALKS THE '+sc.name);
+    addSparkles(p.x,p.y-4,sc.col,26,90);
+    sfx('levelup');
+    return 'chain'; // the school card grants a pick of its spells, same pause
+  }
+  if(o.kind==='pas'){
+    p.pas[o.id]=(p.pas[o.id]||0)+1;
+    const pd=PASSIVES[o.id];
+    addText(p.x,p.y-12,pd.name+(p.pas[o.id]>1?' '+['I','II','III','IV'][p.pas[o.id]-1]:''),pd.col);
+    addSparkles(p.x,p.y-4,pd.col,14,70);
+    return;
+  }
+  if(o.kind==='new'){
+    p.weapons[o.id]={lv:1,t:0,ang:Math.random()*TAU};
+    if(WEAPONS[o.id].ult){
+      flash(WEAPONS[o.id].name+' CLAIMED');
+      addSparkles(p.x,p.y-4,'#ffd23e',24,80);
+    }
+  }
   else if(o.kind==='up')p.weapons[o.id].lv++;
   else if(o.kind==='evo'){
     p.weapons[o.id].evo=true;
@@ -2078,6 +2527,22 @@ function applyOffer(p,o){
   else if(o.kind==='gspd')p.speedMul=Math.min(1.9,p.speedMul+0.08);
   else if(o.kind==='gmhp'){p.maxhp+=40;p.hp+=40;}
   else if(o.kind==='gheal')p.hp=p.maxhp;
+}
+// One draft pick may chain: taking a school card swaps that row's cards for
+// the school's starter spells (the pick pauses like a level-up — owner rule:
+// no choice is ever made while the game runs). forced (timeout / lost pad)
+// resolves the chain immediately with a random starter.
+function takeOffer(pick,forced){
+  const res=applyOffer(pick.p,pick.offers[pick.sel]);
+  if(res==='chain'){
+    const first=shuffle(SCHOOLS[pick.p.school].first.slice());
+    pick.offers=first.slice(0,3).map(id=>({kind:'new',id}));
+    pick.sel=1;
+    if(forced){
+      pick.done=true;
+      applyOffer(pick.p,pick.offers[(Math.random()*pick.offers.length)|0]);
+    }
+  }else pick.done=true;
 }
 function finishLevelup(){
   // granted levels (the rush draft and its post-boss payouts) cost no xp
@@ -2104,6 +2569,25 @@ function applyBuff(p,type){
     // an arcane mote stolen from ARCANOMAGUS before it could drink it back
     case 'spark':p.dmgMul+=0.06;addText(p.x,p.y-12,'+ARCANE','#c9a4ff');addSparkles(p.x,p.y,'#c9a4ff',12,70);sfx('levelup');return;
     case 'pod':{
+      // school runs: the pod deals from your own school's deck (plus Magic
+      // Missile). Evolutions stay draft-only jackpots.
+      if(schoolsOn()){
+        const ids=p.school?['blaster',...SCHOOLS[p.school].actives]:['blaster'];
+        const smiss=ids.filter(id=>!p.weapons[id]);
+        if(smiss.length){
+          const id=smiss[(Math.random()*smiss.length)|0];
+          p.weapons[id]={lv:1,t:0,ang:Math.random()*TAU};
+          addText(p.x,p.y-12,'+'+WEAPONS[id].name,WEAPONS[id].col);
+        }else{
+          const owned=ids.filter(id=>p.weapons[id]&&p.weapons[id].lv<WEAPONS[id].max);
+          if(owned.length){
+            const id=owned[(Math.random()*owned.length)|0];
+            p.weapons[id].lv++;
+            addText(p.x,p.y-12,WEAPONS[id].name+' UP!',WEAPONS[id].col);
+          }else{p.dmgMul+=0.15;addText(p.x,p.y-12,'+DAMAGE','#ff8b3d');}
+        }
+        sfx('levelup');return;
+      }
       const missing=WEAPON_IDS.filter(id=>!p.weapons[id]);
       if(Object.keys(p.weapons).length<4&&missing.length){
         const id=missing[(Math.random()*missing.length)|0];
@@ -2525,6 +3009,66 @@ function tickBossFx(dt,alive){
           sfx('slag');
         }
         break;
+      // ---- school spell hazards ----
+      case 'strail':{ // infernal evocation: burning ground trails the caster
+        f.t-=dt;f.gap-=dt;
+        const o=f.own;
+        if(o.dead){f.t=0;break;}
+        if(f.gap<=0){
+          f.gap=0.26;
+          G.fx.push({kind:'rburn',ground:1,own:o,x:o.x,y:o.y,r:30,dps:f.dps,
+            tick:0,t:2.2,dur:2.2,col:f.col});
+          addParticles(o.x,o.y,Math.random()<0.5?'#ff5a3d':'#ffb62e',3,50);
+        }
+        break;}
+      case 'phantom':{ // phantasmal assassin: hunts the boss first, borrows its victim's strength
+        f.t-=dt;f.tick-=dt;
+        let tg=(G.boss&&!G.boss.dead&&G.boss.vulnMul!==0)?G.boss:null;
+        if(!tg){
+          let bd=1e9;
+          for(const e of G.enemies){
+            if(e.dead||e.vulnMul===0)continue;
+            const dd2=dist2(e.x,e.y,f.x,f.y);
+            if(dd2<bd){bd=dd2;tg=e;}
+          }
+        }
+        if(tg){
+          const dd=Math.hypot(tg.x-f.x,tg.y-f.y)||1;
+          f.x+=(tg.x-f.x)/dd*f.spd*dt;f.y+=(tg.y-f.y)/dd*f.spd*dt;
+        }
+        if(Math.random()<dt*20)addSparkles(f.x,f.y,'#6a8dff',1,30);
+        if(f.tick<=0){
+          f.tick=0.25;
+          queryEnemies(f.x,f.y,f.r,e=>{
+            if(dist2(f.x,f.y,e.x,e.y)>=(f.r+e.r)*(f.r+e.r))return;
+            // the copy strikes with a share of its victim's own strength, so
+            // it self-scales with the wave; capped against bosses
+            const bonus=Math.min(f.dmg*0.5,(e.dmg||0)*0.4);
+            damageEnemy(e,f.dmg*0.5+bonus,f.own);
+          });
+        }
+        break;}
+      case 'soulvoid':{ // vacuuming souls: pull, eat, and pay the party in hp
+        f.t-=dt;f.tick-=dt;
+        for(const e of G.enemies){
+          if(e.dead||e.boss)continue;
+          const dx=f.x-e.x,dy=f.y-e.y,dd=Math.hypot(dx,dy)||1;
+          if(dd<f.r*2.0){e.x+=dx/dd*f.pull*dt;e.y+=dy/dd*f.pull*dt;}
+        }
+        if(f.tick<=0){
+          f.tick=0.3;
+          queryEnemies(f.x,f.y,f.r,e=>{
+            if(dist2(f.x,f.y,e.x,e.y)>=(f.r+e.r)*(f.r+e.r))return;
+            damageEnemy(e,f.dps*0.3,f.own);
+            if(e.dead&&f.healed<20){
+              f.healed++;
+              for(const q of G.players)if(!q.dead)q.hp=Math.min(q.maxhp,q.hp+1);
+              addSparkles(f.x,f.y,'#8ef0a0',3,70);
+            }
+          });
+          addSparkles(f.x,f.y,'#8ef0a0',2,50);
+        }
+        break;}
       default: f.t-=dt;
     }
   }
@@ -4470,25 +5014,25 @@ const ARCANOMAGUS={
    g.beginPath();g.arc(x,y,26,0,TAU);g.stroke();
  }};
 
-// ---------------- THE FOUR MARSHALS — rotate or die ----------------
-// The Four Horsemen without four bodies: a mark that stacks forever, and four
+// ---------------- THE TALLYMAN — rotate or die ----------------
+// One body, not a council: a mark that stacks forever, and four
 // corner runes that clean it off. Two are lit at a time, so the party rotates.
-const marshalSprite=makeSprite([
+const tallymanSprite=makeSprite([
 '....SSSS....','...SBBBBS...','..SBRBBRBS..','..SBBBBBBS..','.SSBBWWBBSS.',
 '.SBBBBBBBBS.','SBBSBBBBSBBS','SBB.SBBS.BBS','.SS..SS..SS.','..S..SS..S..',
 '..SS.SS.SS..','.DD..DD..DD.'],{S:'#c0c8d0',B:'#4a5560',R:'#ff4d6d',W:'#ffe94a',D:'#2a3038'});
-const marshalWrathSprite=makeSprite([
+const tallymanWrathSprite=makeSprite([
 '....GGGG....','...GBBBBG...','..GBWBBWBG..','..GBBBBBBG..','.GGBBWWBBGG.',
 '.GBBBBBBBBG.','GBBGBBBBGBBG','GBB.GBBG.BBG','.GG..GG..GG.','..G..GG..G..',
 '..GG.GG.GG..','.DD..DD..DD.'],{G:'#57e86b',B:'#2a4a34',W:'#eaffea',D:'#1a3020'});
-const MARSHALS={
- id:'marshals',mus:'worldeater',name:'THE FOUR MARSHALS',hp:9600,r:17,sp:22,dmg:18,xp:150,dur:105,
- spr:marshalSprite,scale:2,barCol:'#c0c8d0',phaseCount:2,gates:[0.50],minCasts:3,
- transName:'THE SECOND RANK RIDES',
+const TALLYMAN={
+ id:'tallyman',mus:'worldeater',name:'THE TALLYMAN',hp:9600,r:17,sp:22,dmg:18,xp:150,dur:105,
+ spr:tallymanSprite,scale:2,barCol:'#c0c8d0',phaseCount:2,gates:[0.50],minCasts:3,
+ transName:'THE LEDGER OPENS',
  aiInit:()=>({mode:'intro',t:2.4,cast:null,castT:0,castLen:0,walk:1.5,step:0,runeT:0,corner:0,marks:{}}),
  onPhase(e,ph){
    if(ph!==2)return;
-   e.spr=marshalWrathSprite;e.barCol='#57e86b';G.bossTint='#8bf0a0';
+   e.spr=tallymanWrathSprite;e.barCol='#57e86b';G.bossTint='#8bf0a0';
    G.shake=7;sfx('crack');addParticles(e.x,e.y,'#57e86b',30,140);
  },
  tick(e,dt,alive){
@@ -4528,7 +5072,7 @@ const MARSHALS={
    a.walk-=dt;
    if(a.walk>0)return;
    const s=(a.step++)%2;
-   if(s===0)bossCast(e,'mark','MARK OF THE MARSHAL',2.0);
+   if(s===0)bossCast(e,'mark','RISING TALLY',2.0);
    else bossCast(e,'void','VOID ZONE',1.6);
  },
  resolve(e,k,alive){
@@ -4750,7 +5294,7 @@ const DOOMBRINGER={
      const k=e.phase===2?3:2;
      for(let i=0;i<k;i++)
        pushWander(e,e.x,e.y,{r:30,spd:58,chase:0.35,pct:0.18,t:20,dur:20,col:'#ff7a1f'});
-     flash('DOOMFIRE');subFlash('IT FOLLOWS — DO NOT LET IT CORNER YOU',3);
+     flash('CINDERHOUND');subFlash('IT FOLLOWS — DO NOT LET IT CORNER YOU',3);
      sfx('cinder');
    }
  },
@@ -5094,7 +5638,7 @@ const STARCALLER={
        a.flares.push({x:c.x+Math.cos(an)*rr,y:c.y+Math.sin(an)*rr*0.8});
      }
      for(const f of a.flares)pushSafe(e,f.x,f.y,50,3.0,'#ffd23e',0);
-     bossCast(e,'flare','MEGAFLARE',3.0);
+     bossCast(e,'flare','DEADSTAR',3.0);
      subFlash('SOAK EVERY FLARE OR THE WHOLE PARTY EATS IT',3.0);
    }
    else if(s===1){
@@ -5117,7 +5661,7 @@ const STARCALLER={
      }
      if(missed){
        for(const p of alive){bossHit(p,0.16*missed);addText(p.x,p.y-14,'UNSOAKED!','#ff4d6d');}
-       flash('MEGAFLARE UNANSWERED');sfx('sunderpop');G.shake=9;
+       flash('DEADSTAR UNANSWERED');sfx('sunderpop');G.shake=9;
      }else sfx('stackpop');
      for(const f of G.fx)if(f.kind==='safe'&&f.boss===e)f.t=Math.min(f.t,0.4);
      a.flares=[];a.walk=2.2;
@@ -5192,7 +5736,7 @@ const FROSTLICH={
    a.walk-=dt;
    if(a.walk>0)return;
    const s=(a.step++)%3;
-   if(s===0)bossCast(e,'tomb','FROST TOMB',2.4);
+   if(s===0)bossCast(e,'tomb','ICEBIND',2.4);
    else if(s===1){
      bossCast(e,'blast','FROST BLAST',2.0);
      if(alive.length>1)subFlash('STAND APART — THE FROST CHAINS',2.0);
@@ -5563,7 +6107,7 @@ const CLASSIC_BOSSES=[SLAGMAW,GEMINOX,PYRAXIS,WORLDEATER];
 const RUSH_ROSTER=[
   SLAUGHTERHULK,ROTGRUB,STONEFATHER,EMBERWYRM,VOLTHARN,
   SLAGMAW,
-  HIVELORD,GEARWRIGHT,ARCANOMAGUS,MARSHALS,RIMEFANG,
+  HIVELORD,GEARWRIGHT,ARCANOMAGUS,TALLYMAN,RIMEFANG,
   GEMINOX,
   UNBLINKING,DOOMBRINGER,EARTHBREAKER,WYRMTIDE,PRISMWARDEN,
   PYRAXIS,
@@ -5823,15 +6367,15 @@ function update(dt){
       if(pick.done)continue;
       // a pad that vanished (dead battery) does not burn its pick — it auto-takes after a grace period
       if(!pad){
-        if(G.levelupT>6){pick.done=true;applyOffer(pick.p,pick.offers[pick.sel]);}
+        if(G.levelupT>6)takeOffer(pick,true);
         continue;
       }
       const nx=navX(pad);
       if(nx){pick.sel=clamp(pick.sel+nx,0,2);sfx('select');}
-      if(confirmPressed(pad)){pick.done=true;applyOffer(pick.p,pick.offers[pick.sel]);sfx('pickup');}
+      if(confirmPressed(pad)){takeOffer(pick,false);sfx('pickup');}
     }
     // nobody can hold the party hostage: after 12s the highlighted card is taken for them
-    if(G.levelupT>12)for(const pick of G.levelupPicks)if(!pick.done){pick.done=true;applyOffer(pick.p,pick.offers[pick.sel]);}
+    if(G.levelupT>12)for(const pick of G.levelupPicks)if(!pick.done)takeOffer(pick,true);
     storePadStates(pads);
     if(G.levelupPicks.every(x=>x.done))finishLevelup();
     return;
@@ -5954,6 +6498,23 @@ function update(dt){
     if(hazardAt(e.x,e.y)==='mud')sp*=0.6;
     // chilled: frost relics and frost bosses both slow through this
     if(e.slowT>0){e.slowT-=dt;sp*=e.slow;}else e.slow=1;
+    // dazed by a Bizarre Mirage: rooted, sparkling faintly blue, +30% damage
+    // taken (applied in damageEnemy). Bosses only carry the vuln window.
+    if(e.stunT>0){
+      e.stunT-=dt;
+      if(!e.boss)sp=0;
+      if(Math.random()<dt*6)addSparkles(e.x,e.y-e.r-2,'#bfd0ff',1,20);
+    }
+    // wasting sickness (Spread Diseases): green ticks until it runs its course
+    if(e.disT>0){
+      e.disT-=dt;e.disTick=(e.disTick||0)-dt;
+      if(e.disTick<=0){
+        e.disTick=0.5;
+        damageEnemy(e,e.disDps*0.5,e.disOwner);
+        if(!e.dead)addParticles(e.x,e.y,'#6fe84a',2,30);
+      }
+      if(e.dead)continue;
+    }
 
     if(e.boss&&e.def){
       const a=e.ai,d=e.def;
@@ -6025,7 +6586,7 @@ function update(dt){
       else if(dd<160)sp=0;
       e.shootT-=dt;
       const range=Math.min(260,G.cam.h*0.46);
-      if(e.shootT<=0&&dd<range&&tgt){
+      if(e.shootT<=0&&dd<range&&tgt&&!(e.stunT>0)){
         e.shootT=2.2;
         G.ebullets.push({x:e.x,y:e.y,vx:vx*125,vy:vy*125,r:2.5,dmg:e.dmg*1.4,life:2.6,col:'#6fe84a'});
       }
@@ -6087,6 +6648,9 @@ function update(dt){
     if(hit){
       if(b.rocket)explode(b.x,b.y,b.aoe,b.dmg,b.owner);
       else damageEnemy(hit,b.dmg,b.owner);
+      // plague motes leave the sickness behind; bosses shrug it off (the
+      // burst pays on death, and a boss's death already pays everything)
+      if(b.plague&&!hit.dead&&!hit.boss)hit.plagued=b.plague;
       b.dead=true;
     }
   }
@@ -6461,6 +7025,41 @@ function drawFx(f,W2V,g){
       g.beginPath();g.arc(x,y,Math.max(1,f.r*(1-k)),0,TAU);g.stroke();
       drawSpriteC(g,cinderSprite,x,y-52*k,1+2*k);
       break;}
+    case 'soulvoid':{ // the maw: a rot-green whirl, souls spiralling inward
+      const rgb=hexRgb(f.col);
+      g.fillStyle='rgba('+rgb+',0.16)';
+      g.beginPath();g.arc(x,y,f.r,0,TAU);g.fill();
+      g.strokeStyle='rgba('+rgb+',0.85)';g.lineWidth=2;
+      g.beginPath();g.arc(x,y,f.r,0,TAU);g.stroke();
+      g.strokeStyle='rgba(42,16,48,0.7)';
+      g.beginPath();g.arc(x,y,f.r*0.35,0,TAU);g.stroke();
+      for(let i=0;i<6;i++){
+        const a=G.time*4+i*TAU/6,rr=f.r*(1-((G.time*0.8+i/6)%1));
+        g.fillStyle=i%2?'rgba(142,240,160,0.8)':'rgba(255,255,255,0.5)';
+        g.fillRect(Math.round(x+Math.cos(a)*rr)-1,Math.round(y+Math.sin(a)*rr)-1,2,2);
+      }
+      break;}
+    case 'lance':{ // lava ray / inflict pain: a fat glowing line, gone in a blink
+      const a1=W2V(f.x1,f.y1),a2=W2V(f.x2,f.y2);
+      g.globalAlpha=k;
+      g.strokeStyle=f.col2;g.lineWidth=6;
+      g.beginPath();g.moveTo(a1[0],a1[1]);g.lineTo(a2[0],a2[1]);g.stroke();
+      g.strokeStyle=f.col;g.lineWidth=3;
+      g.beginPath();g.moveTo(a1[0],a1[1]);g.lineTo(a2[0],a2[1]);g.stroke();
+      g.strokeStyle='#fff6c8';g.lineWidth=1;
+      g.beginPath();g.moveTo(a1[0],a1[1]);g.lineTo(a2[0],a2[1]);g.stroke();
+      g.globalAlpha=1;
+      break;}
+    case 'phantom':{ // the assassin: its victim's silhouette, ghost-blue and flickering
+      if(Math.floor(G.time*14)%4===0)break; // it flickers — it isn't really there
+      g.globalAlpha=0.55;
+      drawSpriteC(g,f.spr,x,y,f.scale);
+      g.globalAlpha=0.25;
+      g.fillStyle='#6a8dff';
+      const sw=f.spr.width*f.scale,sh=f.spr.height*f.scale;
+      g.fillRect(Math.round(x-sw/2),Math.round(y-sh/2),sw,sh);
+      g.globalAlpha=1;
+      break;}
     case 'defile':{
       const rgb=hexRgb(f.col);
       g.fillStyle='rgba('+rgb+',0.26)';
@@ -6585,12 +7184,13 @@ function drawFx(f,W2V,g){
       g.strokeRect(Math.round(x-s/2)+0.5,Math.round(y-s/2)+0.5,s-1,s-1);
       break;}
     case 'boom':{
-      g.strokeStyle='rgba(255,182,46,'+k.toFixed(3)+')';g.lineWidth=2;
+      // school bursts ring in their own colour (blue mana, plague green...)
+      g.strokeStyle='rgba('+(f.col?hexRgb(f.col):'255,182,46')+','+k.toFixed(3)+')';g.lineWidth=2;
       g.beginPath();g.arc(x,y,Math.max(0,f.r*(1-k)),0,TAU);g.stroke();
       break;}
     case 'zap':{
       const a1=W2V(f.x1,f.y1),a2=W2V(f.x2,f.y2);
-      g.strokeStyle='rgba(176,107,255,'+k.toFixed(3)+')';g.lineWidth=1.5;
+      g.strokeStyle='rgba('+(f.col?hexRgb(f.col):'176,107,255')+','+k.toFixed(3)+')';g.lineWidth=1.5;
       g.beginPath();g.moveTo(a1[0],a1[1]);
       g.lineTo((a1[0]+a2[0])/2+(Math.random()*8-4),(a1[1]+a2[1])/2+(Math.random()*8-4));
       g.lineTo(a2[0],a2[1]);g.stroke();
@@ -6750,6 +7350,46 @@ function render(){
         ctx.fillRect(gx-1,gy-2,2,4);ctx.fillRect(gx-2,gy-1,4,2);
         ctx.fillStyle=ow.evo?'#fff6c8':'#d8f8ff';ctx.fillRect(gx,gy-1,1,2);
       }
+    }
+    // school aura rings: fire-orange for Constant Flame, rot-green for
+    // Decaying Presence — the ring matches the aura's real hitbox
+    for(const aid of ['cflame','decay']){
+      const aw=p.weapons[aid];
+      if(!aw)continue;
+      const alv=Math.min(aw.lv,6)+(aw.evo?2:0);
+      const rad=(aid==='decay'?30:24)+alv*4;
+      ctx.strokeStyle=(aid==='decay'?'rgba(159,232,74,':'rgba(255,182,46,')+(0.22+0.1*Math.sin(G.time*5))+')';
+      ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(x,y,rad,0,TAU);ctx.stroke();
+    }
+    // Knowledge Aura: a big, deliberately visible blue ring of insight —
+    // allies standing inside share the caster's haste
+    if(p.pas.ka){
+      ctx.strokeStyle='rgba(76,194,255,'+(0.28+0.12*Math.sin(G.time*2.4))+')';
+      ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(x,y,KA_RADIUS,0,TAU);ctx.stroke();
+      ctx.setLineDash([3,5]);
+      ctx.strokeStyle='rgba(191,233,255,0.35)';
+      ctx.beginPath();ctx.arc(x,y,KA_RADIUS-3,G.time*0.7,G.time*0.7+TAU);ctx.stroke();
+      ctx.setLineDash([]);
+      if(Math.random()<0.06){
+        const a=Math.random()*TAU;
+        addSparkles(p.x+Math.cos(a)*KA_RADIUS,p.y+Math.sin(a)*KA_RADIUS,'#7fd8ff',1,16);
+      }
+    }
+    // Mirror Friends: translucent blue ghosts of the player, mirroring the
+    // bob — they cast from these spots, so the echo reads as theirs
+    if(p.pas.mirror){
+      const spots=p.pas.mirror>=4?[[-13,-5],[13,-5]]:[[-13,-5]];
+      spots.forEach((s,i)=>{
+        ctx.globalAlpha=(i?0.28:0.4)+0.08*Math.sin(G.time*3+i*2);
+        drawSpriteC(ctx,playerSprites[p.col],x+s[0],y-2+s[1]+((p.anim%1)<0.5?0:-1));
+        ctx.globalAlpha=0.22;
+        ctx.fillStyle='#4cc2ff';
+        ctx.fillRect(x+s[0]-4,y+s[1]-9,8,14);
+        ctx.globalAlpha=1;
+        if(Math.random()<0.04)addSparkles(p.x+s[0],p.y+s[1]-4,'#7fd8ff',1,20);
+      });
     }
   }
   for(const b of G.bullets){
@@ -6971,7 +7611,8 @@ function renderLevelup(vw,vh){
   const ctx=sctx; // UI draws on the native-res screen canvas (see uiBegin)
   const k=vw/680,F=s=>Math.max(5,Math.round(s*k));
   ctx.fillStyle='rgba(12,7,18,0.80)';ctx.fillRect(0,0,vw,vh);
-  text(ctx,'LEVEL UP!  CHOOSE A BOON',vw/2,10*k,F(13),'#ffe94a','center');
+  const schoolPick=G.levelupPicks.some(pk=>!pk.done&&pk.offers[0]&&pk.offers[0].kind==='school');
+  text(ctx,schoolPick?'CHOOSE YOUR SCHOOL OF MAGIC':'LEVEL UP!  CHOOSE A BOON',vw/2,10*k,F(13),schoolPick?'#c9a4ff':'#ffe94a','center');
   const rows=G.levelupPicks.length;
   const rowH=Math.min(58*k,(vh-50*k)/rows);
   const cardW=Math.min(150*k,(vw-90*k)/3);
@@ -6988,16 +7629,23 @@ function renderLevelup(vw,vh){
       else if(o.kind==='gspd'){name='GOLDEN GREAVES';desc='+8% speed';col='#ffd23e';}
       else if(o.kind==='gmhp'){name='GOLDEN HEART';desc='+40 max hp';col='#ffd23e';}
       else if(o.kind==='gheal'){name='GOLDEN CHALICE';desc='full heal';col='#ffd23e';}
+      else if(o.kind==='school'){const sd=SCHOOLS[o.id];name=sd.name;desc=sd.desc;col=sd.col;}
+      else if(o.kind==='pas'){
+        const pd=PASSIVES[o.id],cur=p.pas[o.id]||0;
+        name=pd.name+(pd.ranks>1?' '+['I','II','III','IV'][cur]:'');
+        desc=pd.desc[cur];col=pd.col;
+      }
       else if(o.kind==='evo'){const wd=WEAPONS[o.id];name='EVOLVE: '+wd.evoName;desc=wd.evoDesc;col='#ffd23e';}
       else{
         const wd=WEAPONS[o.id];col=wd.col;
-        if(o.kind==='new'){name='NEW: '+wd.name;desc=wd.desc;}
+        if(o.kind==='new'){name=(wd.ult?'ULTIMATE: ':'NEW: ')+wd.name;desc=wd.desc;}
         else{name=wd.name+' LV'+(p.weapons[o.id].lv+1);desc='upgrade!';}
       }
       ctx.fillStyle=selected?'rgba(255,233,74,0.14)':'rgba(255,255,255,0.05)';
       ctx.fillRect(x,y,cardW,rowH-8*k);
-      // an evolution card glints gold even when the cursor is elsewhere
-      ctx.strokeStyle=pick.done?(selected?'#57e86b':'#333'):(selected?PCOLORS[p.col]:(o.kind==='evo'?'#a8842a':'#333c46'));
+      // evolutions and ultimates glint gold even when the cursor is elsewhere
+      const gilt=o.kind==='evo'||(o.kind==='new'&&WEAPONS[o.id]&&WEAPONS[o.id].ult);
+      ctx.strokeStyle=pick.done?(selected?'#57e86b':'#333'):(selected?PCOLORS[p.col]:(gilt?'#a8842a':'#333c46'));
       ctx.lineWidth=selected?2:1;
       ctx.strokeRect(x+0.5,y+0.5,cardW-1,rowH-8*k-1);
       ctx.fillStyle=col;ctx.fillRect(x+5*k,y+6*k,6*k,6*k);

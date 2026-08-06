@@ -12,7 +12,7 @@ for(const mode of ['classic','endless']){
     for(let i=0;i<60*300;i++){
       const G=g.G;
       if(G.state==='levelup'){
-        for(const pk of G.levelupPicks)if(!pk.done){pk.done=true;g.ev('applyOffer')(pk.p,pk.offers[pk.sel]);}
+        for(const pk of G.levelupPicks)if(!pk.done)g.ev('takeOffer')(pk,true); // chain-aware: a school card resolves to a starter spell
         g.ev('finishLevelup')();continue;
       }
       for(const p of G.players){p.hp=p.maxhp;p.invuln=1;}

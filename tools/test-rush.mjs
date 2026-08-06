@@ -18,7 +18,7 @@ for(let i=0;i<60*60*200&&g.G.state!=='victory'&&g.G.state!=='gameover';i++){
   const G=g.G;
   // auto-confirm level-up picks and keep the party alive
   if(G.state==='levelup'){
-    for(const pick of G.levelupPicks)if(!pick.done){pick.done=true;g.ev('applyOffer')(pick.p,pick.offers[pick.sel]);}
+    for(const pick of G.levelupPicks)if(!pick.done)g.ev('takeOffer')(pick,true); // chain-aware: a school card resolves to a starter spell
     g.ev('finishLevelup')();
     levelups++;
     continue;

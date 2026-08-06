@@ -64,14 +64,14 @@ decent broadband), guest-side interpolation only (no prediction).
 The BOSS RUSH order climbs from single-mechanic checks to the full encounters:
 
     SLAUGHTERHULK  ROTGRUB  STONEFATHER  EMBERWYRM  VOLTHARN  SLAGMAW
-    HIVELORD  GEARWRIGHT XI  ARCANOMAGUS  THE FOUR MARSHALS  RIMEFANG  GEMINOX
+    HIVELORD  GEARWRIGHT XI  ARCANOMAGUS  THE TALLYMAN  RIMEFANG  GEMINOX
     THE UNBLINKING  DOOMBRINGER  EARTHBREAKER  WYRMTIDE  PRISMWARDEN  PYRAXIS
     STARCALLER  FROSTBOUND LICH  WARDEN OF ASH  THE PALE KING  BLADEDANCER
     THE WORLDEATER
 
-Each is a two- or three-phase fight adapted from a classic MMO raid encounter —
+Each is a two- or three-phase fight built from raid-genre mechanic primitives —
 a lane dance, a polarity check, a soak, a shielded burn, a snatch-and-carry —
-built out of the shared mechanic primitives in `index.html` (`pushSweep`,
+assembled out of the shared mechanic helpers in `index.html` (`pushSweep`,
 `pushLine`, `pushCone`, `pushWander`, `pushEdge`, `pushPole`, `prisonPlayer`,
 `shieldBoss`). All text is English/Spanish.
 

@@ -210,8 +210,15 @@ function encodeSnapshot(){
     creep:G.creep?Array.from(G.creep):null,
     players:G.players.map(encPlayer),
     enemies:G.enemies.filter(function(e){return !e.dead;}).map(encEnemy),
+    // glow/prism ride along: they are what makes a school bolt look like a
+    // spell instead of a pellet, and a guest seeing flat squares while the
+    // host sees starlight is the same run rendered as two different games.
+    // Both are omitted unless set, so OG weapon fire costs nothing extra.
     bullets:G.bullets.filter(function(b){return !b.dead;}).map(function(b){
-      return {x:r1(b.x),y:r1(b.y),vx:r1(b.vx||0),vy:r1(b.vy||0),r:b.r,col:b.col};}),
+      var o={x:r1(b.x),y:r1(b.y),vx:r1(b.vx||0),vy:r1(b.vy||0),r:b.r,col:b.col};
+      if(b.glow)o.glow=1;
+      if(b.prism)o.prism=b.prism;
+      return o;}),
     ebullets:G.ebullets.filter(function(b){return !b.dead;}).map(function(b){
       return {x:r1(b.x),y:r1(b.y),vx:r1(b.vx||0),vy:r1(b.vy||0),r:b.r,col:b.col};}),
     gems:G.gems.filter(function(g){return !g.dead;}).map(function(g){

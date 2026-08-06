@@ -350,10 +350,11 @@ function sfx(name){
     // ---- school spells: fire growls low, arcana chimes high, necromancy croaks ----
     case 'lavaray':beep(160,0.28,'sawtooth',-90,0.13);noiseHit(0.22,0.11,900);break;
     case 'evocation':beep(90,0.8,'sawtooth',60,0.2);noiseHit(0.6,0.2,400);break;
-    case 'arcbolt':beep(880,0.07,'square',-320,0.05);beep(1320,0.05,'sine',-200,0.03);break;
-    case 'ablast':noiseHit(0.16,0.14,2600);beep(720,0.14,'triangle',-380,0.10);break;
-    case 'mirage':seq([1040,1560,1240],60,0.12,'sine',0.07,120);break;
-    case 'phantomup':seq([440,330,550],80,0.16,'sawtooth',0.10,-120);break;
+    // illusion rings like struck glass: a bright partial over every body tone
+    case 'arcbolt':beep(1046,0.07,'triangle',-260,0.05);beep(1568,0.06,'sine',280,0.035);break;
+    case 'ablast':noiseHit(0.12,0.10,3400);beep(1318,0.16,'sine',420,0.08);beep(880,0.14,'triangle',-300,0.07);break;
+    case 'mirage':seq([1046,1568,2093,1760],55,0.16,'sine',0.07,140);beep(523,0.3,'triangle',180,0.05);break;
+    case 'phantomup':seq([880,1174,1568],70,0.18,'sine',0.09,120);beep(330,0.24,'sawtooth',-120,0.08);break;
     case 'shadowbolt':beep(320,0.09,'sawtooth',-180,0.05);noiseHit(0.05,0.05,500);break;
     case 'plaguecast':noiseHit(0.12,0.10,700);beep(240,0.14,'triangle',-90,0.07);break;
     case 'inflict':beep(140,0.3,'sawtooth',-70,0.13);beep(520,0.12,'square',-260,0.06);break;
@@ -1200,60 +1201,68 @@ const WEAPON_IDS=Object.keys(WEAPONS);
 // Evolution here is +2 effective levels and cd x0.8 (softer than the OG
 // weapons' +3 — these spells are individually fatter).
 // Each school owns a palette: Destruction is molten reds and embers,
-// Illusion is blue arcana and sparks, Necromancy is rot-green and grave
-// violet. Every projectile, burst and passive glow keys off these.
+// Illusion is white starlight fringing into a rainbow (see PRISM), Necromancy
+// is rot-green and grave violet. Every projectile, burst and passive glow
+// keys off these.
+// Tuning pass (v0.2): the v0.1 numbers held up one-on-one but the kits were
+// measurably behind the OG six against a crowd — the mode the game actually
+// lives in. tools/bench-schools.mjs measures every card against a ring of
+// dummies; the crowd cards (meteor / constant flame / decaying presence /
+// energy blast) were raised to sit alongside FLAME SIGIL and RUNE WARDS, the
+// dead weight (lava ray, plague, spread diseases) was rebuilt, and the three
+// ultimates now hit like the boss-kill unlock they're sold as.
 const SCHOOL_SPELLS={
   // -- DESTRUCTION: molten reds, embers, smoke --
   lavaray:{name:'LAVA RAY',col:'#ff5a3d',max:6,school:'destro',
     desc:'a molten ray that burns through the rank',
     evoName:'CORE LANCE',evoDesc:'a ray from the world’s heart',
-    sp:{a:23,b:12,c:2.4,r:0.90,h:2,hp:0.4,fx:'lance'}},
+    sp:{a:26,b:14,c:1.8,r:0.90,h:2,hp:0.4,fx:'lance'}},
   meteor:{name:'METEOR SHOWER',col:'#ff9040',max:6,school:'destro',
     desc:'stones of fire fall on the horde',
     evoName:'EXTINCTION RAIN',evoDesc:'the sky simply falls',
-    sp:{a:14,b:6,c:2.0,r:0.92,h:4,hp:0.4,fx:'meteor'}},
+    sp:{a:15,b:6.5,c:1.9,r:0.92,h:4,hp:0.5,fx:'meteor'}},
   cflame:{name:'CONSTANT FLAME',col:'#ffb62e',max:6,school:'destro',
     desc:'a ring of fire that never gutters',
     evoName:'WILDFIRE MANTLE',evoDesc:'you are the bonfire now',
-    sp:{a:2.5,b:2.2,c:0.45,r:0.94,h:4,hp:0.4,fx:'aura'}},
+    sp:{a:3.4,b:2.6,c:0.42,r:0.94,h:4,hp:0.4,fx:'aura'}},
   evocation:{name:'INFERNAL EVOCATION',col:'#ff3c1e',max:4,ult:1,school:'destro',
     desc:'your steps leave rivers of lava',
     evoName:'',evoDesc:'',
-    sp:{a:38,b:11,c:10,r:0.92,h:12,hp:0,fx:'trail'}},
-  // -- ILLUSION: blue hues, arcane sparks, afterimages --
-  arcmissile:{name:'ARCANE MISSILE',col:'#39d5ff',max:6,school:'illusion',
-    desc:'seeking bolts of pure blue arcana',
+    sp:{a:44,b:13,c:8.5,r:0.92,h:12,hp:0,fx:'trail'}},
+  // -- ILLUSION: white light split into a rainbow, stars, afterimages --
+  arcmissile:{name:'ARCANE MISSILE',col:'#bfe9ff',max:6,school:'illusion',
+    desc:'seeking bolts of pure starlight',
     evoName:'PRISMATIC SWARM',evoDesc:'a sky full of seeking light',
-    sp:{a:12,b:2.6,c:0.72,r:0.90,h:1,hp:0.5,fx:'seek'}},
-  eblast:{name:'ENERGY BLAST',col:'#7fd8ff',max:6,school:'illusion',
-    desc:'a burst of raw mana at the thickest knot',
+    sp:{a:13,b:2.8,c:0.72,r:0.90,h:1,hp:0.5,fx:'seek'}},
+  eblast:{name:'ENERGY BLAST',col:'#ffffff',max:6,school:'illusion',
+    desc:'starbursts bloom across the thickest knot',
     evoName:'MANA DETONATION',evoDesc:'the burst becomes a detonation',
-    sp:{a:7,b:1.8,c:1.5,r:0.93,h:5,hp:0.8,fx:'blast'}},
-  shocking:{name:'SHOCKING CURRENT',col:'#4c9aff',max:6,school:'illusion',
-    desc:'blue lightning that leaps foe to foe',
+    sp:{a:9,b:2.4,c:1.6,r:0.93,h:2,hp:0.6,fx:'blast'}},
+  shocking:{name:'SHOCKING CURRENT',col:'#7fd8ff',max:6,school:'illusion',
+    desc:'prismatic lightning that leaps foe to foe',
     evoName:'TEMPEST COIL',evoDesc:'the current never grounds',
-    sp:{a:14,b:3.6,c:1.5,r:0.90,h:3,hp:0.5,fx:'chain'}},
-  mirage:{name:'BIZARRE MIRAGE',col:'#9fb8ff',max:6,school:'illusion',
+    sp:{a:15,b:3.8,c:1.35,r:0.90,h:4,hp:0.5,fx:'chain'}},
+  mirage:{name:'BIZARRE MIRAGE',col:'#c9a4ff',max:6,school:'illusion',
     desc:'dazes the horde — dazed foes take +30% from EVERYONE',
     evoName:'ENDLESS MIRAGE',evoDesc:'the dream widens and lingers',
-    sp:{a:8,b:2,c:6.0,r:0.92,h:5,hp:0,fx:'mirage'}},
-  assassin:{name:'PHANTASMAL ASSASSIN',col:'#6a8dff',max:4,ult:1,school:'illusion',
+    sp:{a:10,b:3,c:5.5,r:0.92,h:5,hp:0,fx:'mirage'}},
+  assassin:{name:'PHANTASMAL ASSASSIN',col:'#e8d5ff',max:4,ult:1,school:'illusion',
     desc:'a copied foe turned on its own kind',
     evoName:'',evoDesc:'',
-    sp:{a:32,b:10,c:8.0,r:0.92,h:8,hp:0,fx:'phantom'}},
+    sp:{a:44,b:14,c:7.0,r:0.92,h:8,hp:0,fx:'phantom'}},
   // -- NECROMANCY: rot green, grave violet, wisps --
   shadowb:{name:'SHADOW BULLETS',col:'#8a5cff',max:6,school:'necro',
     desc:'bolts of grave-cold shadow',
     evoName:'GRAVE VOLLEY',evoDesc:'the dead lend their fingers',
-    sp:{a:10,b:2.6,c:0.72,r:0.90,h:1,hp:0.5,fx:'seek'}},
+    sp:{a:11,b:2.8,c:0.72,r:0.90,h:1,hp:0.5,fx:'seek'}},
   decay:{name:'DECAYING PRESENCE',col:'#9fe84a',max:6,school:'necro',
     desc:'everything near you rots',
     evoName:'ENTROPIC FIELD',evoDesc:'rot becomes law',
-    sp:{a:6,b:3,c:0.55,r:0.94,h:3,hp:0.4,fx:'aura'}},
+    sp:{a:6.2,b:3.0,c:0.54,r:0.94,h:3,hp:0.4,fx:'aura'}},
   plague:{name:'PLAGUE',col:'#b6d94a',max:6,school:'necro',
     desc:'infected foes burst when they die',
     evoName:'BLACK PLAGUE',evoDesc:'one death is never the last',
-    sp:{a:15,b:5,c:3.0,r:0.90,h:4,hp:0.6,fx:'plague'}},
+    sp:{a:22,b:8,c:2.2,r:0.90,h:4,hp:0.6,fx:'plague'}},
   inflict:{name:'INFLICT PAIN',col:'#c04aff',max:6,school:'necro',
     desc:'a lance of agony for the biggest foe',
     evoName:'AGONY',evoDesc:'pain beyond language',
@@ -1261,11 +1270,11 @@ const SCHOOL_SPELLS={
   diseases:{name:'SPREAD DISEASES',col:'#6fe84a',max:6,school:'necro',
     desc:'a wasting sickness that gnaws and gnaws',
     evoName:'PANDEMIC',evoDesc:'the sickness learns to travel',
-    sp:{a:7,b:3,c:5.0,r:0.92,h:4,hp:0,fx:'disease'}},
+    sp:{a:8,b:3.2,c:3.8,r:0.92,h:5,hp:0.6,fx:'disease'}},
   souls:{name:'VACUUMING SOULS',col:'#8ef0a0',max:4,ult:1,school:'necro',
     desc:'a maw that drinks the horde and feeds the party',
     evoName:'',evoDesc:'',
-    sp:{a:36,b:10,c:9.0,r:0.93,h:12,hp:0,fx:'soulvoid'}}
+    sp:{a:46,b:13,c:8.5,r:0.93,h:12,hp:0,fx:'soulvoid'}}
 };
 Object.assign(WEAPONS,SCHOOL_SPELLS); // draft cards, HUD dots and run records reuse the weapon plumbing
 const SCHOOLS={
@@ -1273,8 +1282,8 @@ const SCHOOLS={
     desc:'heavy fire — easy to start, hard to stop',
     actives:['lavaray','meteor','cflame'],first:['lavaray','meteor','cflame'],
     passives:['ba','hh','cr'],ult:'evocation'},
-  illusion:{name:'PATH OF ILLUSION',col:'#39d5ff',
-    desc:'blue arcana, mirrors and stolen time',
+  illusion:{name:'PATH OF ILLUSION',col:'#c9a4ff',
+    desc:'starlight, mirrors and stolen time',
     actives:['arcmissile','eblast','shocking','mirage'],first:['arcmissile','eblast','shocking'],
     passives:['mirror','ka'],ult:'assassin'},
   necro:{name:'PATH OF NECROMANCY',col:'#9fe84a',
@@ -1290,9 +1299,9 @@ const PASSIVES={
     desc:['8% chance a cast CRITS for double damage','16% chance to crit for double','25% chance to crit for double']},
   cr:{name:'CINDER RUSH',school:'destro',col:'#ff3c1e',ranks:3,vals:[5,3.5,2.5],
     desc:['a kill makes your next spell instant (every 5s)','a kill makes your next spell instant (every 3.5s)','a kill makes your next spell instant (every 2.5s)']},
-  mirror:{name:'MIRROR FRIEND',school:'illusion',col:'#7fd8ff',ranks:4,vals:[0.30,0.42,0.54,0.54],
-    desc:['a mirror of you casts your spells at 30% power','your mirror grows: 42% power','your mirror grows: 54% power','a second, dimmer mirror joins in']},
-  ka:{name:'KNOWLEDGE AURA',school:'illusion',col:'#4cc2ff',ranks:2,vals:[0.12,0.20],
+  mirror:{name:'MIRROR FRIEND',school:'illusion',col:'#e8d5ff',ranks:4,vals:[0.36,0.50,0.64,0.64],
+    desc:['a mirror of you casts your spells at 36% power','your mirror grows: 50% power','your mirror grows: 64% power','a second, dimmer mirror joins in']},
+  ka:{name:'KNOWLEDGE AURA',school:'illusion',col:'#ffffff',ranks:2,vals:[0.12,0.20],
     desc:['a ring of insight: you and allies inside cast 12% faster','the ring sharpens: 20% faster']},
   leech:{name:'LEECHED GIFT',school:'necro',col:'#8ef0a0',ranks:3,vals:[0.04,0.06,0.08],
     desc:['heal you + nearby allies for 4% of your damage','heal for 6% of damage dealt','heal for 8% of damage dealt']}
@@ -1769,6 +1778,36 @@ function addSparkles(x,y,col,n,sp){
     G.particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-10,t:0.35+Math.random()*0.35,col,size:1,spark:true});
   }
 }
+// ---- prismatic light (the Illusion signature) ----
+// Illusion reads as white light split into a rainbow: its motes, bullets and
+// rings don't hold one colour, they walk this ramp. White sits first so the
+// core of everything illusion casts is white and the colour is the fringe.
+const PRISM=['#ffffff','#ffe8fb','#ff9fe8','#c9a4ff','#7fd8ff','#8ef0d0','#ffef9f','#ffb98c'];
+const prismCol=i=>PRISM[(((i|0)%PRISM.length)+PRISM.length)%PRISM.length];
+// Big drifting stars with a white core. `star` 1 = four points, 2 = eight;
+// `prism` walks the ramp as the mote lives, `drag` bleeds its speed so a burst
+// blooms outward and then hangs in the air instead of flying off screen.
+function addStars(x,y,col,n,sp,prism){
+  if(G.particles.length>800)return;
+  for(let i=0;i<n;i++){
+    const a=Math.random()*TAU,s=(0.25+Math.random()*0.9)*(sp||50);
+    G.particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-16,
+      t:0.55+Math.random()*0.55,col,size:1,drag:2.4,
+      star:1+(Math.random()<0.35?1:0),
+      prism:prism?1+((Math.random()*PRISM.length)|0):0});
+  }
+}
+// a ring of stars thrown outward from a point — the shape every illusion
+// burst opens with, so the school reads at a glance
+function starRing(x,y,r,n,col,prism){
+  if(G.particles.length>800)return;
+  for(let i=0;i<n;i++){
+    const a=i*TAU/n+Math.random()*0.2;
+    G.particles.push({x:x+Math.cos(a)*r*0.35,y:y+Math.sin(a)*r*0.35,
+      vx:Math.cos(a)*r*2.2,vy:Math.sin(a)*r*2.2-8,t:0.42+Math.random()*0.3,
+      col,size:1,drag:5.5,star:1,prism:prism?1+((Math.random()*PRISM.length)|0):0});
+  }
+}
 function dropLoot(e){
   const gems=e.boss?14:(Math.random()<0.15?2:1);
   const per=Math.max(1,Math.round(e.xp/gems));
@@ -2096,6 +2135,11 @@ function kaHaste(p){
   return best;
 }
 function spellHits(id,lv){const d=spellDef(id);return d.h+Math.floor((d.hp||0)*(lv-1));}
+// One formula for the two body auras, shared by the hitbox and the ring the
+// player sees. v0.1 started at 24/30px, which is inside the player's own
+// sprite — the spell did nothing at all until level 4 or so. It now covers
+// contact range from the first cast and grows to FLAME SIGIL's reach.
+function auraRad(id,lv){return (id==='decay'?36:32)+lv*5;}
 function spellDmg(p,id,lv,mul){
   const d=spellDef(id);
   let dmg=(d.a+d.b*lv)*p.dmgMul*mul;
@@ -2136,31 +2180,48 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
       if(!tgt)return false;
       const n=spellHits(id,lv);
       const ang=Math.atan2(tgt.y-oy,tgt.x-ox);
+      const arc=id==='arcmissile';
       for(let i=0;i<n;i++){
         const a=ang+(i-(n-1)/2)*0.13;
-        G.bullets.push({x:ox,y:oy,vx:Math.cos(a)*230,vy:Math.sin(a)*230,r:crit?3:2,dmg,
-          life:1.6,owner:p,col,trail:true,trailCol:col,sparkTrail:true});
+        G.bullets.push({x:ox,y:oy,vx:Math.cos(a)*(arc?260:230),vy:Math.sin(a)*(arc?260:230),
+          r:crit?3:2,dmg,life:1.6,owner:p,col,trail:true,trailCol:col,
+          sparkTrail:!arc,starTrail:arc,glow:true,prism:arc?1+((Math.random()*PRISM.length)|0):0});
       }
-      sfx(id==='blaster'?'shoot':(id==='arcmissile'?'arcbolt':'shadowbolt'));
+      // the arcane volley leaves the hand as a spray of stars
+      if(arc)addStars(ox+Math.cos(ang)*8,oy+Math.sin(ang)*8,'#ffffff',3+n,60,true);
+      else if(id!=='blaster')addSparkles(ox,oy,col,3,50);
+      sfx(id==='blaster'?'shoot':(arc?'arcbolt':'shadowbolt'));
       crText(ox,oy);
       break;}
     case 'lance':{ // lava ray: a molten line through the rank
       const tgt=nearestEnemy(ox,oy,300);
       if(!tgt)return false;
       const a=Math.atan2(tgt.y-oy,tgt.x-ox);
-      const len=90+spellHits(id,lv)*24;
+      const len=110+spellHits(id,lv)*28;
       const ex=ox+Math.cos(a)*len,ey=oy+Math.sin(a)*len;
-      G.fx.push({kind:'lance',x1:ox,y1:oy,x2:ex,y2:ey,col:'#ff5a3d',col2:'#ffb62e',t:0.22,dur:0.22});
-      queryEnemies((ox+ex)/2,(oy+ey)/2,len/2+30,e=>{
+      G.fx.push({kind:'lance',fat:1,x1:ox,y1:oy,x2:ex,y2:ey,col:'#ff5a3d',col2:'#ffb62e',t:0.3,dur:0.3});
+      // a ray that "burns through the rank" has to be wide enough to catch a
+      // rank: the v0.1 hitbox was 9px and routinely clipped one enemy
+      const W=16;
+      queryEnemies((ox+ex)/2,(oy+ey)/2,len/2+40,e=>{
         const dx=ex-ox,dy=ey-oy,L2=dx*dx+dy*dy||1;
         let t=((e.x-ox)*dx+(e.y-oy)*dy)/L2;t=clamp(t,0,1);
         const px=ox+dx*t,py=oy+dy*t;
-        if(dist2(e.x,e.y,px,py)<(9+e.r)*(9+e.r)){
+        if(dist2(e.x,e.y,px,py)<(W+e.r)*(W+e.r)){
           damageEnemy(e,dmg,p);
-          addParticles(e.x,e.y,Math.random()<0.5?'#ff5a3d':'#ffb62e',3,60);
+          addParticles(e.x,e.y,Math.random()<0.5?'#ff5a3d':'#ffb62e',5,80);
+          addSparkles(e.x,e.y-4,'#fff6c8',2,50);
         }
       });
-      addParticles(ox+Math.cos(a)*14,oy+Math.sin(a)*14,'#ff5a3d',6,70);
+      // molten spatter along the whole beam, hottest at the muzzle
+      for(let i=0;i<7;i++){
+        const t=i/7,hx=ox+(ex-ox)*t,hy=oy+(ey-oy)*t;
+        G.particles.push({x:hx+(Math.random()*8-4),y:hy+(Math.random()*8-4),
+          vx:(Math.random()*2-1)*30,vy:-20-Math.random()*40,t:0.3+Math.random()*0.4,
+          col:Math.random()<0.4?'#fff6c8':(Math.random()<0.5?'#ff5a3d':'#ffb62e'),size:1});
+      }
+      addParticles(ox+Math.cos(a)*14,oy+Math.sin(a)*14,'#fff6c8',8,90);
+      G.shake=Math.max(G.shake,2);
       sfx('lavaray');crText(tgt.x,tgt.y);
       break;}
     case 'meteor':{ // meteor shower: staggered falling impacts
@@ -2168,51 +2229,87 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
       if(!tgt)return false;
       const n=spellHits(id,lv);
       sfx('cinder');
-      for(let i=0;i<n;i++)after(i*0.14,()=>{
+      for(let i=0;i<n;i++)after(i*0.12,()=>{
         if(p.dead)return;
-        const tg=nearestEnemy(tgt.x,tgt.y,120)||tgt;
-        G.fx.push({kind:'rmet',ground:1,own:p,
-          x:tg.x+(Math.random()*2-1)*46,y:tg.y+(Math.random()*2-1)*46,
-          r:26+lv*2,dmg,t:0.5,dur:0.5,col});
+        const tg=nearestEnemy(tgt.x,tgt.y,130)||tgt;
+        const mx=tg.x+(Math.random()*2-1)*46,my=tg.y+(Math.random()*2-1)*46;
+        G.fx.push({kind:'rmet',ground:1,own:p,x:mx,y:my,r:26+lv*2.5,dmg,t:0.5,dur:0.5,col});
+        // every stone lands with its own little shock: shake, smoke, embers
+        after(0.5,()=>{
+          G.shake=Math.max(G.shake,2.5);
+          addParticles(mx,my,'#ff9040',7,90);
+          for(let s=0;s<3;s++)G.particles.push({x:mx+(Math.random()*16-8),y:my+(Math.random()*10-5),
+            vx:(Math.random()*2-1)*12,vy:-22-Math.random()*20,t:0.6+Math.random()*0.4,
+            col:'#6b5a4a',size:2,drag:1.4});
+        });
       });
       crText(tgt.x,tgt.y);
       break;}
     case 'aura':{ // constant flame / decaying presence: the caster IS the weapon
-      const rad=(id==='decay'?30:24)+lv*4;
+      const rad=auraRad(id,lv);
       queryEnemies(ox,oy,rad,e=>{
         if(dist2(ox,oy,e.x,e.y)<(rad+e.r)*(rad+e.r))damageEnemy(e,dmg,p);
       });
+      // a field you stand inside has to look occupied, not outlined: fill the
+      // whole disc, not just the rim, and pay for a couple of bright motes
       for(let i=0;i<2;i++){
         const a=Math.random()*TAU;
-        if(id==='decay') // rot wisps drift UP out of the ground
-          G.particles.push({x:ox+Math.cos(a)*rad*0.8,y:oy+Math.sin(a)*rad*0.8,vx:0,vy:-14,
-            t:0.5,col:Math.random()<0.6?'#9fe84a':'#5a7a3a',size:1});
-        else // embers spit outward
-          G.particles.push({x:ox+Math.cos(a)*rad,y:oy+Math.sin(a)*rad,
-            vx:Math.cos(a)*8,vy:Math.sin(a)*8-16,t:0.3,
-            col:Math.random()<0.5?'#ff5a3d':'#ffb62e',size:1});
+        if(id==='decay'){ // rot wisps drift UP out of the ground
+          const rr=rad*Math.sqrt(Math.random());
+          G.particles.push({x:ox+Math.cos(a)*rr,y:oy+Math.sin(a)*rr,
+            vx:(Math.random()*2-1)*8,vy:-16-Math.random()*16,
+            t:0.6+Math.random()*0.5,
+            col:Math.random()<0.5?'#9fe84a':(Math.random()<0.5?'#5a7a3a':'#c04aff'),
+            size:1+(Math.random()<0.35?1:0),drag:1.2});
+        }else{ // embers spit outward and rise, hottest at the rim
+          const rr=rad*(0.5+Math.random()*0.5);
+          G.particles.push({x:ox+Math.cos(a)*rr,y:oy+Math.sin(a)*rr,
+            vx:Math.cos(a)*22,vy:Math.sin(a)*22-34,t:0.4+Math.random()*0.35,
+            col:Math.random()<0.25?'#fff6c8':(Math.random()<0.5?'#ff5a3d':'#ffb62e'),
+            size:1+(Math.random()<0.25?1:0),drag:2.2});
+        }
+      }
+      // one grave-violet soul / white-hot cinder per few casts, to give the
+      // field a highlight the eye can land on
+      if(Math.random()<0.35){
+        const a=Math.random()*TAU;
+        if(id==='decay')addSparkles(ox+Math.cos(a)*rad*0.7,oy+Math.sin(a)*rad*0.7,'#c9a4ff',1,26);
+        else addSparkles(ox+Math.cos(a)*rad*0.8,oy+Math.sin(a)*rad*0.8,'#fff6c8',1,30);
       }
       break;}
-    case 'blast':{ // energy blast: blue mana burst with arcane sparks
+    case 'blast':{ // energy blast: starbursts blooming across the crowd
       const tgt=nearestEnemy(ox,oy,300);
       if(!tgt)return false;
-      const R=32+lv*5;
-      G.fx.push({kind:'boom',col:'#7fd8ff',x:tgt.x,y:tgt.y,r:R,t:0.3,dur:0.3});
-      addParticles(tgt.x,tgt.y,'#39d5ff',14,120);
-      addSparkles(tgt.x,tgt.y,'#bfe9ff',8,90);
-      queryEnemies(tgt.x,tgt.y,R,e=>{
-        if(dist2(tgt.x,tgt.y,e.x,e.y)<(R+e.r)*(R+e.r))damageEnemy(e,dmg,p);
+      // v0.1 declared h/hp on this card and then never read them, so the spell
+      // stayed a single small pop at every level. It is now what the data always
+      // said it was: `h + hp*(lv-1)` blooms walking the knot, and with that it
+      // is Illusion's answer to FLAME SIGIL.
+      const R=28+lv*4,n=spellHits(id,lv);
+      sfx('ablast');
+      for(let i=0;i<n;i++)after(i*0.08,()=>{
+        if(p.dead)return;
+        // each bloom re-picks: the burst chases the crowd instead of stacking
+        const t2=i?(nearestEnemy(tgt.x,tgt.y,150)||tgt):tgt;
+        const bx=t2.x+(i?(Math.random()*2-1)*26:0),by=t2.y+(i?(Math.random()*2-1)*26:0);
+        G.fx.push({kind:'sbloom',x:bx,y:by,r:R,pts:8,seed:i*1.3,t:0.34,dur:0.34});
+        starRing(bx,by,R*0.5,10,'#ffffff',true);
+        addStars(bx,by,'#ffffff',6,110,true);
+        queryEnemies(bx,by,R,e=>{
+          if(dist2(bx,by,e.x,e.y)<(R+e.r)*(R+e.r))damageEnemy(e,dmg,p);
+        });
       });
-      sfx('ablast');crText(tgt.x,tgt.y);
+      crText(tgt.x,tgt.y);
       break;}
-    case 'chain':{ // shocking current: blue lightning, foe to foe
-      const first=nearestEnemy(ox,oy,200);
+    case 'chain':{ // shocking current: prismatic lightning, foe to foe
+      const first=nearestEnemy(ox,oy,220);
       if(!first)return false;
       let cur=first,px=ox,py=oy;
-      const hitSet=new Set(),jumps=spellHits(id,lv),jr=125;
+      const hitSet=new Set(),jumps=spellHits(id,lv),jr=145;
       for(let i=0;i<jumps&&cur;i++){
-        G.fx.push({kind:'zap',col:'#4c9aff',x1:px,y1:py,x2:cur.x,y2:cur.y,t:0.12,dur:0.12});
-        addSparkles(cur.x,cur.y,'#7fd8ff',2,50);
+        // white-hot core under a coloured arc, each link a step further round
+        // the ramp — the current visibly refracts as it travels
+        G.fx.push({kind:'zap',col:prismCol(i+2),glow:1,x1:px,y1:py,x2:cur.x,y2:cur.y,t:0.16,dur:0.16});
+        addStars(cur.x,cur.y,'#ffffff',3,55,true);
         damageEnemy(cur,dmg,p);
         hitSet.add(cur);px=cur.x;py=cur.y;
         let next=null,bd=jr*jr;
@@ -2229,8 +2326,12 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
       const tgt=nearestEnemy(ox,oy,300);
       if(!tgt)return false;
       const R=44+lv*4,stunDur=lv>6?2.0:1.5;
-      G.fx.push({kind:'boom',col:'#9fb8ff',x:tgt.x,y:tgt.y,r:R,t:0.35,dur:0.35});
-      addSparkles(tgt.x,tgt.y,'#dfe8ff',10,80);
+      // the dream opens as a wide prismatic bloom and then stays on the ground
+      // for as long as the daze lasts, so you can see the window you bought
+      G.fx.push({kind:'sbloom',x:tgt.x,y:tgt.y,r:R,pts:12,t:0.5,dur:0.5});
+      G.fx.push({kind:'sring',x:tgt.x,y:tgt.y,r:R,ground:1,seed:1.7,t:stunDur,dur:stunDur});
+      starRing(tgt.x,tgt.y,R*0.6,16,'#ffffff',true);
+      addStars(tgt.x,tgt.y,'#ffffff',14,120,true);
       let n=0;
       queryEnemies(tgt.x,tgt.y,R,e=>{
         if(dist2(tgt.x,tgt.y,e.x,e.y)>=(R+e.r)*(R+e.r))return;
@@ -2239,9 +2340,9 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
         // bosses only stagger — their scripts must not desync — but the
         // vulnerability window still opens for everyone
         e.stunT=Math.max(e.stunT||0,e.boss?0.4:stunDur);n++;
-        addSparkles(e.x,e.y-e.r,'#bfd0ff',3,40);
+        addStars(e.x,e.y-e.r,'#ffffff',4,45,true);
       });
-      if(n&&!echo)addText(tgt.x,tgt.y-14,'DAZED!','#9fb8ff');
+      if(n&&!echo)addText(tgt.x,tgt.y-14,'DAZED!',prismCol(G.time*8));
       sfx('mirage');
       break;}
     case 'phantom':{ // phantasmal assassin: a stolen silhouette hunting its own kind
@@ -2249,54 +2350,89 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
       if(!tgt)return false;
       G.fx.push({kind:'phantom',own:p,x:ox,y:oy,r:22,dmg,spd:150,tick:0,
         t:4,dur:4,col,spr:tgt.spr,scale:tgt.scale||1});
-      addSparkles(ox,oy,'#6a8dff',14,90);
+      // it arrives the way a copy should: a bloom of light that resolves into
+      // something that was already standing there
+      G.fx.push({kind:'sbloom',x:ox,y:oy,r:42,pts:10,t:0.4,dur:0.4});
+      starRing(ox,oy,26,14,'#ffffff',true);
+      addStars(ox,oy,'#ffffff',12,90,true);
       sfx('phantomup');
-      if(!echo)addText(ox,oy-16,'ASSASSIN!','#6a8dff');
+      if(!echo)addText(ox,oy-16,'ASSASSIN!',prismCol(G.time*8));
       break;}
     case 'pain':{ // inflict pain: one lance of agony for the biggest thing alive
       const tgt=relicTarget(p,340);
       if(!tgt)return false;
       const mult=1+Math.floor(0.4*(lv-1));
-      G.fx.push({kind:'lance',x1:ox,y1:oy,x2:tgt.x,y2:tgt.y,col:'#c04aff',col2:'#2a1030',t:0.25,dur:0.25});
-      addParticles(tgt.x,tgt.y,'#c04aff',10,90);
+      G.fx.push({kind:'lance',fat:1,x1:ox,y1:oy,x2:tgt.x,y2:tgt.y,col:'#c04aff',col2:'#2a1030',t:0.28,dur:0.28});
+      G.fx.push({kind:'boom',col:'#c04aff',x:tgt.x,y:tgt.y,r:26+mult*6,t:0.3,dur:0.3});
+      addParticles(tgt.x,tgt.y,'#c04aff',14,110);
+      addSparkles(tgt.x,tgt.y,'#e8b8ff',6,70);
+      // agony rises off the victim as violet wisps
+      for(let i=0;i<4;i++)G.particles.push({x:tgt.x+(Math.random()*14-7),y:tgt.y,
+        vx:(Math.random()*2-1)*10,vy:-30-Math.random()*20,t:0.7,col:'#8a5cff',size:2,drag:1.3});
       damageEnemy(tgt,dmg*mult,p);
+      G.shake=Math.max(G.shake,2);
       sfx('inflict');crText(tgt.x,tgt.y);
       break;}
-    case 'plague':{ // plague: a rotting mote that arms its victim to burst
+    case 'plague':{ // plague: a rotting mote that splashes, then arms its victim to burst
       const tgt=nearestEnemy(ox,oy,300);
       if(!tgt)return false;
       const a=Math.atan2(tgt.y-oy,tgt.x-ox);
-      G.bullets.push({x:ox,y:oy,vx:Math.cos(a)*190,vy:Math.sin(a)*190,r:3,dmg,
-        life:2.0,owner:p,col,trail:true,trailCol:'#6fe84a',
-        plague:{dmg:dmg*0.9,r:40+lv*3,owner:p}});
+      // v0.1 paid nothing until something died, which made the card feel inert
+      // for its whole first second on screen. It now bursts on contact too.
+      G.bullets.push({x:ox,y:oy,vx:Math.cos(a)*210,vy:Math.sin(a)*210,r:3,dmg,
+        life:2.0,owner:p,col,trail:true,trailCol:'#6fe84a',glow:true,
+        rocket:true,aoe:30+lv*3,
+        plague:{dmg:dmg*0.9,r:44+lv*4,owner:p}});
+      addParticles(ox,oy,'#6fe84a',5,50);
       sfx('plaguecast');
       break;}
     case 'disease':{ // spread diseases: a wasting DoT on the nearest few
       const marks=[];
-      queryEnemies(ox,oy,240,e=>{if(!e.dead&&!e.boss)marks.push(e);});
+      queryEnemies(ox,oy,260,e=>{if(!e.dead&&!e.boss)marks.push(e);});
       if(!marks.length)return false;
       marks.sort((a,b)=>dist2(ox,oy,a.x,a.y)-dist2(ox,oy,b.x,b.y));
-      const n=Math.min(lv>6?6:4,marks.length);
+      const n=Math.min(spellHits(id,lv),marks.length);
       for(let i=0;i<n;i++){
         const e=marks[i];
-        e.disT=4;e.disDps=Math.max(e.disDps||0,dmg);e.disOwner=p;
+        e.disT=4;
+        // "gnaws and gnaws": re-infecting used to Math.max the tick, so a
+        // second cast on the same body was worth nothing. Sickness compounds
+        // now — capped at 2x so it can't run away with a boss add pack.
+        e.disDps=Math.min((e.disDps||0)+dmg,dmg*2);
+        e.disOwner=p;
         addSparkles(e.x,e.y-e.r,'#6fe84a',4,40);
+        G.particles.push({x:e.x,y:e.y,vx:0,vy:-18,t:0.6,col:'#5a7a3a',size:2});
       }
       sfx('plaguecast');
       break;}
     case 'trail':{ // infernal evocation: rivers of lava behind your steps
-      G.fx.push({kind:'strail',own:p,gap:0,t:4,dur:4,dps:dmg,col:'#ff3c1e'});
-      addParticles(ox,oy,'#ff5a3d',16,110);
-      G.shake=Math.max(G.shake,3);
+      // a boss-kill ultimate that laid a 30px thread for 4s read as a minor
+      // upgrade. Five seconds, a wider river, and it opens with an eruption —
+      // and the river now deals the damage the card advertises (see rburn's
+      // tag: overlapping patches used to tick independently).
+      G.fx.push({kind:'strail',own:p,gap:0,t:5,dur:5,dps:dmg,col:'#ff3c1e'});
+      G.fx.push({kind:'boom',col:'#ffb62e',x:ox,y:oy,r:70,t:0.4,dur:0.4});
+      G.fx.push({kind:'rburn',ground:1,own:p,x:ox,y:oy,r:52,dps:dmg,tag:'ev'+p.idx,tick:0,t:2.6,dur:2.6,col:'#ff3c1e'});
+      addParticles(ox,oy,'#ff5a3d',26,150);
+      addParticles(ox,oy,'#fff6c8',10,90);
+      for(let i=0;i<10;i++){
+        const a=Math.random()*TAU;
+        G.particles.push({x:ox,y:oy,vx:Math.cos(a)*70,vy:Math.sin(a)*70-60,
+          t:0.7+Math.random()*0.5,col:Math.random()<0.5?'#ff3c1e':'#ffb62e',size:2,drag:1.6});
+      }
+      G.shake=Math.max(G.shake,6);
       sfx('evocation');
       if(!echo)addText(ox,oy-16,'THE GROUND MELTS','#ff5a3d');
       break;}
     case 'soulvoid':{ // vacuuming souls: the maw pulls, eats, and feeds the party
-      const tgt=nearestEnemy(ox,oy,280);
+      const tgt=relicTarget(p,300);
       if(!tgt)return false;
-      G.fx.push({kind:'soulvoid',ground:1,own:p,x:tgt.x,y:tgt.y,r:74,dps:dmg,
-        pull:95,healed:0,tick:0,t:3,dur:3,col:'#8ef0a0'});
+      G.fx.push({kind:'soulvoid',ground:1,own:p,x:tgt.x,y:tgt.y,r:86,dps:dmg,
+        pull:120,healed:0,tick:0,t:3.5,dur:3.5,col:'#8ef0a0',burst:dmg*1.1});
+      addParticles(tgt.x,tgt.y,'#8ef0a0',18,110);
+      G.shake=Math.max(G.shake,3);
       sfx('souls');
+      if(!echo)addText(tgt.x,tgt.y-16,'THE MAW OPENS','#8ef0a0');
       break;}
   }
   return true;
@@ -2381,8 +2517,10 @@ function fireRelic(p,id,r,dt){
         }
         if(d.chill&&!e.dead){e.slow=d.chill.mul;e.slowT=d.chill.dur;}
       });
+      // same-signature burns pool on top of each other when a relic fires at a
+      // rooted boss — tag them so the ground burns once, not once per cast
       if(d.burn)G.fx.push({kind:'rburn',ground:1,own:p,x:t.x,y:t.y,r:d.burn.r,dps:d.burn.dps*pw,
-        tick:0,t:d.burn.dur,dur:d.burn.dur,col:d.col});
+        tag:id+p.idx,tick:0,t:d.burn.dur,dur:d.burn.dur,col:d.col});
       G.shake=Math.max(G.shake,3);sfx(d.sfx||'slam');
       break;}
     case 'bolt':{
@@ -2930,7 +3068,20 @@ function tickBossFx(dt,alive){
         f.t-=dt;f.tick-=dt;
         if(f.tick<=0){
           f.tick=0.25;
-          queryEnemies(f.x,f.y,f.r,e=>{if(dist2(f.x,f.y,e.x,e.y)<(f.r+e.r)*(f.r+e.r))damageEnemy(e,f.dps*0.25,f.own);});
+          queryEnemies(f.x,f.y,f.r,e=>{
+            if(dist2(f.x,f.y,e.x,e.y)>=(f.r+e.r)*(f.r+e.r))return;
+            // Overlapping patches from ONE source are one fire, not N. The
+            // evocation trail lays a patch every 0.22s and each lives 2.6s, so
+            // a body on the river sat in ~12 patches and every one of them
+            // ticked: the ultimate was quietly dealing ~12x its listed dps to
+            // anything that stopped moving. Tagged patches share a tick.
+            if(f.tag){
+              if(!e.burnCd)e.burnCd={};
+              if(G.time<(e.burnCd[f.tag]||0))return;
+              e.burnCd[f.tag]=G.time+0.24;
+            }
+            damageEnemy(e,f.dps*0.25,f.own);
+          });
           const a=Math.random()*TAU,rr=Math.random()*f.r;
           addParticles(f.x+Math.cos(a)*rr,f.y+Math.sin(a)*rr,'#ffb62e',2,40);
         }
@@ -3019,10 +3170,13 @@ function tickBossFx(dt,alive){
         const o=f.own;
         if(o.dead){f.t=0;break;}
         if(f.gap<=0){
-          f.gap=0.26;
-          G.fx.push({kind:'rburn',ground:1,own:o,x:o.x,y:o.y,r:30,dps:f.dps,
-            tick:0,t:2.2,dur:2.2,col:f.col});
+          f.gap=0.22;
+          G.fx.push({kind:'rburn',ground:1,own:o,x:o.x,y:o.y,r:44,dps:f.dps,
+            tag:'ev'+o.idx,tick:0,t:2.6,dur:2.6,col:f.col});
           addParticles(o.x,o.y,Math.random()<0.5?'#ff5a3d':'#ffb62e',3,50);
+          const a=Math.random()*TAU;
+          G.particles.push({x:o.x+Math.cos(a)*20,y:o.y+Math.sin(a)*20,vx:0,vy:-26,
+            t:0.6,col:'#fff6c8',size:1,drag:1.5});
         }
         break;}
       case 'phantom':{ // phantasmal assassin: hunts the boss first, borrows its victim's strength
@@ -3040,7 +3194,7 @@ function tickBossFx(dt,alive){
           const dd=Math.hypot(tg.x-f.x,tg.y-f.y)||1;
           f.x+=(tg.x-f.x)/dd*f.spd*dt;f.y+=(tg.y-f.y)/dd*f.spd*dt;
         }
-        if(Math.random()<dt*20)addSparkles(f.x,f.y,'#6a8dff',1,30);
+        if(Math.random()<dt*26)addStars(f.x,f.y+(Math.random()*10-5),'#ffffff',1,24,true);
         if(f.tick<=0){
           f.tick=0.25;
           queryEnemies(f.x,f.y,f.r,e=>{
@@ -3071,6 +3225,24 @@ function tickBossFx(dt,alive){
             }
           });
           addSparkles(f.x,f.y,'#8ef0a0',2,50);
+        }
+        // souls spiral in for the whole channel, so the pull reads before the damage does
+        if(Math.random()<dt*30){
+          const a=Math.random()*TAU,rr=f.r*(0.8+Math.random()*0.7);
+          G.particles.push({x:f.x+Math.cos(a)*rr,y:f.y+Math.sin(a)*rr,
+            vx:-Math.cos(a)*90,vy:-Math.sin(a)*90,t:0.7,
+            col:Math.random()<0.5?'#8ef0a0':'#c9a4ff',size:1,spark:true});
+        }
+        // the maw closes on a detonation: the ultimate needs a punchline
+        if(f.t<=0&&!f.closed){
+          f.closed=1;
+          G.fx.push({kind:'boom',col:'#8ef0a0',x:f.x,y:f.y,r:f.r*1.3,t:0.35,dur:0.35});
+          addParticles(f.x,f.y,'#8ef0a0',26,150);
+          addSparkles(f.x,f.y,'#c9a4ff',14,110);
+          queryEnemies(f.x,f.y,f.r*1.3,e=>{
+            if(dist2(f.x,f.y,e.x,e.y)<(f.r*1.3+e.r)*(f.r*1.3+e.r))damageEnemy(e,f.burst,f.own);
+          });
+          G.shake=Math.max(G.shake,5);sfx('boom');
         }
         break;}
       default: f.t-=dt;
@@ -6502,12 +6674,19 @@ function update(dt){
     if(hazardAt(e.x,e.y)==='mud')sp*=0.6;
     // chilled: frost relics and frost bosses both slow through this
     if(e.slowT>0){e.slowT-=dt;sp*=e.slow;}else e.slow=1;
-    // dazed by a Bizarre Mirage: rooted, sparkling faintly blue, +30% damage
+    // dazed by a Bizarre Mirage: rooted, wearing a crown of stars, +30% damage
     // taken (applied in damageEnemy). Bosses only carry the vuln window.
     if(e.stunT>0){
       e.stunT-=dt;
       if(!e.boss)sp=0;
-      if(Math.random()<dt*6)addSparkles(e.x,e.y-e.r-2,'#bfd0ff',1,20);
+      // three stars circling the head, cartoon-concussion style — the mark is
+      // worth reading at a glance because everyone's damage keys off it
+      if(Math.random()<dt*22){
+        const a=G.time*3.2+((Math.random()*3)|0)*TAU/3;
+        G.particles.push({x:e.x+Math.cos(a)*(e.r+4),y:e.y-e.r-4+Math.sin(a)*3,
+          vx:0,vy:-4,t:0.3,col:'#ffffff',size:1,star:2,
+          prism:1+((Math.random()*PRISM.length)|0)});
+      }
     }
     // wasting sickness (Spread Diseases): green ticks until it runs its course
     if(e.disT>0){
@@ -6628,8 +6807,13 @@ function update(dt){
   // ---- player bullets ----
   for(const b of G.bullets){
     b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
-    if(b.trail&&Math.random()<0.6&&G.particles.length<850)
-      G.particles.push({x:b.x,y:b.y,vx:0,vy:0,t:0.2,col:b.trailCol||'#b3a184',size:1,spark:b.sparkTrail});
+    if(b.trail&&Math.random()<0.6&&G.particles.length<850){
+      if(b.starTrail) // arcane bolts shed a wake of little prismatic stars
+        G.particles.push({x:b.x+(Math.random()*4-2),y:b.y+(Math.random()*4-2),
+          vx:-b.vx*0.08,vy:-b.vy*0.08-8,t:0.3+Math.random()*0.25,col:b.trailCol,
+          size:1,star:1,drag:3,prism:b.prism?1+((Math.random()*PRISM.length)|0):0});
+      else G.particles.push({x:b.x,y:b.y,vx:0,vy:0,t:0.2,col:b.trailCol||'#b3a184',size:1,spark:b.sparkTrail});
+    }
     if(b.life<=0){if(b.rocket)explode(b.x,b.y,b.aoe,b.dmg,b.owner);b.dead=true;continue;}
     if(solidAt(b.x,b.y)){
       if(b.rocket)explode(b.x,b.y,b.aoe,b.dmg,b.owner);
@@ -6650,11 +6834,14 @@ function update(dt){
       }
     }
     if(hit){
+      // plague motes leave the sickness behind BEFORE they deal their damage:
+      // the mote splashes on contact now, and infecting afterwards meant any
+      // target the splash killed outright died clean — no burst, no chain,
+      // which is the entire card. Bosses shrug it off (their death already
+      // pays everything).
+      if(b.plague&&!hit.boss)hit.plagued=b.plague;
       if(b.rocket)explode(b.x,b.y,b.aoe,b.dmg,b.owner);
       else damageEnemy(hit,b.dmg,b.owner);
-      // plague motes leave the sickness behind; bosses shrug it off (the
-      // burst pays on death, and a boss's death already pays everything)
-      if(b.plague&&!hit.dead&&!hit.boss)hit.plagued=b.plague;
       b.dead=true;
     }
   }
@@ -6719,7 +6906,11 @@ function update(dt){
   }
 
   // ---- housekeeping ----
-  for(const pt of G.particles){pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.t-=dt;}
+  for(const pt of G.particles){
+    pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.t-=dt;
+    // stars coast to a stop and hang: the bloom is the readable part, not the flight
+    if(pt.drag){const f=Math.max(0,1-pt.drag*dt);pt.vx*=f;pt.vy*=f;}
+  }
   for(const t of G.texts){t.y+=t.vy*dt;t.t-=dt;}
   G.particles=G.particles.filter(p=>p.t>0);
   G.texts=G.texts.filter(t=>t.t>0);
@@ -7046,21 +7237,33 @@ function drawFx(f,W2V,g){
     case 'lance':{ // lava ray / inflict pain: a fat glowing line, gone in a blink
       const a1=W2V(f.x1,f.y1),a2=W2V(f.x2,f.y2);
       g.globalAlpha=k;
-      g.strokeStyle=f.col2;g.lineWidth=6;
+      // `fat` beams (the lava ray) bloom on cast and collapse to a thread —
+      // the hitbox is 16px wide, so the art has to look 16px wide
+      const w0=f.fat?10+16*k:6;
+      g.strokeStyle='rgba('+hexRgb(f.col2)+','+(0.45*k).toFixed(3)+')';g.lineWidth=w0+6;
       g.beginPath();g.moveTo(a1[0],a1[1]);g.lineTo(a2[0],a2[1]);g.stroke();
-      g.strokeStyle=f.col;g.lineWidth=3;
+      g.strokeStyle=f.col2;g.lineWidth=w0;
       g.beginPath();g.moveTo(a1[0],a1[1]);g.lineTo(a2[0],a2[1]);g.stroke();
-      g.strokeStyle='#fff6c8';g.lineWidth=1;
+      g.strokeStyle=f.col;g.lineWidth=Math.max(2,w0*0.5);
+      g.beginPath();g.moveTo(a1[0],a1[1]);g.lineTo(a2[0],a2[1]);g.stroke();
+      g.strokeStyle='#fff6c8';g.lineWidth=f.fat?Math.max(1,3*k):1;
       g.beginPath();g.moveTo(a1[0],a1[1]);g.lineTo(a2[0],a2[1]);g.stroke();
       g.globalAlpha=1;
       break;}
-    case 'phantom':{ // the assassin: its victim's silhouette, ghost-blue and flickering
+    case 'phantom':{ // the assassin: its victim's silhouette, prismatic and flickering
       if(Math.floor(G.time*14)%4===0)break; // it flickers — it isn't really there
-      g.globalAlpha=0.55;
-      drawSpriteC(g,f.spr,x,y,f.scale);
-      g.globalAlpha=0.25;
-      g.fillStyle='#6a8dff';
       const sw=f.spr.width*f.scale,sh=f.spr.height*f.scale;
+      // three offset afterimages walking the ramp, then the copy itself
+      for(let i=3;i>=1;i--){
+        g.globalAlpha=0.13;
+        g.fillStyle=prismCol(i*2+G.time*7);
+        g.fillRect(Math.round(x-sw/2)-i*2,Math.round(y-sh/2),sw,sh);
+        g.fillRect(Math.round(x-sw/2)+i*2,Math.round(y-sh/2),sw,sh);
+      }
+      g.globalAlpha=0.6;
+      drawSpriteC(g,f.spr,x,y,f.scale);
+      g.globalAlpha=0.3;
+      g.fillStyle=prismCol(G.time*9);
       g.fillRect(Math.round(x-sw/2),Math.round(y-sh/2),sw,sh);
       g.globalAlpha=1;
       break;}
@@ -7192,12 +7395,69 @@ function drawFx(f,W2V,g){
       g.strokeStyle='rgba('+(f.col?hexRgb(f.col):'255,182,46')+','+k.toFixed(3)+')';g.lineWidth=2;
       g.beginPath();g.arc(x,y,Math.max(0,f.r*(1-k)),0,TAU);g.stroke();
       break;}
+    case 'sbloom':{
+      // ILLUSION burst: white light splitting into a rainbow. A hard white
+      // flash collapses inward while two prismatic rings race outward and a
+      // crown of star points rides the leading edge.
+      const e=1-k;                        // 0 -> 1 over the life
+      const grow=f.r*(0.28+0.72*Math.sqrt(e));
+      g.globalAlpha=k;
+      g.fillStyle='rgba(255,255,255,'+(0.45*k*k).toFixed(3)+')';
+      g.beginPath();g.arc(x,y,Math.max(1,f.r*0.55*k),0,TAU);g.fill();
+      for(let i=0;i<3;i++){
+        const rr=grow*(1-i*0.17);
+        if(rr<1)continue;
+        g.strokeStyle=i===0?'#ffffff':prismCol(i*2+G.time*11+(f.seed||0));
+        g.lineWidth=i===0?2:1;
+        g.beginPath();g.arc(x,y,rr,0,TAU);g.stroke();
+      }
+      const pts=f.pts||8;
+      for(let i=0;i<pts;i++){
+        const a=i*TAU/pts+e*1.6+(f.seed||0);
+        const px=Math.round(x+Math.cos(a)*grow),py=Math.round(y+Math.sin(a)*grow);
+        g.fillStyle=prismCol(i+G.time*13);
+        g.fillRect(px-2,py,5,1);g.fillRect(px,py-2,1,5);
+        g.fillStyle='#ffffff';g.fillRect(px,py,1,1);
+      }
+      g.globalAlpha=1;
+      break;}
+    case 'sring':{
+      // the dream that lingers: a slow prismatic hoop over dazed ground
+      const fade=f.t<0.5?f.t/0.5:1;
+      g.globalAlpha=fade*0.9;
+      g.strokeStyle=prismCol(G.time*6+(f.seed||0));g.lineWidth=1;
+      g.beginPath();g.arc(x,y,f.r,0,TAU);g.stroke();
+      g.strokeStyle='rgba(255,255,255,0.35)';
+      g.beginPath();g.arc(x,y,f.r*0.72,0,TAU);g.stroke();
+      for(let i=0;i<6;i++){
+        const a=G.time*0.9+i*TAU/6;
+        const px=Math.round(x+Math.cos(a)*f.r),py=Math.round(y+Math.sin(a)*f.r);
+        g.fillStyle=prismCol(i*2+G.time*9);
+        g.fillRect(px-1,py,3,1);g.fillRect(px,py-1,1,3);
+      }
+      g.globalAlpha=1;
+      break;}
     case 'zap':{
       const a1=W2V(f.x1,f.y1),a2=W2V(f.x2,f.y2);
-      g.strokeStyle='rgba('+(f.col?hexRgb(f.col):'176,107,255')+','+k.toFixed(3)+')';g.lineWidth=1.5;
-      g.beginPath();g.moveTo(a1[0],a1[1]);
-      g.lineTo((a1[0]+a2[0])/2+(Math.random()*8-4),(a1[1]+a2[1])/2+(Math.random()*8-4));
-      g.lineTo(a2[0],a2[1]);g.stroke();
+      // a jagged polyline, re-jittered every frame so the bolt crackles
+      const segs=f.glow?4:2,pts=[[a1[0],a1[1]]];
+      for(let i=1;i<segs;i++){
+        const t=i/segs;
+        pts.push([a1[0]+(a2[0]-a1[0])*t+(Math.random()*10-5),
+                  a1[1]+(a2[1]-a1[1])*t+(Math.random()*10-5)]);
+      }
+      pts.push([a2[0],a2[1]]);
+      const stroke=(col,w)=>{
+        g.strokeStyle=col;g.lineWidth=w;
+        g.beginPath();g.moveTo(pts[0][0],pts[0][1]);
+        for(let i=1;i<pts.length;i++)g.lineTo(pts[i][0],pts[i][1]);
+        g.stroke();
+      };
+      if(f.glow){ // prismatic bolt: coloured halo, coloured body, white core
+        stroke('rgba('+hexRgb(f.col)+','+(0.30*k).toFixed(3)+')',6);
+        stroke('rgba('+hexRgb(f.col)+','+k.toFixed(3)+')',3);
+        stroke('rgba(255,255,255,'+k.toFixed(3)+')',1);
+      }else stroke('rgba('+(f.col?hexRgb(f.col):'176,107,255')+','+k.toFixed(3)+')',1.5);
       break;}
     case 'beam':{
       const a1=W2V(f.x1,f.y1),a2=W2V(f.x2,f.y2);
@@ -7361,24 +7621,55 @@ function render(){
       const aw=p.weapons[aid];
       if(!aw)continue;
       const alv=Math.min(aw.lv,6)+(aw.evo?2:0);
-      const rad=(aid==='decay'?30:24)+alv*4;
-      ctx.strokeStyle=(aid==='decay'?'rgba(159,232,74,':'rgba(255,182,46,')+(0.22+0.1*Math.sin(G.time*5))+')';
-      ctx.lineWidth=1;
+      const rad=auraRad(aid,alv);
+      const rot=aid==='decay';
+      // a breathing double rim, not a hairline: this is a hitbox you stand in
+      ctx.strokeStyle=(rot?'rgba(159,232,74,':'rgba(255,182,46,')+(0.30+0.14*Math.sin(G.time*5))+')';
+      ctx.lineWidth=2;
       ctx.beginPath();ctx.arc(x,y,rad,0,TAU);ctx.stroke();
+      ctx.strokeStyle=(rot?'rgba(90,122,58,':'rgba(255,90,61,')+(0.22+0.1*Math.sin(G.time*5+1.6))+')';
+      ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(x,y,rad-3,0,TAU);ctx.stroke();
+      // motes riding the rim, turning one way for fire and the other for rot
+      for(let i=0;i<8;i++){
+        const a=(rot?-G.time*1.1:G.time*1.6)+i*TAU/8;
+        ctx.fillStyle=rot?(i&1?'#9fe84a':'#5a7a3a'):(i&1?'#ffd23e':'#ff5a3d');
+        ctx.fillRect(Math.round(x+Math.cos(a)*rad)-1,Math.round(y+Math.sin(a)*rad)-1,2,2);
+      }
+      // Ambient fill, emitted per FRAME (like the Knowledge Aura ring below):
+      // the cast tick is far too slow a heartbeat to keep a standing field
+      // looking occupied, and these motes are cosmetic — no damage rides them.
+      if(Math.random()<0.55&&G.particles.length<760){
+        const a=Math.random()*TAU,rr=rad*Math.sqrt(Math.random());
+        G.particles.push({x:p.x+Math.cos(a)*rr,y:p.y+Math.sin(a)*rr,
+          vx:(Math.random()*2-1)*(rot?6:14),vy:rot?-14-Math.random()*14:-24-Math.random()*18,
+          t:0.7+Math.random()*0.6,drag:1.4,size:1+(Math.random()<0.3?1:0),
+          col:rot?(Math.random()<0.5?'#9fe84a':(Math.random()<0.5?'#5a7a3a':'#c04aff'))
+                 :(Math.random()<0.3?'#fff6c8':(Math.random()<0.5?'#ff5a3d':'#ffb62e'))});
+      }
     }
     // Knowledge Aura: a big, deliberately visible blue ring of insight —
     // allies standing inside share the caster's haste
     if(p.pas.ka){
-      ctx.strokeStyle='rgba(76,194,255,'+(0.28+0.12*Math.sin(G.time*2.4))+')';
+      ctx.strokeStyle='rgba(255,255,255,'+(0.30+0.12*Math.sin(G.time*2.4))+')';
       ctx.lineWidth=1;
       ctx.beginPath();ctx.arc(x,y,KA_RADIUS,0,TAU);ctx.stroke();
       ctx.setLineDash([3,5]);
-      ctx.strokeStyle='rgba(191,233,255,0.35)';
+      ctx.strokeStyle=prismCol(G.time*4);
       ctx.beginPath();ctx.arc(x,y,KA_RADIUS-3,G.time*0.7,G.time*0.7+TAU);ctx.stroke();
       ctx.setLineDash([]);
-      if(Math.random()<0.06){
+      // eight stars drifting the rim: the haste ring should look like a ring
+      // of insight, not a debug circle
+      for(let i=0;i<8;i++){
+        const a=G.time*0.5+i*TAU/8;
+        const gx=Math.round(x+Math.cos(a)*KA_RADIUS),gy=Math.round(y+Math.sin(a)*KA_RADIUS);
+        ctx.fillStyle=prismCol(i+G.time*6);
+        ctx.fillRect(gx-2,gy,5,1);ctx.fillRect(gx,gy-2,1,5);
+        ctx.fillStyle='#fff';ctx.fillRect(gx,gy,1,1);
+      }
+      if(Math.random()<0.10){
         const a=Math.random()*TAU;
-        addSparkles(p.x+Math.cos(a)*KA_RADIUS,p.y+Math.sin(a)*KA_RADIUS,'#7fd8ff',1,16);
+        addStars(p.x+Math.cos(a)*KA_RADIUS,p.y+Math.sin(a)*KA_RADIUS,'#ffffff',1,14,true);
       }
     }
     // Mirror Friends: translucent blue ghosts of the player, mirroring the
@@ -7386,20 +7677,37 @@ function render(){
     if(p.pas.mirror){
       const spots=p.pas.mirror>=4?[[-13,-5],[13,-5]]:[[-13,-5]];
       spots.forEach((s,i)=>{
-        ctx.globalAlpha=(i?0.28:0.4)+0.08*Math.sin(G.time*3+i*2);
-        drawSpriteC(ctx,playerSprites[p.col],x+s[0],y-2+s[1]+((p.anim%1)<0.5?0:-1));
-        ctx.globalAlpha=0.22;
-        ctx.fillStyle='#4cc2ff';
-        ctx.fillRect(x+s[0]-4,y+s[1]-9,8,14);
+        const mx=x+s[0],my=y-2+s[1]+((p.anim%1)<0.5?0:-1);
+        // a chromatic split behind the ghost — the copy looks refracted out of
+        // the caster rather than pasted next to them
+        ctx.globalAlpha=0.16;
+        ctx.fillStyle=prismCol(1+G.time*6+i*2);ctx.fillRect(mx-6,my-9,8,14);
+        ctx.fillStyle=prismCol(4+G.time*6+i*2);ctx.fillRect(mx-2,my-9,8,14);
+        ctx.globalAlpha=(i?0.30:0.45)+0.09*Math.sin(G.time*3+i*2);
+        drawSpriteC(ctx,playerSprites[p.col],mx,my);
+        ctx.globalAlpha=0.20;
+        ctx.fillStyle=prismCol(G.time*7+i*3);
+        ctx.fillRect(mx-4,my-7,8,14);
         ctx.globalAlpha=1;
-        if(Math.random()<0.04)addSparkles(p.x+s[0],p.y+s[1]-4,'#7fd8ff',1,20);
+        if(Math.random()<0.09)addStars(p.x+s[0],p.y+s[1]-4,'#ffffff',1,18,true);
       });
     }
   }
   for(const b of G.bullets){
     const q=W2V(b.x,b.y);
-    ctx.fillStyle=b.col;
-    ctx.fillRect(Math.round(q[0]-b.r),Math.round(q[1]-b.r),b.r*2,b.r*2);
+    if(b.glow){
+      // spell bolts are light, not pellets: a coloured cross that bleeds past
+      // the hitbox, a white-hot core, and (illusion) a hue that walks the ramp
+      const r=b.r;
+      ctx.fillStyle=b.prism?prismCol(b.prism+G.time*15):b.col;
+      ctx.fillRect(Math.round(q[0]-r-1),Math.round(q[1]-r),r*2+2,r*2);
+      ctx.fillRect(Math.round(q[0]-r),Math.round(q[1]-r-1),r*2,r*2+2);
+      ctx.fillStyle='#ffffff';
+      ctx.fillRect(Math.round(q[0]-r+1),Math.round(q[1]-r+1),Math.max(1,r*2-2),Math.max(1,r*2-2));
+    }else{
+      ctx.fillStyle=b.col;
+      ctx.fillRect(Math.round(q[0]-b.r),Math.round(q[1]-b.r),b.r*2,b.r*2);
+    }
   }
   for(const b of G.ebullets){
     const q=W2V(b.x,b.y);
@@ -7409,8 +7717,19 @@ function render(){
   for(const f of G.fx)if(!f.ground)drawFx(f,W2V,ctx);
   for(const pt of G.particles){
     const q=W2V(pt.x,pt.y);
-    ctx.fillStyle=pt.col;
-    if(pt.spark){
+    ctx.fillStyle=pt.prism?prismCol(pt.prism+G.time*13):pt.col;
+    if(pt.star){
+      // a real twinkle: the arms breathe with the mote's life, and the eight-
+      // point stars add diagonals a frame apart so the whole field shimmers
+      const a=Math.min(3,1+Math.round(pt.t*3.2)),bx=q[0],by=q[1];
+      ctx.fillRect(bx-a,by,a*2+1,1);ctx.fillRect(bx,by-a,1,a*2+1);
+      if(pt.star>1&&(Math.floor(G.time*16+bx)&1)){
+        const d=Math.max(1,a-1);
+        ctx.fillRect(bx-d,by-d,1,1);ctx.fillRect(bx+d,by-d,1,1);
+        ctx.fillRect(bx-d,by+d,1,1);ctx.fillRect(bx+d,by+d,1,1);
+      }
+      ctx.fillStyle='#ffffff';ctx.fillRect(bx,by,1,1);
+    }else if(pt.spark){
       if(pt.t>0.15||Math.floor(pt.t*20)%2===0){
         ctx.fillRect(q[0]-1,q[1],3,1);ctx.fillRect(q[0],q[1]-1,1,3);
       }

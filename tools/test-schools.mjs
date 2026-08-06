@@ -136,18 +136,26 @@ for(const school of ['destro','illusion','necro']){
     say(g.ev('kaHaste')(ally)===0,'knowledge aura: no reach outside the ring');
   }
   // Mirror Friend: the echo casts the UN-evolved spell at reduced power.
-  // Evolved owner bolt: (12+2.6*8)=32.8. Echo: (12+2.6*6)*0.30=8.28.
+  // Evolved owner bolt: (a+b*8)=13+2.8*8=35.4. Echo: (13+2.8*6)*mirror[0].
+  // Both sides are derived from the live tables so a tuning pass can't turn
+  // this into a false failure — what's asserted is the RULE (the echo casts
+  // the un-evolved spell at the passive's share), not two frozen numbers.
   {
     me.pas.mirror=1;
     me.weapons={arcmissile:{lv:6,t:0,ang:0,evo:true}};
     const e=mk(me.x+60,me.y);e.hp=1e9;g.ev('rebuildGrid')();
     G.xp=0;G.gems.length=0;G.bullets.length=0; // no level-up pause may swallow the echo timer
     g.ev('fireSpell')(me,'arcmissile',me.weapons.arcmissile,1/60);
+    const sp=g.ev('WEAPONS').arcmissile.sp,share=g.ev('PASSIVES').mirror.vals[0];
+    const wantOwner=sp.a+sp.b*8,wantEcho=(sp.a+sp.b*6)*share;
     const direct=G.bullets.map(b=>b.dmg);
     let echo=null;
-    for(let i=0;i<40;i++){g.step(1/60);for(const b of G.bullets)if(b.dmg<10)echo=b.dmg;}
-    say(direct.length>0&&Math.abs(direct[0]-32.8)<0.01,'mirror: evolved owner bolt at 32.8 (got '+(direct[0]||0).toFixed(1)+')');
-    say(echo!==null&&Math.abs(echo-8.28)<0.6,'mirror: echo cast un-evolved at 30% (dmg '+(echo===null?'none':echo.toFixed(2))+')');
+    for(let i=0;i<40;i++){g.step(1/60);for(const b of G.bullets)if(b.dmg<wantOwner-0.5)echo=b.dmg;}
+    say(direct.length>0&&Math.abs(direct[0]-wantOwner)<0.01,
+      'mirror: evolved owner bolt at '+wantOwner.toFixed(1)+' (got '+(direct[0]||0).toFixed(1)+')');
+    say(echo!==null&&Math.abs(echo-wantEcho)<0.6,
+      'mirror: echo cast un-evolved at '+(share*100).toFixed(0)+'% = '+wantEcho.toFixed(2)+
+      ' (dmg '+(echo===null?'none':echo.toFixed(2))+')');
   }
 }
 // ---- every spell fires, ticks and draws (ultimates included) ----

@@ -131,7 +131,11 @@ for(const school of ['destro','illusion','necro']){
     g.ev('joinPlayer')(1,0);
     const ally=G.players[1];
     me.pas.ka=2;ally.x=me.x+40;ally.y=me.y;
-    say(Math.abs(g.ev('kaHaste')(ally)-0.20)<0.001,'knowledge aura: ally in the ring casts 20% faster');
+    // read the rank off the live table: a tuning pass must not read as a bug.
+    // What's asserted is that the ring REACHES the ally, not the number.
+    const kaMax=g.ev('PASSIVES').ka.vals[1];
+    say(Math.abs(g.ev('kaHaste')(ally)-kaMax)<0.001,
+      'knowledge aura: ally in the ring casts '+Math.round(kaMax*100)+'% faster');
     ally.x=me.x+500;
     say(g.ev('kaHaste')(ally)===0,'knowledge aura: no reach outside the ring');
   }

@@ -1216,7 +1216,7 @@ const SCHOOL_SPELLS={
   lavaray:{name:'LAVA RAY',col:'#ff5a3d',max:6,school:'destro',
     desc:'a molten ray that burns through the rank',
     evoName:'CORE LANCE',evoDesc:'a ray from the world’s heart',
-    sp:{a:26,b:14,c:1.8,r:0.90,h:2,hp:0.4,fx:'lance'}},
+    sp:{a:26,b:14,c:1.5,r:0.90,h:2,hp:0.4,fx:'lance'}},
   meteor:{name:'METEOR SHOWER',col:'#ff9040',max:6,school:'destro',
     desc:'stones of fire fall on the horde',
     evoName:'EXTINCTION RAIN',evoDesc:'the sky simply falls',
@@ -1233,19 +1233,24 @@ const SCHOOL_SPELLS={
   arcmissile:{name:'ARCANE MISSILE',col:'#bfe9ff',max:6,school:'illusion',
     desc:'seeking bolts of pure starlight',
     evoName:'PRISMATIC SWARM',evoDesc:'a sky full of seeking light',
-    sp:{a:13,b:2.8,c:0.72,r:0.90,h:1,hp:0.5,fx:'seek'}},
+    // homing changes what these numbers buy: the v0.1 fan routinely whiffed at
+    // range, so the raw a/b was priced against a hit rate well under 1. At a
+    // near-perfect hit rate the same numbers made it the best single-target
+    // card in the game (459 dps benched, vs INFLICT PAIN's 239 — Necromancy's
+    // dedicated boss card). Damage and bolt count are priced down to match.
+    sp:{a:13,b:2.9,c:0.72,r:0.89,h:2,hp:0.5,fx:'star'}},
   eblast:{name:'ENERGY BLAST',col:'#ffffff',max:6,school:'illusion',
     desc:'starbursts bloom across the thickest knot',
     evoName:'MANA DETONATION',evoDesc:'the burst becomes a detonation',
-    sp:{a:9,b:2.4,c:1.6,r:0.93,h:2,hp:0.6,fx:'blast'}},
+    sp:{a:11,b:2.2,c:1.5,r:0.94,h:2,hp:0.6,fx:'blast'}},
   shocking:{name:'SHOCKING CURRENT',col:'#7fd8ff',max:6,school:'illusion',
     desc:'prismatic lightning that leaps foe to foe',
     evoName:'TEMPEST COIL',evoDesc:'the current never grounds',
-    sp:{a:15,b:3.8,c:1.35,r:0.90,h:4,hp:0.5,fx:'chain'}},
+    sp:{a:17,b:4.4,c:1.05,r:0.90,h:4,hp:0.5,fx:'chain'}},
   mirage:{name:'BIZARRE MIRAGE',col:'#c9a4ff',max:6,school:'illusion',
-    desc:'dazes the horde — dazed foes take +30% from EVERYONE',
+    desc:'a dream that dazes and devours — dazed foes take +30% from EVERYONE',
     evoName:'ENDLESS MIRAGE',evoDesc:'the dream widens and lingers',
-    sp:{a:10,b:3,c:5.5,r:0.92,h:5,hp:0,fx:'mirage'}},
+    sp:{a:14,b:5.2,c:4.2,r:0.91,h:5,hp:0,fx:'mirage'}},
   assassin:{name:'PHANTASMAL ASSASSIN',col:'#e8d5ff',max:4,ult:1,school:'illusion',
     desc:'a copied foe turned on its own kind',
     evoName:'',evoDesc:'',
@@ -1254,15 +1259,15 @@ const SCHOOL_SPELLS={
   shadowb:{name:'SHADOW BULLETS',col:'#8a5cff',max:6,school:'necro',
     desc:'bolts of grave-cold shadow',
     evoName:'GRAVE VOLLEY',evoDesc:'the dead lend their fingers',
-    sp:{a:11,b:2.8,c:0.72,r:0.90,h:1,hp:0.5,fx:'seek'}},
+    sp:{a:12,b:3.2,c:0.72,r:0.90,h:1,hp:0.5,fx:'seek'}},
   decay:{name:'DECAYING PRESENCE',col:'#9fe84a',max:6,school:'necro',
     desc:'everything near you rots',
     evoName:'ENTROPIC FIELD',evoDesc:'rot becomes law',
-    sp:{a:6.2,b:3.0,c:0.54,r:0.94,h:3,hp:0.4,fx:'aura'}},
+    sp:{a:7.4,b:3.8,c:0.52,r:0.94,h:3,hp:0.4,fx:'aura'}},
   plague:{name:'PLAGUE',col:'#b6d94a',max:6,school:'necro',
     desc:'infected foes burst when they die',
     evoName:'BLACK PLAGUE',evoDesc:'one death is never the last',
-    sp:{a:22,b:8,c:2.2,r:0.90,h:4,hp:0.6,fx:'plague'}},
+    sp:{a:25,b:9,c:1.9,r:0.90,h:4,hp:0.6,fx:'plague'}},
   inflict:{name:'INFLICT PAIN',col:'#c04aff',max:6,school:'necro',
     desc:'a lance of agony for the biggest foe',
     evoName:'AGONY',evoDesc:'pain beyond language',
@@ -1270,7 +1275,7 @@ const SCHOOL_SPELLS={
   diseases:{name:'SPREAD DISEASES',col:'#6fe84a',max:6,school:'necro',
     desc:'a wasting sickness that gnaws and gnaws',
     evoName:'PANDEMIC',evoDesc:'the sickness learns to travel',
-    sp:{a:8,b:3.2,c:3.8,r:0.92,h:5,hp:0.6,fx:'disease'}},
+    sp:{a:9,b:3.8,c:2.6,r:0.92,h:5,hp:0.6,fx:'disease'}},
   souls:{name:'VACUUMING SOULS',col:'#8ef0a0',max:4,ult:1,school:'necro',
     desc:'a maw that drinks the horde and feeds the party',
     evoName:'',evoDesc:'',
@@ -1301,8 +1306,11 @@ const PASSIVES={
     desc:['a kill makes your next spell instant (every 5s)','a kill makes your next spell instant (every 3.5s)','a kill makes your next spell instant (every 2.5s)']},
   mirror:{name:'MIRROR FRIEND',school:'illusion',col:'#e8d5ff',ranks:4,vals:[0.36,0.50,0.64,0.64],
     desc:['a mirror of you casts your spells at 36% power','your mirror grows: 50% power','your mirror grows: 64% power','a second, dimmer mirror joins in']},
-  ka:{name:'KNOWLEDGE AURA',school:'illusion',col:'#ffffff',ranks:2,vals:[0.12,0.20],
-    desc:['a ring of insight: you and allies inside cast 12% faster','the ring sharpens: 20% faster']},
+  // two picks for a haste that only pays inside an 80px ring was the worst buy
+  // in the school — Illusion's mid-game kit spends five of its sixteen picks on
+  // passives, and this was two of them doing almost nothing.
+  ka:{name:'KNOWLEDGE AURA',school:'illusion',col:'#ffffff',ranks:2,vals:[0.16,0.26],
+    desc:['a ring of insight: you and allies inside cast 16% faster','the ring sharpens: 26% faster']},
   leech:{name:'LEECHED GIFT',school:'necro',col:'#8ef0a0',ranks:3,vals:[0.04,0.06,0.08],
     desc:['heal you + nearby allies for 4% of your damage','heal for 6% of damage dealt','heal for 8% of damage dealt']}
 };
@@ -1389,6 +1397,7 @@ const flameRad=w=>28+wlv(w)*5+(w.evo?12:0);
 // ---------- state ----------
 const G={
   state:'title', mode:'endless', modeSel:0, rushStart:1, time:0, shake:0,
+  pflash:0, pflashCol:null,
   players:[], enemies:[], bullets:[], ebullets:[], gems:[], pickups:[], crates:[],
   particles:[], texts:[], fx:[], timers:[],
   xp:0, level:1, kills:0,
@@ -1799,6 +1808,26 @@ function addStars(x,y,col,n,sp,prism){
 }
 // a ring of stars thrown outward from a point — the shape every illusion
 // burst opens with, so the school reads at a glance
+// a bolt's ribbon: WAKE_MAX/2 recent positions, flat [x,y,x,y,...]
+const WAKE_MAX=24;
+// A screen-level wash for the moments that deserve one — an ultimate landing,
+// the dream opening. `col` null = illusion's prismatic white; pass a hex for a
+// school-tinted pulse (destruction's warm one). Never stacks past 1: a party of
+// four casting at once must not white out the arena.
+function pflash(a,col){G.pflash=Math.min(1,Math.max(G.pflash,a));G.pflashCol=col||null;}
+// every illusion hit lands as light: a little prismatic bloom on the body it
+// touched. Cheap enough to call on EVERY damage instance, which is the point —
+// the school should read as starlight even when it is only chipping.
+function starHit(x,y,n){
+  if(G.particles.length>820)return;
+  const k=n||4;
+  for(let i=0;i<k;i++){
+    const a=Math.random()*TAU,s=30+Math.random()*70;
+    G.particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-20,
+      t:0.3+Math.random()*0.3,col:'#ffffff',size:1,drag:4.5,
+      star:1+(Math.random()<0.4?1:0),prism:1+((Math.random()*PRISM.length)|0)});
+  }
+}
 function starRing(x,y,r,n,col,prism){
   if(G.particles.length>800)return;
   for(let i=0;i<n;i++){
@@ -1860,6 +1889,20 @@ function damageEnemy(e,dmg,owner){
   if(e.hp<=0){
     e.dead=true;
     if(owner)owner.kills++;
+    // NECROMANCY takes something from every death: the soul leaves the body
+    // and drifts back to the necromancer. It is pure decoration on its own,
+    // but it is also the only visible sign LEECHED GIFT is paying out, so it
+    // fires for the whole school and brightens when the passive is held.
+    if(owner&&owner.school==='necro'&&G.particles.length<780){
+      const n=owner.pas&&owner.pas.leech?3:2;
+      for(let i=0;i<n;i++){
+        const dx=owner.x-e.x,dy=owner.y-e.y-8,dd=Math.hypot(dx,dy)||1;
+        G.particles.push({x:e.x+(Math.random()*10-5),y:e.y+(Math.random()*8-4),
+          vx:dx/dd*(50+Math.random()*40),vy:dy/dd*(50+Math.random()*40)-14,
+          t:0.7+Math.random()*0.4,drag:0.7,size:1,spark:true,
+          col:Math.random()<0.6?'#8ef0a0':'#c9a4ff'});
+      }
+    }
     // Cinder Rush: a kill hands back the spell you were waiting on — the
     // longest-cooling spell casts instantly. Does nothing on a bossless lull.
     if(owner&&owner.pas&&owner.pas.cr&&G.time>=owner.crReady&&!e.boss){
@@ -1880,9 +1923,18 @@ function damageEnemy(e,dmg,owner){
     // chain reaction is the whole point of the spell
     if(e.plagued){
       const pl=e.plagued;
-      addParticles(e.x,e.y,'#b6d94a',14,110);
-      addSparkles(e.x,e.y,'#6fe84a',6,60);
-      G.fx.push({kind:'boom',col:'#b6d94a',x:e.x,y:e.y,r:pl.r,t:0.25,dur:0.25});
+      addParticles(e.x,e.y,'#b6d94a',18,110);
+      addSparkles(e.x,e.y,'#6fe84a',8,60);
+      G.fx.push({kind:'boom',col:'#b6d94a',x:e.x,y:e.y,r:pl.r,t:0.3,dur:0.3});
+      G.fx.push({kind:'rot',ground:1,x:e.x,y:e.y,r:pl.r*0.5,t:1.8,dur:1.8});
+      // the body comes apart: pale shards thrown clear of the burst
+      for(let i=0;i<7;i++){
+        const a=Math.random()*TAU,s=60+Math.random()*70;
+        G.particles.push({x:e.x,y:e.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-40,
+          t:0.6+Math.random()*0.4,col:Math.random()<0.5?'#d8e8b0':'#8a9a6a',
+          size:2,drag:1.8});
+      }
+      G.shake=Math.max(G.shake,2);
       sfx('slag');
       queryEnemies(e.x,e.y,pl.r,o=>{
         if(o===e||o.dead)return;
@@ -2175,22 +2227,62 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
   const {dmg,crit}=spellDmg(p,id,lv,mul);
   const crText=(x,y)=>{if(crit&&!echo)addText(x,y-12,'CRIT!','#ffd23e');};
   switch(d.fx){
-    case 'seek':{ // blaster / arcane missile / shadow bullets
+    case 'seek':{ // magic missile / shadow bullets
       const tgt=nearestEnemy(ox,oy,340);
       if(!tgt)return false;
       const n=spellHits(id,lv);
       const ang=Math.atan2(tgt.y-oy,tgt.x-ox);
-      const arc=id==='arcmissile';
+      // MAGIC MISSILE stays a dumb straight fan on purpose — it is the shared
+      // baseline every school starts from, and the school starters only feel
+      // like an upgrade because this one does not steer. SHADOW BULLETS get a
+      // slow, heavy drift toward their mark: grave-cold, not eager.
+      const dark=id==='shadowb';
       for(let i=0;i<n;i++){
-        const a=ang+(i-(n-1)/2)*0.13;
-        G.bullets.push({x:ox,y:oy,vx:Math.cos(a)*(arc?260:230),vy:Math.sin(a)*(arc?260:230),
-          r:crit?3:2,dmg,life:1.6,owner:p,col,trail:true,trailCol:col,
-          sparkTrail:!arc,starTrail:arc,glow:true,prism:arc?1+((Math.random()*PRISM.length)|0):0});
+        const a=ang+(i-(n-1)/2)*(dark?0.24:0.13);
+        G.bullets.push({x:ox,y:oy,vx:Math.cos(a)*(dark?185:230),vy:Math.sin(a)*(dark?185:230),
+          r:crit?3:(dark?3:2),dmg,life:dark?2.2:1.6,owner:p,col,trail:true,trailCol:col,
+          sparkTrail:true,home:dark?3.0:0,homeR:dark?300:0,tgt:null});
       }
-      // the arcane volley leaves the hand as a spray of stars
-      if(arc)addStars(ox+Math.cos(ang)*8,oy+Math.sin(ang)*8,'#ffffff',3+n,60,true);
-      else if(id!=='blaster')addSparkles(ox,oy,col,3,50);
-      sfx(id==='blaster'?'shoot':(arc?'arcbolt':'shadowbolt'));
+      if(dark){
+        addSparkles(ox,oy,col,5,50);
+        for(let i=0;i<4;i++)G.particles.push({x:ox+(Math.random()*10-5),y:oy+(Math.random()*8-4),
+          vx:(Math.random()*2-1)*14,vy:-14-Math.random()*18,t:0.5+Math.random()*0.3,
+          col:Math.random()<0.5?'#8a5cff':'#3a2456',size:2,drag:1.6});
+      }
+      sfx(id==='blaster'?'shoot':'shadowbolt');
+      crText(ox,oy);
+      break;}
+    case 'star':{ // arcane missile: a volley of seeking stars
+      // v0.1 shipped this as a literal recolour of MAGIC MISSILE — same
+      // cooldown curve, same bolt count, same straight fan, same code path —
+      // while its own card promised "seeking bolts of pure starlight". It is
+      // now the thing on the card: the bolts leave the hand on a WIDE arc
+      // (some of them backwards) and then bank onto their mark, so the curve
+      // is the spectacle. Each one holds its target until that target dies,
+      // then re-acquires, so a volley sweeps a crowd instead of dogpiling.
+      const tgt=nearestEnemy(ox,oy,340);
+      if(!tgt)return false;
+      const n=spellHits(id,lv);
+      const ang=Math.atan2(tgt.y-oy,tgt.x-ox);
+      // the volley blooms open: bolts alternate sides and widen with the index,
+      // so the fan leaves the hand almost sideways and the bank back onto the
+      // target is the thing you watch. The first bolt is instant — a cast that
+      // shows nothing on its own frame reads as input lag.
+      const throwStar=i=>{
+        if(p.dead)return;
+        const off=(i%2?1:-1)*(0.45+0.38*Math.floor(i/2))*(1+Math.random()*0.2);
+        const a=ang+clamp(off,-1.9,1.9);
+        G.bullets.push({x:ox,y:oy,vx:Math.cos(a)*215,vy:Math.sin(a)*215,
+          r:crit?4:3,dmg,life:2.8,owner:p,col,
+          home:6.5,homeR:340,tgt:null,ghost:1,starHit:1,
+          trail:true,trailCol:col,starTrail:true,star:1,wake:[],
+          glow:true,prism:1+((Math.random()*PRISM.length)|0)});
+        addStars(ox+Math.cos(a)*8,oy+Math.sin(a)*8,'#ffffff',2,70,true);
+      };
+      throwStar(0);
+      for(let i=1;i<n;i++)after(i*0.05,()=>throwStar(i));
+      starRing(ox,oy,16,8,'#ffffff',true);
+      sfx('arcbolt');
       crText(ox,oy);
       break;}
     case 'lance':{ // lava ray: a molten line through the rank
@@ -2201,8 +2293,10 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
       const ex=ox+Math.cos(a)*len,ey=oy+Math.sin(a)*len;
       G.fx.push({kind:'lance',fat:1,x1:ox,y1:oy,x2:ex,y2:ey,col:'#ff5a3d',col2:'#ffb62e',t:0.3,dur:0.3});
       // a ray that "burns through the rank" has to be wide enough to catch a
-      // rank: the v0.1 hitbox was 9px and routinely clipped one enemy
-      const W=16;
+      // rank: the v0.1 hitbox was 9px and routinely clipped one enemy. 16 was
+      // still narrow enough that the card benched BELOW the free MAGIC MISSILE
+      // in a crowd (106 vs 152) — a school starter losing to the baseline.
+      const W=22;
       queryEnemies((ox+ex)/2,(oy+ey)/2,len/2+40,e=>{
         const dx=ex-ox,dy=ey-oy,L2=dx*dx+dy*dy||1;
         let t=((e.x-ox)*dx+(e.y-oy)*dy)/L2;t=clamp(t,0,1);
@@ -2213,15 +2307,23 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
           addSparkles(e.x,e.y-4,'#fff6c8',2,50);
         }
       });
-      // molten spatter along the whole beam, hottest at the muzzle
-      for(let i=0;i<7;i++){
-        const t=i/7,hx=ox+(ex-ox)*t,hy=oy+(ey-oy)*t;
-        G.particles.push({x:hx+(Math.random()*8-4),y:hy+(Math.random()*8-4),
-          vx:(Math.random()*2-1)*30,vy:-20-Math.random()*40,t:0.3+Math.random()*0.4,
-          col:Math.random()<0.4?'#fff6c8':(Math.random()<0.5?'#ff5a3d':'#ffb62e'),size:1});
+      // molten spatter along the whole beam, hottest at the muzzle, with the
+      // embers dragging so the ray leaves a hanging wall of heat behind it
+      for(let i=0;i<18;i++){
+        const t=i/18,hx=ox+(ex-ox)*t,hy=oy+(ey-oy)*t;
+        G.particles.push({x:hx+(Math.random()*10-5),y:hy+(Math.random()*10-5),
+          vx:(Math.random()*2-1)*40,vy:-24-Math.random()*50,t:0.4+Math.random()*0.5,
+          col:Math.random()<0.4?'#fff6c8':(Math.random()<0.5?'#ff5a3d':'#ffb62e'),
+          size:1+(Math.random()<0.3?1:0),drag:1.9});
       }
-      addParticles(ox+Math.cos(a)*14,oy+Math.sin(a)*14,'#fff6c8',8,90);
-      G.shake=Math.max(G.shake,2);
+      // smoke rising off the scar
+      for(let i=0;i<5;i++){
+        const t=Math.random(),hx=ox+(ex-ox)*t,hy=oy+(ey-oy)*t;
+        G.particles.push({x:hx,y:hy,vx:(Math.random()*2-1)*10,vy:-18-Math.random()*20,
+          t:0.7+Math.random()*0.5,col:'#4a3a30',size:2,drag:1.2});
+      }
+      addParticles(ox+Math.cos(a)*14,oy+Math.sin(a)*14,'#fff6c8',12,90);
+      G.shake=Math.max(G.shake,3);
       sfx('lavaray');crText(tgt.x,tgt.y);
       break;}
     case 'meteor':{ // meteor shower: staggered falling impacts
@@ -2234,13 +2336,23 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
         const tg=nearestEnemy(tgt.x,tgt.y,130)||tgt;
         const mx=tg.x+(Math.random()*2-1)*46,my=tg.y+(Math.random()*2-1)*46;
         G.fx.push({kind:'rmet',ground:1,own:p,x:mx,y:my,r:26+lv*2.5,dmg,t:0.5,dur:0.5,col});
-        // every stone lands with its own little shock: shake, smoke, embers
+        // every stone lands with its own little shock: shake, smoke, embers,
+        // and a scorch mark that outlives the impact so the ground remembers
         after(0.5,()=>{
-          G.shake=Math.max(G.shake,2.5);
-          addParticles(mx,my,'#ff9040',7,90);
-          for(let s=0;s<3;s++)G.particles.push({x:mx+(Math.random()*16-8),y:my+(Math.random()*10-5),
-            vx:(Math.random()*2-1)*12,vy:-22-Math.random()*20,t:0.6+Math.random()*0.4,
-            col:'#6b5a4a',size:2,drag:1.4});
+          G.shake=Math.max(G.shake,3.5);
+          G.fx.push({kind:'scorch',ground:1,x:mx,y:my,r:26+lv*2.5,seed:mx,t:1.6,dur:1.6});
+          addParticles(mx,my,'#ff9040',12,110);
+          addParticles(mx,my,'#fff6c8',5,70);
+          for(let s=0;s<8;s++){
+            const a=Math.random()*TAU;
+            G.particles.push({x:mx,y:my,vx:Math.cos(a)*(40+Math.random()*70),
+              vy:Math.sin(a)*(40+Math.random()*70)-50,t:0.5+Math.random()*0.5,
+              col:Math.random()<0.3?'#fff6c8':(Math.random()<0.5?'#ff5a3d':'#ffb62e'),
+              size:1+(Math.random()<0.4?1:0),drag:2.4});
+          }
+          for(let s=0;s<5;s++)G.particles.push({x:mx+(Math.random()*20-10),y:my+(Math.random()*12-6),
+            vx:(Math.random()*2-1)*12,vy:-22-Math.random()*24,t:0.8+Math.random()*0.5,
+            col:Math.random()<0.5?'#6b5a4a':'#3a3028',size:2,drag:1.3});
         });
       });
       crText(tgt.x,tgt.y);
@@ -2251,8 +2363,10 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
         if(dist2(ox,oy,e.x,e.y)<(rad+e.r)*(rad+e.r))damageEnemy(e,dmg,p);
       });
       // a field you stand inside has to look occupied, not outlined: fill the
-      // whole disc, not just the rim, and pay for a couple of bright motes
-      for(let i=0;i<2;i++){
+      // whole disc, not just the rim, and pay for a few bright motes. These
+      // auras cast several times a second, so the per-cast count is small and
+      // the density comes from the rate — three is already a storm.
+      for(let i=0;i<3;i++){
         const a=Math.random()*TAU;
         if(id==='decay'){ // rot wisps drift UP out of the ground
           const rr=rad*Math.sqrt(Math.random());
@@ -2271,11 +2385,15 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
       }
       // one grave-violet soul / white-hot cinder per few casts, to give the
       // field a highlight the eye can land on
-      if(Math.random()<0.35){
+      if(Math.random()<0.55){
         const a=Math.random()*TAU;
-        if(id==='decay')addSparkles(ox+Math.cos(a)*rad*0.7,oy+Math.sin(a)*rad*0.7,'#c9a4ff',1,26);
-        else addSparkles(ox+Math.cos(a)*rad*0.8,oy+Math.sin(a)*rad*0.8,'#fff6c8',1,30);
+        if(id==='decay')addSparkles(ox+Math.cos(a)*rad*0.7,oy+Math.sin(a)*rad*0.7,'#c9a4ff',2,26);
+        else addSparkles(ox+Math.cos(a)*rad*0.8,oy+Math.sin(a)*rad*0.8,'#fff6c8',2,30);
       }
+      // rot leaves a stain: a slow violet-green decal under DECAYING PRESENCE
+      if(id==='decay'&&Math.random()<0.10)
+        G.fx.push({kind:'rot',ground:1,x:ox+(Math.random()*rad-rad/2),y:oy+(Math.random()*rad-rad/2),
+          r:8+Math.random()*10,t:2.2,dur:2.2});
       break;}
     case 'blast':{ // energy blast: starbursts blooming across the crowd
       const tgt=nearestEnemy(ox,oy,300);
@@ -2286,17 +2404,24 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
       // is Illusion's answer to FLAME SIGIL.
       const R=28+lv*4,n=spellHits(id,lv);
       sfx('ablast');
+      // the blooms are joined into a constellation once the last one lands, so
+      // a big cast leaves a shape on the screen instead of n unrelated pops
+      const marks=[];
       for(let i=0;i<n;i++)after(i*0.08,()=>{
         if(p.dead)return;
         // each bloom re-picks: the burst chases the crowd instead of stacking
         const t2=i?(nearestEnemy(tgt.x,tgt.y,150)||tgt):tgt;
         const bx=t2.x+(i?(Math.random()*2-1)*26:0),by=t2.y+(i?(Math.random()*2-1)*26:0);
-        G.fx.push({kind:'sbloom',x:bx,y:by,r:R,pts:8,seed:i*1.3,t:0.34,dur:0.34});
-        starRing(bx,by,R*0.5,10,'#ffffff',true);
-        addStars(bx,by,'#ffffff',6,110,true);
+        G.fx.push({kind:'sbloom',x:bx,y:by,r:R,pts:10,seed:i*1.3,t:0.4,dur:0.4});
+        starRing(bx,by,R*0.5,12,'#ffffff',true);
+        starRing(bx,by,R*0.9,8,'#ffffff',true);
+        addStars(bx,by,'#ffffff',8,110,true);
+        marks.push(bx,by);
         queryEnemies(bx,by,R,e=>{
-          if(dist2(bx,by,e.x,e.y)<(R+e.r)*(R+e.r))damageEnemy(e,dmg,p);
+          if(dist2(bx,by,e.x,e.y)<(R+e.r)*(R+e.r)){damageEnemy(e,dmg,p);starHit(e.x,e.y,3);}
         });
+        if(marks.length>=4&&i===n-1)
+          G.fx.push({kind:'constel',line:marks.slice(),x:bx,y:by,t:0.45,dur:0.45});
       });
       crText(tgt.x,tgt.y);
       break;}
@@ -2304,13 +2429,16 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
       const first=nearestEnemy(ox,oy,220);
       if(!first)return false;
       let cur=first,px=ox,py=oy;
-      const hitSet=new Set(),jumps=spellHits(id,lv),jr=145;
+      const hitSet=new Set(),jumps=spellHits(id,lv),jr=160;
+      const link=[ox,oy];
       for(let i=0;i<jumps&&cur;i++){
         // white-hot core under a coloured arc, each link a step further round
         // the ramp — the current visibly refracts as it travels
-        G.fx.push({kind:'zap',col:prismCol(i+2),glow:1,x1:px,y1:py,x2:cur.x,y2:cur.y,t:0.16,dur:0.16});
-        addStars(cur.x,cur.y,'#ffffff',3,55,true);
+        G.fx.push({kind:'zap',col:prismCol(i+2),glow:1,x1:px,y1:py,x2:cur.x,y2:cur.y,t:0.22,dur:0.22});
+        addStars(cur.x,cur.y,'#ffffff',5,55,true);
+        starHit(cur.x,cur.y,4);
         damageEnemy(cur,dmg,p);
+        link.push(cur.x,cur.y);
         hitSet.add(cur);px=cur.x;py=cur.y;
         let next=null,bd=jr*jr;
         queryEnemies(px,py,jr,e=>{
@@ -2320,18 +2448,32 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
         });
         cur=next;
       }
+      // the path the current took, held on screen for a beat as a constellation
+      if(link.length>=6)G.fx.push({kind:'constel',line:link,x:px,y:py,t:0.45,dur:0.45});
       sfx('zap');crText(first.x,first.y);
       break;}
-    case 'mirage':{ // bizarre mirage: pale-blue daze, tiny damage — the stun is the payload
+    case 'mirage':{ // bizarre mirage: a dream that dazes AND devours
+      // v0.1 was a pure control card: it set stunT, opened the +30% window
+      // (damageEnemy: `if(e.stunT>0)dmg*=1.3`) and dealt almost nothing itself.
+      // It benched at 22/59/8 dps — a whole card in a four-card school
+      // contributing a rounding error, which is what "the school feels weak"
+      // meant. The daze and the window are still the identity; the dream now
+      // LINGERS on the ground, ticking for as long as the daze it bought and
+      // re-dazing anything that wanders into it.
       const tgt=nearestEnemy(ox,oy,300);
       if(!tgt)return false;
       const R=44+lv*4,stunDur=lv>6?2.0:1.5;
-      // the dream opens as a wide prismatic bloom and then stays on the ground
+      // the dream opens as a wide prismatic dome and then stays on the ground
       // for as long as the daze lasts, so you can see the window you bought
-      G.fx.push({kind:'sbloom',x:tgt.x,y:tgt.y,r:R,pts:12,t:0.5,dur:0.5});
+      G.fx.push({kind:'sbloom',x:tgt.x,y:tgt.y,r:R*1.25,pts:16,t:0.55,dur:0.55});
+      G.fx.push({kind:'sbloom',x:tgt.x,y:tgt.y,r:R*0.6,pts:10,seed:2.1,t:0.4,dur:0.4});
       G.fx.push({kind:'sring',x:tgt.x,y:tgt.y,r:R,ground:1,seed:1.7,t:stunDur,dur:stunDur});
-      starRing(tgt.x,tgt.y,R*0.6,16,'#ffffff',true);
-      addStars(tgt.x,tgt.y,'#ffffff',14,120,true);
+      G.fx.push({kind:'mzone',ground:1,own:p,x:tgt.x,y:tgt.y,r:R,dps:dmg,
+        stun:stunDur,tick:0,t:stunDur,dur:stunDur,col});
+      starRing(tgt.x,tgt.y,R*0.6,20,'#ffffff',true);
+      starRing(tgt.x,tgt.y,R*0.95,14,'#ffffff',true);
+      addStars(tgt.x,tgt.y,'#ffffff',18,130,true);
+      pflash(0.32);
       let n=0;
       queryEnemies(tgt.x,tgt.y,R,e=>{
         if(dist2(tgt.x,tgt.y,e.x,e.y)>=(R+e.r)*(R+e.r))return;
@@ -2340,7 +2482,7 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
         // bosses only stagger — their scripts must not desync — but the
         // vulnerability window still opens for everyone
         e.stunT=Math.max(e.stunT||0,e.boss?0.4:stunDur);n++;
-        addStars(e.x,e.y-e.r,'#ffffff',4,45,true);
+        starHit(e.x,e.y-e.r,5);
       });
       if(n&&!echo)addText(tgt.x,tgt.y-14,'DAZED!',prismCol(G.time*8));
       sfx('mirage');
@@ -2351,10 +2493,15 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
       G.fx.push({kind:'phantom',own:p,x:ox,y:oy,r:22,dmg,spd:150,tick:0,
         t:4,dur:4,col,spr:tgt.spr,scale:tgt.scale||1});
       // it arrives the way a copy should: a bloom of light that resolves into
-      // something that was already standing there
-      G.fx.push({kind:'sbloom',x:ox,y:oy,r:42,pts:10,t:0.4,dur:0.4});
-      starRing(ox,oy,26,14,'#ffffff',true);
-      addStars(ox,oy,'#ffffff',12,90,true);
+      // something that was already standing there. An ultimate earns the beat
+      // of slow-motion and the screen-level wash.
+      G.fx.push({kind:'sbloom',x:ox,y:oy,r:62,pts:14,t:0.5,dur:0.5});
+      G.fx.push({kind:'sbloom',x:ox,y:oy,r:34,pts:8,seed:2.4,t:0.36,dur:0.36});
+      starRing(ox,oy,20,12,'#ffffff',true);
+      starRing(ox,oy,34,16,'#ffffff',true);
+      starRing(ox,oy,50,20,'#ffffff',true);
+      addStars(ox,oy,'#ffffff',22,120,true);
+      if(!echo){pflash(0.55);setSlow(0.12);}
       sfx('phantomup');
       if(!echo)addText(ox,oy-16,'ASSASSIN!',prismCol(G.time*8));
       break;}
@@ -2387,18 +2534,24 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
       sfx('plaguecast');
       break;}
     case 'disease':{ // spread diseases: a wasting DoT on the nearest few
+      // v0.1 refused to infect bosses at all, which is most of why Necromancy
+      // benched dead last in the single-target column (203 dps at 22 picks).
+      // A wasting sickness that can't touch the biggest body in the room is
+      // not a Necromancy card. Bosses catch it at half strength — enough to
+      // matter, not enough to make a DoT the answer to every encounter.
       const marks=[];
-      queryEnemies(ox,oy,260,e=>{if(!e.dead&&!e.boss)marks.push(e);});
+      queryEnemies(ox,oy,260,e=>{if(!e.dead&&e.vulnMul!==0)marks.push(e);});
       if(!marks.length)return false;
       marks.sort((a,b)=>dist2(ox,oy,a.x,a.y)-dist2(ox,oy,b.x,b.y));
       const n=Math.min(spellHits(id,lv),marks.length);
       for(let i=0;i<n;i++){
         const e=marks[i];
+        const d=e.boss?dmg*0.5:dmg;
         e.disT=4;
         // "gnaws and gnaws": re-infecting used to Math.max the tick, so a
         // second cast on the same body was worth nothing. Sickness compounds
         // now — capped at 2x so it can't run away with a boss add pack.
-        e.disDps=Math.min((e.disDps||0)+dmg,dmg*2);
+        e.disDps=Math.min((e.disDps||0)+d,d*2);
         e.disOwner=p;
         addSparkles(e.x,e.y-e.r,'#6fe84a',4,40);
         G.particles.push({x:e.x,y:e.y,vx:0,vy:-18,t:0.6,col:'#5a7a3a',size:2});
@@ -2421,6 +2574,7 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
           t:0.7+Math.random()*0.5,col:Math.random()<0.5?'#ff3c1e':'#ffb62e',size:2,drag:1.6});
       }
       G.shake=Math.max(G.shake,6);
+      if(!echo){pflash(0.6,'#ff5a3d');setSlow(0.1);}
       sfx('evocation');
       if(!echo)addText(ox,oy-16,'THE GROUND MELTS','#ff5a3d');
       break;}
@@ -2430,7 +2584,9 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
       G.fx.push({kind:'soulvoid',ground:1,own:p,x:tgt.x,y:tgt.y,r:86,dps:dmg,
         pull:120,healed:0,tick:0,t:3.5,dur:3.5,col:'#8ef0a0',burst:dmg*1.1});
       addParticles(tgt.x,tgt.y,'#8ef0a0',18,110);
+      addSparkles(tgt.x,tgt.y,'#c9a4ff',14,90);
       G.shake=Math.max(G.shake,3);
+      if(!echo){pflash(0.5,'#8ef0a0');setSlow(0.1);}
       sfx('souls');
       if(!echo)addText(tgt.x,tgt.y-16,'THE MAW OPENS','#8ef0a0');
       break;}
@@ -3165,6 +3321,28 @@ function tickBossFx(dt,alive){
         }
         break;
       // ---- school spell hazards ----
+      case 'mzone':{ // bizarre mirage: the dream lingers, gnawing and re-dazing
+        f.t-=dt;f.tick-=dt;
+        if(f.tick<=0){
+          f.tick=0.3;
+          queryEnemies(f.x,f.y,f.r,e=>{
+            if(e.dead||e.vulnMul===0)return;
+            if(dist2(f.x,f.y,e.x,e.y)>=(f.r+e.r)*(f.r+e.r))return;
+            damageEnemy(e,f.dps*0.3,f.own);
+            // anything that walks into the dream is caught by it too; bosses
+            // keep the 0.4s stagger cap so their scripts can't desync
+            if(!e.dead)e.stunT=Math.max(e.stunT||0,e.boss?0.4:Math.min(f.stun,f.t));
+            if(!e.dead&&Math.random()<0.5)starHit(e.x,e.y-e.r,2);
+          });
+        }
+        if(Math.random()<dt*22){
+          const a=Math.random()*TAU,rr=f.r*Math.sqrt(Math.random());
+          G.particles.push({x:f.x+Math.cos(a)*rr,y:f.y+Math.sin(a)*rr,
+            vx:(Math.random()*2-1)*8,vy:-12-Math.random()*14,t:0.5+Math.random()*0.4,
+            col:'#ffffff',size:1,drag:1.8,star:1+(Math.random()<0.4?1:0),
+            prism:1+((Math.random()*PRISM.length)|0)});
+        }
+        break;}
       case 'strail':{ // infernal evocation: burning ground trails the caster
         f.t-=dt;f.gap-=dt;
         const o=f.own;
@@ -6569,6 +6747,7 @@ function update(dt){
   if(G.flashT>0)G.flashT-=dt;
   if(G.subFlashT>0)G.subFlashT-=dt;
   if(G.shake>0)G.shake=Math.max(0,G.shake-dt*14);
+  if(G.pflash>0)G.pflash=Math.max(0,G.pflash-dt*2.6);
 
   for(let i=G.timers.length-1;i>=0;i--){
     const t=G.timers[i];
@@ -6806,8 +6985,30 @@ function update(dt){
 
   // ---- player bullets ----
   for(const b of G.bullets){
+    // ---- homing ----
+    // b.home is a turn rate in rad/s, not a snap: a seeker banks toward its
+    // mark at a fixed angular speed, so a bolt launched sideways visibly
+    // curves back and a bolt that overshoots loops around for another pass.
+    // The target is cached and only re-acquired when it dies or goes
+    // untargetable (shielded/airborne/burrowed => vulnMul 0) — re-picking the
+    // nearest every frame makes a volley snap between bodies and look cheap.
+    if(b.home){
+      if(!b.tgt||b.tgt.dead||b.tgt.vulnMul===0)b.tgt=nearestEnemy(b.x,b.y,b.homeR||320);
+      if(b.tgt){
+        const cur=Math.atan2(b.vy,b.vx),sp=Math.hypot(b.vx,b.vy);
+        let d=Math.atan2(b.tgt.y-b.y,b.tgt.x-b.x)-cur;
+        d=Math.atan2(Math.sin(d),Math.cos(d)); // shortest way round
+        const a=cur+clamp(d,-b.home*dt,b.home*dt);
+        b.vx=Math.cos(a)*sp;b.vy=Math.sin(a)*sp;
+      }
+    }
     b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
-    if(b.trail&&Math.random()<0.6&&G.particles.length<850){
+    // a ribbon of recent positions, drawn as a tapering prismatic streak
+    if(b.wake){
+      b.wake.push(b.x,b.y);
+      if(b.wake.length>WAKE_MAX)b.wake.splice(0,b.wake.length-WAKE_MAX);
+    }
+    if(b.trail&&Math.random()<(b.starTrail?0.9:0.6)&&G.particles.length<850){
       if(b.starTrail) // arcane bolts shed a wake of little prismatic stars
         G.particles.push({x:b.x+(Math.random()*4-2),y:b.y+(Math.random()*4-2),
           vx:-b.vx*0.08,vy:-b.vy*0.08-8,t:0.3+Math.random()*0.25,col:b.trailCol,
@@ -6815,7 +7016,9 @@ function update(dt){
       else G.particles.push({x:b.x,y:b.y,vx:0,vy:0,t:0.2,col:b.trailCol||'#b3a184',size:1,spark:b.sparkTrail});
     }
     if(b.life<=0){if(b.rocket)explode(b.x,b.y,b.aoe,b.dmg,b.owner);b.dead=true;continue;}
-    if(solidAt(b.x,b.y)){
+    // ghost bolts pass through rock: a seeker that banks into a pillar mid-turn
+    // and dies there reads as broken, not as terrain mattering
+    if(!b.ghost&&solidAt(b.x,b.y)){
       if(b.rocket)explode(b.x,b.y,b.aoe,b.dmg,b.owner);
       else addParticles(b.x,b.y,'#8b929c',3,40);
       b.dead=true;continue;
@@ -6842,6 +7045,7 @@ function update(dt){
       if(b.plague&&!hit.boss)hit.plagued=b.plague;
       if(b.rocket)explode(b.x,b.y,b.aoe,b.dmg,b.owner);
       else damageEnemy(hit,b.dmg,b.owner);
+      if(b.starHit){starHit(b.x,b.y,6);starRing(b.x,b.y,10,6,'#ffffff',true);}
       b.dead=true;
     }
   }
@@ -7437,6 +7641,60 @@ function drawFx(f,W2V,g){
       }
       g.globalAlpha=1;
       break;}
+    case 'rot':{
+      // NECROMANCY's residue: a patch of ground going sour under the aura
+      g.globalAlpha=k*0.32;
+      g.fillStyle=(Math.floor(f.x+f.y)&1)?'#5a7a3a':'#3a2456';
+      g.beginPath();g.arc(x,y,f.r*(0.5+0.5*(1-k)),0,TAU);g.fill();
+      g.globalAlpha=1;
+      break;}
+    case 'scorch':{
+      // DESTRUCTION's residue: a dark blast mark that cools from ember-orange
+      // to soot, so a meteor barrage visibly chews up the ground it lands on
+      const e=1-k;
+      g.globalAlpha=k*0.55;
+      g.fillStyle=e<0.35?'#5a3320':'#2a2018';
+      g.beginPath();g.arc(x,y,f.r*0.8,0,TAU);g.fill();
+      if(e<0.5){
+        g.strokeStyle='rgba('+hexRgb(e<0.25?'#ffb62e':'#ff5a3d')+','+(0.6*(1-e*2)).toFixed(3)+')';
+        g.lineWidth=1;g.beginPath();g.arc(x,y,f.r*0.8,0,TAU);g.stroke();
+      }
+      g.globalAlpha=1;
+      break;}
+    case 'constel':{
+      // ILLUSION's signature on any multi-hit cast: the points it touched are
+      // joined into a constellation that hangs for a beat and fades. `pts` is
+      // a flat [x,y,x,y,...] of world coords, so it survives the enemies that
+      // made it dying on the same frame. Named `line`, not `pts` — sbloom
+      // already uses `pts` for a point COUNT and the two must not collide in
+      // the net encoder.
+      const P=f.line;
+      g.lineWidth=1;
+      for(let i=2;i<P.length;i+=2){
+        const a=W2V(P[i-2],P[i-1]),b2=W2V(P[i],P[i+1]);
+        g.strokeStyle='rgba('+hexRgb(prismCol(i+G.time*9))+','+(0.7*k).toFixed(3)+')';
+        g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b2[0],b2[1]);g.stroke();
+      }
+      for(let i=0;i<P.length;i+=2){
+        const a=W2V(P[i],P[i+1]),s=Math.max(1,Math.round(1+k*2));
+        g.fillStyle='rgba(255,255,255,'+k.toFixed(3)+')';
+        g.fillRect(a[0]-s,a[1],s*2+1,1);g.fillRect(a[0],a[1]-s,1,s*2+1);
+      }
+      break;}
+    case 'mzone':{
+      // the floor of the dream: a soft white haze under the sring hoop, with a
+      // slow prismatic shimmer crawling across it so the ground looks unreal
+      const fade=f.t<0.5?f.t/0.5:1;
+      g.globalAlpha=fade;
+      g.fillStyle='rgba(255,255,255,0.10)';
+      g.beginPath();g.arc(x,y,f.r,0,TAU);g.fill();
+      for(let i=0;i<3;i++){
+        const rr=f.r*(0.35+0.3*i)+Math.sin(G.time*1.8+i*2.1)*3;
+        g.strokeStyle='rgba('+hexRgb(prismCol(i*3+G.time*5))+',0.30)';g.lineWidth=1;
+        g.beginPath();g.arc(x,y,rr,0,TAU);g.stroke();
+      }
+      g.globalAlpha=1;
+      break;}
     case 'zap':{
       const a1=W2V(f.x1,f.y1),a2=W2V(f.x2,f.y2);
       // a jagged polyline, re-jittered every frame so the bolt crackles
@@ -7693,9 +7951,48 @@ function render(){
       });
     }
   }
+  // ribbons first, so every bolt draws on top of every tail
+  for(const b of G.bullets){
+    const w=b.wake;
+    if(!w||w.length<4)continue;
+    // a tapering prismatic streak: three passes, widest and faintest first,
+    // the same halo/body/core idiom the `zap` glow uses (there is no additive
+    // blending in this renderer, so overlap is what sells brightness)
+    const n=w.length/2;
+    for(let pass=0;pass<3;pass++){
+      ctx.lineWidth=[3,2,1][pass];
+      ctx.lineCap='round';
+      for(let i=1;i<n;i++){
+        const f=i/n; // 0 at the oldest sample, 1 at the bolt
+        const a=f*f*[0.22,0.45,0.85][pass];
+        if(a<0.02)continue;
+        ctx.strokeStyle=pass===2?'rgba(255,255,255,'+a.toFixed(3)+')'
+          :'rgba('+hexRgb(b.prism?prismCol(b.prism+i*0.7+G.time*11):(b.trailCol||b.col))+','+a.toFixed(3)+')';
+        const p0=W2V(w[(i-1)*2],w[(i-1)*2+1]),p1=W2V(w[i*2],w[i*2+1]);
+        ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke();
+      }
+    }
+    ctx.lineWidth=1;
+  }
   for(const b of G.bullets){
     const q=W2V(b.x,b.y);
-    if(b.glow){
+    if(b.star){
+      // a seeking star, not a pellet: long prismatic arms that breathe, a
+      // faint halo ring, diagonals a frame apart so the whole volley shimmers
+      const r=b.r,arm=r*2+2,col=prismCol((b.prism||1)+G.time*15);
+      ctx.strokeStyle='rgba('+hexRgb(col)+',0.30)';
+      ctx.beginPath();ctx.arc(q[0],q[1],r+2,0,TAU);ctx.stroke();
+      ctx.fillStyle=col;
+      ctx.fillRect(q[0]-arm,q[1],arm*2+1,1);
+      ctx.fillRect(q[0],q[1]-arm,1,arm*2+1);
+      const d=Math.max(1,r-1);
+      if(Math.floor(G.time*14+q[0])&1){
+        ctx.fillRect(q[0]-d,q[1]-d,1,1);ctx.fillRect(q[0]+d,q[1]-d,1,1);
+        ctx.fillRect(q[0]-d,q[1]+d,1,1);ctx.fillRect(q[0]+d,q[1]+d,1,1);
+      }
+      ctx.fillStyle='#ffffff';
+      ctx.fillRect(q[0]-1,q[1]-1,3,3);
+    }else if(b.glow){
       // spell bolts are light, not pellets: a coloured cross that bleeds past
       // the hitbox, a white-hot core, and (illusion) a hue that walks the ramp
       const r=b.r;
@@ -7753,6 +8050,7 @@ function render(){
   // onto the screen canvas at native resolution — text rendered into the
   // low-res buffer and upscaled is unreadable.
   uiBegin(w,h);
+  renderPrismFlash(w,h);
   renderWeMood(w,h);
   for(const p of G.players){
     if(!p.dead)continue;
@@ -7797,6 +8095,28 @@ function uiEnd(){
 
 
 // ---------- HUD ----------
+// The prismatic wash: the screen-level punctuation for spells that deserve one.
+// A white bloom over the whole frame plus a few wide prismatic bands sweeping
+// across it — the pixel-art stand-in for a bloom pass, since this renderer has
+// no additive blending and no shaders. Kept under 22% alpha at full strength so
+// it reads as light, never as a whiteout you have to play through.
+function renderPrismFlash(vw,vh){
+  if(G.pflash<=0.01)return;
+  const ctx=sctx,a=G.pflash*G.pflash;
+  if(G.pflashCol){
+    ctx.fillStyle='rgba('+hexRgb(G.pflashCol)+','+(0.20*a).toFixed(3)+')';
+    ctx.fillRect(0,0,vw,vh);
+    return;
+  }
+  ctx.fillStyle='rgba(255,255,255,'+(0.16*a).toFixed(3)+')';
+  ctx.fillRect(0,0,vw,vh);
+  const band=Math.max(3,vh/7);
+  for(let i=0;i<6;i++){
+    const y=((G.time*40+i*band*1.7)%(vh+band*2))-band;
+    ctx.fillStyle='rgba('+hexRgb(prismCol(i+G.time*4))+','+(0.07*a).toFixed(3)+')';
+    ctx.fillRect(0,y,vw,band);
+  }
+}
 // Worldeater atmosphere: a closing dark vignette for the whole fight, a
 // letterboxed reveal during the intro, and a red pulse once the enrage clock
 // is running. Drawn under the HUD so the readable UI stays clean.

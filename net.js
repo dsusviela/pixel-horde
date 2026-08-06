@@ -157,7 +157,9 @@ function encEnemy(e){
 var FX_SCALARS=['x','y','r','t','dur','w','gapA','gaps','gapW','spd','dir',
   'x1','y1','x2','y2','heal','locked','fizzled','active',
   // the BOSS RUSH mechanic and relic fx (sweep/line/cone/pole/orbit/beam/defile)
-  'a','ang','len','half','n','rad','sign','rmax','r0','r1'];
+  'a','ang','len','half','n','rad','sign','rmax','r0','r1',
+  // school spell fx: sbloom/sring point count and phase offset
+  'pts','seed'];
 function encFx(f){
   var o={kind:f.kind};
   if(f.ground)o.ground=1;
@@ -170,6 +172,8 @@ function encFx(f){
     else if(tv==='string')o[k]=v;
   }
   if(f.col)o.col=f.col;
+  // the constellation an illusion cast leaves behind: a flat [x,y,...] path
+  if(f.line&&f.line.length)o.line=f.line.map(r1);
   if(f.shape)o.shape=f.shape;
   if(f.mode)o.mode=f.mode;
   if(f.icon){var ik=SPRREV.get(f.icon);if(ik)o.icon=ik;}
@@ -210,14 +214,18 @@ function encodeSnapshot(){
     creep:G.creep?Array.from(G.creep):null,
     players:G.players.map(encPlayer),
     enemies:G.enemies.filter(function(e){return !e.dead;}).map(encEnemy),
-    // glow/prism ride along: they are what makes a school bolt look like a
+    // glow/prism/star ride along: they are what makes a school bolt look like a
     // spell instead of a pellet, and a guest seeing flat squares while the
     // host sees starlight is the same run rendered as two different games.
-    // Both are omitted unless set, so OG weapon fire costs nothing extra.
+    // All are omitted unless set, so OG weapon fire costs nothing extra.
+    // `wake` is deliberately NOT sent — a 12-point ribbon per bolt would
+    // dominate the snapshot; guests rebuild their own from the bolt's motion.
     bullets:G.bullets.filter(function(b){return !b.dead;}).map(function(b){
       var o={x:r1(b.x),y:r1(b.y),vx:r1(b.vx||0),vy:r1(b.vy||0),r:b.r,col:b.col};
       if(b.glow)o.glow=1;
       if(b.prism)o.prism=b.prism;
+      if(b.star)o.star=b.star;
+      if(b.trail){o.trail=1;if(b.trailCol)o.trailCol=b.trailCol;if(b.starTrail)o.starTrail=1;}
       return o;}),
     ebullets:G.ebullets.filter(function(b){return !b.dead;}).map(function(b){
       return {x:r1(b.x),y:r1(b.y),vx:r1(b.vx||0),vy:r1(b.vy||0),r:b.r,col:b.col};}),
@@ -410,10 +418,14 @@ function guestTick(dt){
   if(G.flashT>0)G.flashT-=dt;
   if(G.subFlashT>0)G.subFlashT-=dt;
   if(G.shake>0)G.shake=Math.max(0,G.shake-dt*14);
+  if(G.pflash>0)G.pflash=Math.max(0,G.pflash-dt*2.6);
   var i;
   for(i=0;i<G.particles.length;i++){
     var pt=G.particles[i];
     pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.t-=dt;
+    // same drag the host applies: stars must coast to a stop and hang, or the
+    // guest's version of every illusion burst flies off screen instead
+    if(pt.drag){var df=Math.max(0,1-pt.drag*dt);pt.vx*=df;pt.vy*=df;}
   }
   G.particles=G.particles.filter(function(p){return p.t>0;});
   for(i=0;i<G.texts.length;i++){G.texts[i].y+=G.texts[i].vy*dt;G.texts[i].t-=dt;}
@@ -424,7 +436,26 @@ function guestTick(dt){
     if(f.kind==='ring'&&f.spd)f.r=Math.max(0,f.r+(f.dir||1)*f.spd*dt);
   }
   G.fx=G.fx.filter(function(f){return f.t>-0.5;});
-  for(i=0;i<G.bullets.length;i++){G.bullets[i].x+=(G.bullets[i].vx||0)*dt;G.bullets[i].y+=(G.bullets[i].vy||0)*dt;}
+  // Bullets: integrate, then rebuild the cosmetics the host never sends. The
+  // ribbon and the star wake are pure functions of the bolt's own motion, so
+  // the guest can grow them locally for free rather than paying snapshot bytes
+  // for a 12-point path per bolt. Homing is invisible here on purpose: the
+  // host re-sends corrected vx/vy every snapshot, so the curve replays itself.
+  for(i=0;i<G.bullets.length;i++){
+    var b=G.bullets[i];
+    b.x+=(b.vx||0)*dt;b.y+=(b.vy||0)*dt;
+    if(b.star){
+      if(!b.wake)b.wake=[];
+      b.wake.push(b.x,b.y);
+      if(b.wake.length>24)b.wake.splice(0,b.wake.length-24);
+    }
+    if(b.trail&&Math.random()<(b.starTrail?0.9:0.6)&&G.particles.length<850){
+      if(b.starTrail)G.particles.push({x:b.x+(Math.random()*4-2),y:b.y+(Math.random()*4-2),
+        vx:-(b.vx||0)*0.08,vy:-(b.vy||0)*0.08-8,t:0.3+Math.random()*0.25,
+        col:b.trailCol||b.col,size:1,star:1,drag:3,prism:b.prism||0});
+      else G.particles.push({x:b.x,y:b.y,vx:0,vy:0,t:0.2,col:b.trailCol||b.col,size:1,spark:1});
+    }
+  }
   for(i=0;i<G.ebullets.length;i++){G.ebullets[i].x+=(G.ebullets[i].vx||0)*dt;G.ebullets[i].y+=(G.ebullets[i].vy||0)*dt;}
   for(i=0;i<G.gems.length;i++)G.gems[i].t+=dt;
   for(i=0;i<G.pickups.length;i++)G.pickups[i].t+=dt;

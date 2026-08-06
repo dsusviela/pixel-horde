@@ -1956,12 +1956,16 @@ function addDmg(base){
   const n=Math.max(1,G.players.length);
   return (base/100)*(G.players.reduce((s,p)=>s+p.maxhp,0)/n);
 }
+// one lever for how hard bosses hit, applied at every consumption point
+// (mechanics, touch, bullets) so nothing double-scales. Owner call
+// 2026-08-05: a slight bump, not a lot.
+const BOSS_DMG_MUL=1.1;
 // scripted boss mechanics: damage as a fraction of maxhp, ignores the 0.5s hurt throttle
 function bossHit(p,pct){
   // pct 0 telegraphs (armSlam/armLeap let the boss resolve the hit itself)
   // must not fire the hurt flash/sfx as a phantom hit
   if(pct<=0||p.dead||p.invuln>0)return;
-  p.hp-=p.maxhp*pct;p.flash=0.15;sfx('hurt');
+  p.hp-=p.maxhp*pct*BOSS_DMG_MUL;p.flash=0.15;sfx('hurt');
   G.shake=Math.max(G.shake,2);
   if(p.hp<=0)killPlayer(p);
 }
@@ -6443,7 +6447,7 @@ function update(dt){
         // hugging a boss floors at 12% maxhp per tick for the same reason as
         // the bullet floor: flat touch dmg can't keep up with charm-fed hp
         else if(!e.noTouch&&!(e.boss&&e.def&&e.def===WORLDEATER&&e.phase===4))
-          hurtPlayer(p,e.boss?Math.max(e.dmg,p.maxhp*0.12):e.dmg);
+          hurtPlayer(p,e.boss?Math.max(e.dmg,p.maxhp*0.12)*BOSS_DMG_MUL:e.dmg);
       }
     });
   }
@@ -6554,7 +6558,7 @@ function update(dt){
         if(ai.t<=0){ai.mode='charge';ai.t=1.0;const an=Math.atan2(ai.ty-e.y,ai.tx-e.x);ai.cvx=Math.cos(an);ai.cvy=Math.sin(an);}
       }else if(ai.mode==='charge'){
         vx=ai.cvx;vy=ai.cvy;sp=170;
-        if(ai.t<=0){ai.mode='walk';ai.t=4;explode(e.x,e.y,70,0,undefined,e.dmg*1.2);}
+        if(ai.t<=0){ai.mode='walk';ai.t=4;explode(e.x,e.y,70,0,undefined,e.dmg*1.2*BOSS_DMG_MUL);}
       }
       if(ai.sumT<=0){ai.sumT=8;for(let i=0;i<4;i++)spawnEnemy('swarm',e.x+(Math.random()*40-20),e.y+(Math.random()*40-20));}
     }
@@ -6574,7 +6578,7 @@ function update(dt){
         e.shootT=2.6;
         for(let i=0;i<12;i++){
           const an=i*TAU/12+G.time;
-          G.ebullets.push({x:e.x,y:e.y,vx:Math.cos(an)*95,vy:Math.sin(an)*95,r:2.5,dmg:e.dmg*0.7,life:3,col:'#e77bd0'});
+          G.ebullets.push({x:e.x,y:e.y,vx:Math.cos(an)*95,vy:Math.sin(an)*95,r:2.5,dmg:e.dmg*0.7*BOSS_DMG_MUL,life:3,col:'#e77bd0'});
         }
         sfx('spread');
       }
@@ -6664,7 +6668,7 @@ function update(dt){
       const rr=p.r+b.r;
       // boss bullets floor at 6% maxhp: flat dmg goes stale once charm-stacked
       // hp pools grow, and regen out-heals it into an AFK-able fight
-      if(dist2(b.x,b.y,p.x,p.y)<rr*rr){hurtPlayer(p,b.boss?Math.max(b.dmg,p.maxhp*0.06):b.dmg);b.dead=true;break;}
+      if(dist2(b.x,b.y,p.x,p.y)<rr*rr){hurtPlayer(p,b.boss?Math.max(b.dmg,p.maxhp*0.06)*BOSS_DMG_MUL:b.dmg);b.dead=true;break;}
     }
   }
 

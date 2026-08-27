@@ -16,7 +16,21 @@ import {boot} from './headless.mjs';
 
 const SECONDS=30, DT=1/60;
 
-function bench(kit,{n=12,ring=44,hp=4e6,seed=7}={}){
+// layout: where the dummies stand relative to the player.
+//   'ring'   — n bodies evenly around the player at radius `ring`
+//   'column' — n bodies receding in a straight line from the player
+// The ring is the crowd, but it has ZERO DEPTH: every body sits at the same
+// distance, so a beam's LENGTH is worth nothing there and only its width
+// scores. That flatters wide/aura shapes and reads long, narrow ones (LAVA
+// RAY, CONSTANT FLAME's jet) as broken when they are merely pointed. The
+// column is the same crowd seen the way you actually meet it — a lane of
+// bodies coming at you — and is where reach is supposed to pay.
+function layoutPos(p,i,n,{layout,ring,gap,face}){
+  if(layout==='column')return [p.x+Math.cos(face)*(24+i*gap),p.y+Math.sin(face)*(24+i*gap)];
+  const a=i*Math.PI*2/n;
+  return [p.x+Math.cos(a)*ring,p.y+Math.sin(a)*ring];
+}
+function bench(kit,{n=12,ring=44,hp=4e6,seed=7,layout='ring',gap=26}={}){
   const g=boot(seed);
   g.addPad();g.G.state='title';g.ev('joinPlayer')(0,0);g.ev('startRun')('classic');
   for(let i=0;i<6;i++)g.step(DT);
@@ -26,11 +40,15 @@ function bench(kit,{n=12,ring=44,hp=4e6,seed=7}={}){
   for(const [id,lv] of Object.entries(kit.w))p.weapons[id]={lv:Math.abs(lv),t:0,ang:0,evo:lv<0};
   for(const [id,r] of Object.entries(kit.pas||{}))p.pas[id]=r;
   G.bossKills=1; // ultimates unlocked
+  // facing matters to the aimed cards (CONSTANT FLAME's jet, EMBER FAN): point
+  // the player down the column so a forward shape is measured doing its job
+  const face=0;p.faceX=Math.cos(face);p.faceY=Math.sin(face);
+  const opt={layout,ring,gap,face};
   const spawn=g.ev('spawnEnemy');
   const dummies=[],last=new Map();
   const place=i=>{
-    const a=i*Math.PI*2/n;
-    const e=spawn('chaser',p.x+Math.cos(a)*ring,p.y+Math.sin(a)*ring);
+    const q=layoutPos(p,i,n,opt);
+    const e=spawn('chaser',q[0],q[1]);
     e.hp=e.maxhp=hp;e.sp=0;e.dmg=0;e.xp=1;dummies[i]=e;last.set(e,hp);return e;
   };
   for(let i=0;i<n;i++)place(i);
@@ -39,9 +57,10 @@ function bench(kit,{n=12,ring=44,hp=4e6,seed=7}={}){
     // the field is a fixture: no drift, no deaths, no level-up pause, no
     // incoming damage — only the kit's output varies between runs
     p.hp=p.maxhp;p.invuln=1;G.xp=0;
+    p.faceX=Math.cos(face);p.faceY=Math.sin(face);
     for(let i=0;i<n;i++){
-      const e=dummies[i],a=i*Math.PI*2/n;
-      e.x=p.x+Math.cos(a)*ring;e.y=p.y+Math.sin(a)*ring;e.stunT=0;e.slow=1;
+      const e=dummies[i],q=layoutPos(p,i,n,opt);
+      e.x=q[0];e.y=q[1];e.stunT=0;e.slow=1;
     }
     G.enemies=G.enemies.filter(e=>dummies.indexOf(e)>=0);
     G.ebullets.length=0;
@@ -75,9 +94,10 @@ if(process.argv[2]==='kits'){
     'necro      mid':{school:'necro',w:{blaster:3,decay:5,shadowb:4},pas:{leech:2}},
     'necro     late':{school:'necro',w:{blaster:3,decay:6,plague:5,diseases:5},pas:{leech:3}},
   };
-  console.log('kit             picks    swarm   single');
+  console.log('kit             picks    swarm     lane   single');
   for(const [name,kit] of Object.entries(KITS))
     console.log(name.padEnd(15),pad(cost(kit),5),pad(bench(kit).toFixed(0),8),
+      pad(bench(kit,{layout:'column'}).toFixed(0),8),
       pad(bench(kit,{n:1,ring:70}).toFixed(0),8));
 }else{
   const rows=[
@@ -86,12 +106,13 @@ if(process.argv[2]==='kits'){
     ['arcmissile','illusion'],['eblast','illusion'],['shocking','illusion'],['mirage','illusion'],['assassin','illusion'],
     ['shadowb','necro'],['decay','necro'],['plague','necro'],['inflict','necro'],['diseases','necro'],['souls','necro'],
   ];
-  console.log('card                    lv3 swarm  lv6 swarm  lv6 single');
+  console.log('card                    lv3 swarm  lv6 swarm   lv6 lane  lv6 single');
   for(const [id,sc] of rows){
     const cap=sc&&['evocation','assassin','souls'].indexOf(id)>=0?4:6;
     console.log(id.padEnd(12),(sc||'vanilla').padEnd(10),
       pad(bench({school:sc,w:{[id]:Math.min(3,cap)}}).toFixed(0),8),
       pad(bench({school:sc,w:{[id]:cap}}).toFixed(0),10),
-      pad(bench({school:sc,w:{[id]:cap}},{n:1,ring:70}).toFixed(0),10));
+      pad(bench({school:sc,w:{[id]:cap}},{layout:'column'}).toFixed(0),10),
+      pad(bench({school:sc,w:{[id]:cap}},{n:1,ring:70}).toFixed(0),11));
   }
 }

@@ -118,7 +118,8 @@ const buffIcons={
   damage:makeSprite(['....R....','...RRR...','..RRRRR..','.RR.R.RR.','RR..R..RR','....R....','...RRR...','..RR.RR..','.RR...RR.'],{R:'#ff8b3d'}),
   magnet:makeSprite(['..MMMMM..','.M.....M.','M..MMM..M','M.M...M.M','M.M.W.M.M','M.M...M.M','M..MMM..M','.M.....M.','..MMMMM..'],{M:'#b06bff',W:'#e8d5ff'}),
   spark:makeSprite(['....P....','...PWP...','..PWWWP..','.PWWCWWP.','PWWCCCWWP','.PWWCWWP.','..PWWWP..','...PWP...','....P....'],{P:'#7a3ad0',W:'#c9a4ff',C:'#eaffff'}),
-  pod:makeSprite(['....C....','CCC.C.CCC','CWWCCCWWC','CWWWCWWWC','CWWWCWWWC','CWYWCWYWC','CWWWCWWWC','CCCCCCCCC','....C....'],{C:'#3f9c4a',W:'#f0e6c8',Y:'#ffd23e'})
+  pod:makeSprite(['....C....','CCC.C.CCC','CWWCCCWWC','CWWWCWWWC','CWWWCWWWC','CWYWCWYWC','CWWWCWWWC','CCCCCCCCC','....C....'],{C:'#3f9c4a',W:'#f0e6c8',Y:'#ffd23e'}),
+  vacuum:makeSprite(['..CCCC...','.C....C..','C..CC..C.','C.C..C.C.','C.C.W..C.','C..CCW.C.','.C....CC.','..CCCC...','.........'],{C:'#39d5ff',W:'#eaffff'})
 };
 const huntMarkSprite=makeSprite(['.R.R.','RRRRR','.RRR.','..R..'],{R:'#ff3c3c'});
 const eliteMarkSprite=makeSprite(['.Y.','YYY','.Y.'],{Y:'#ffd23e'});
@@ -235,6 +236,9 @@ const stackRuneSprite=makeSprite(['W.......W','.W.....W.','..W...W..','...WWW...
 const spreadMarkSprite=makeSprite(['MM...MM','.MM.MM.','..MMM..','...W...','..MMM..','.MM.MM.','MM...MM'],{M:'#ffffff',W:'#ff6bd6'});
 const brandMarkSprite=makeSprite(['EE.....EE','E.......E','.........','.........','.........','.........','.........','E.......E','EE.....EE'],{E:'#ff7a1a'});
 const creepTileSprite=makeSprite(['BBBBBBBB','BAAAAAAB','BAAWAAAB','BAAAAAAB','BAAAWAAB','BAAAAAAB','BAAAAAAB','BBBBBBBB'],{A:'#0a1f0c',B:'#3fe05a',W:'#c8ffd2'});
+// the Worldeater's devoured floor: void-dark, not creep-green — the two
+// hazards coexist in a rush run and must read as different bosses' work
+const voidTileSprite=makeSprite(['BBBBBBBB','BAAAAAAB','BAAWAAAB','BAAAAAAB','BAAAWAAB','BAAAAAAB','BAAAAAAB','BBBBBBBB'],{A:'#07040f',B:'#3a2f4a',W:'#8a5cff'});
 
 // ---------- audio ----------
 let AC=null,masterGain=null,comp=null;
@@ -1041,11 +1045,10 @@ function stick(p){
 // ---------- terrain ----------
 const TILE=16,CHUNK=16,CHPX=TILE*CHUNK;
 const T_GRASS=0,T_ROCK=1,T_MUD=2,T_ACID=3;
+// Flat green world by owner call (2026-08-26): no generated rock/mud/acid —
+// the arena is the camera and the choreography is the mobs. T_ROCK still
+// exists for boss-arena pillar OVERRIDES (LOS mechanics need them).
 function tileType(tx,ty){
-  if(tx*tx+ty*ty<64)return T_GRASS;
-  if(vnoise(tx*0.34,ty*0.34,11)>0.775)return T_ROCK;
-  if(vnoise(tx*0.13,ty*0.13,22)>0.73)return T_MUD;
-  if(vnoise(tx*0.2,ty*0.2,33)>0.815)return T_ACID;
   return T_GRASS;
 }
 const tileCache=new Map();
@@ -1081,20 +1084,7 @@ function chunkCanvas(cx,cy){
       g.fillRect(px,py,TILE,TILE);
       if(h2(wx,wy,8)<0.18){g.fillStyle='#3a5628';g.fillRect(px+((h*13)|0)%12+2,py+((h*29)|0)%12+2,2,1);}
       if(h2(wx,wy,9)<0.05){g.fillStyle='#4a6a34';g.fillRect(px+7,py+8,1,2);g.fillRect(px+6,py+7,3,1);}
-      if(t===T_GRASS){
-        const fh=h2(wx,wy,12);
-        if(fh<0.030){
-          const fx=px+3+((h*17)|0)%9,fy=py+3+((h*31)|0)%9;
-          g.fillStyle=fh<0.010?'#c07bff':(fh<0.020?'#ff6bd6':'#ffd23e');
-          g.fillRect(fx-1,fy,1,1);g.fillRect(fx+1,fy,1,1);g.fillRect(fx,fy-1,1,1);g.fillRect(fx,fy+1,1,1);
-          g.fillStyle='#fff2c0';g.fillRect(fx,fy,1,1);
-        }else if(fh>0.988){
-          const mx=px+4+((h*23)|0)%7,my=py+5+((h*41)|0)%7;
-          g.fillStyle='#e8e0cc';g.fillRect(mx,my+1,1,2);
-          g.fillStyle='#d8452e';g.fillRect(mx-1,my,3,1);
-          g.fillStyle='#fff';g.fillRect(mx,my,1,1);
-        }
-      }
+      // (flowers/mushrooms removed: ground decoration read as pickups/fx noise)
     }
     if(t===T_ROCK){
       g.fillStyle='#3a352b';g.fillRect(px+1,py+2,14,13);
@@ -1221,10 +1211,19 @@ const SCHOOL_SPELLS={
     desc:'stones of fire fall on the horde',
     evoName:'EXTINCTION RAIN',evoDesc:'the sky simply falls',
     sp:{a:15,b:6.5,c:1.9,r:0.92,h:4,hp:0.5,fx:'meteor'}},
+  // v0.1 was a body aura (radius 32+lv*5), which benched enormously — the swarm
+  // fixture parks 12 dummies at r=44, i.e. entirely inside it — while playing
+  // as a card you had to hug the horde to use and that could not touch a boss
+  // at all (single-target column: 0). v0.2 made it a forward jet: a smooth
+  // translucent wedge, which was off-style for a game drawn in pixels, and
+  // aimed wherever you faced. It is now EMBER FAN's shape — a fan of spark
+  // BULLETS — thrown a bit faster than EMBER FAN throws it and aimed at the
+  // nearest foe. Reach and spread still climb with the level (coneGeom); the
+  // per-cast numbers are repriced from a 6/s tick to a ~1/s volley.
   cflame:{name:'CONSTANT FLAME',col:'#ffb62e',max:6,school:'destro',
-    desc:'a ring of fire that never gutters',
-    evoName:'WILDFIRE MANTLE',evoDesc:'you are the bonfire now',
-    sp:{a:3.4,b:2.6,c:0.42,r:0.94,h:4,hp:0.4,fx:'aura'}},
+    desc:'a fan of fire that never gutters',
+    evoName:'WILDFIRE MANTLE',evoDesc:'the fan becomes a firestorm',
+    sp:{a:26,b:4.5,c:1.2,r:0.93,h:5,hp:1,fx:'cone'}},
   evocation:{name:'INFERNAL EVOCATION',col:'#ff3c1e',max:4,ult:1,school:'destro',
     desc:'your steps leave rivers of lava',
     evoName:'',evoDesc:'',
@@ -1238,23 +1237,29 @@ const SCHOOL_SPELLS={
     // near-perfect hit rate the same numbers made it the best single-target
     // card in the game (459 dps benched, vs INFLICT PAIN's 239 — Necromancy's
     // dedicated boss card). Damage and bolt count are priced down to match.
-    sp:{a:13,b:2.9,c:0.72,r:0.89,h:2,hp:0.5,fx:'star'}},
+    // declutter repricing: fewer, heavier bolts (2/2/3/4 at lv1/3/6/evo, was
+    // 2/3/4/5) — a mirror-rank-4 volley used to put 15 stars in the air at
+    // once. Per-CAST damage at lv3/6/evo is held within 1% of the old table;
+    // lv1-2 land a touch harder per cast as the price of the count cut.
+    sp:{a:17,b:1.65,c:0.80,r:0.89,h:2,hp:0.3,fx:'star'}},
   eblast:{name:'ENERGY BLAST',col:'#ffffff',max:6,school:'illusion',
     desc:'starbursts bloom across the thickest knot',
     evoName:'MANA DETONATION',evoDesc:'the burst becomes a detonation',
-    sp:{a:11,b:2.2,c:1.5,r:0.94,h:2,hp:0.6,fx:'blast'}},
+    // declutter repricing: fewer, heavier blooms (2/2/3/4 at lv1/3/6/evo, was
+    // 2/3/5/6) with per-cast damage held near the old totals
+    sp:{a:10.2,b:3.0,c:1.5,r:0.94,h:2,hp:0.3,fx:'blast'}},
   shocking:{name:'SHOCKING CURRENT',col:'#7fd8ff',max:6,school:'illusion',
     desc:'prismatic lightning that leaps foe to foe',
     evoName:'TEMPEST COIL',evoDesc:'the current never grounds',
-    sp:{a:17,b:4.4,c:1.05,r:0.90,h:4,hp:0.5,fx:'chain'}},
+    sp:{a:12,b:3.0,c:1.05,r:0.90,h:4,hp:0.5,fx:'chain'}},
   mirage:{name:'BIZARRE MIRAGE',col:'#c9a4ff',max:6,school:'illusion',
     desc:'a dream that dazes and devours — dazed foes take +30% from EVERYONE',
     evoName:'ENDLESS MIRAGE',evoDesc:'the dream widens and lingers',
-    sp:{a:14,b:5.2,c:4.2,r:0.91,h:5,hp:0,fx:'mirage'}},
+    sp:{a:10,b:3.6,c:4.2,r:0.91,h:5,hp:0,fx:'mirage'}},
   assassin:{name:'PHANTASMAL ASSASSIN',col:'#e8d5ff',max:4,ult:1,school:'illusion',
     desc:'a copied foe turned on its own kind',
     evoName:'',evoDesc:'',
-    sp:{a:44,b:14,c:7.0,r:0.92,h:8,hp:0,fx:'phantom'}},
+    sp:{a:31,b:9.8,c:7.0,r:0.92,h:8,hp:0,fx:'phantom'}},
   // -- NECROMANCY: rot green, grave violet, wisps --
   shadowb:{name:'SHADOW BULLETS',col:'#8a5cff',max:6,school:'necro',
     desc:'bolts of grave-cold shadow',
@@ -1407,7 +1412,10 @@ const G={
   spawnedChunks:new Set(),
   overSince:0, flashMsg:null, flashT:0, subFlash:null, subFlashT:0,
   wave:0, startWave:1, waveState:'fight', waveT:0, interLen:8,
-  waveQuota:0, waveSpawned:0, waveSpawnT:0, waveSpawnGap:0, wavePulses:[], cleanT:0,
+  waveQuota:0, waveSpawned:0, waveSpawnT:0, waveSpawnGap:0, wavePulses:[], cleanT:0, wavePat:null,
+  bankSeen:0, bankFlash:0,
+  mobDmgAcc:0, fightT:0, waveDPS:0, killsWave:0,
+  slotChest:null, reel:null, lastJack:false, vacuumT:0,
   arena:null, tileOverride:new Map(), creep:null,
   deaths:0, bossKills:0, bossTimes:[], buffTally:{},
   bossDmgAcc:0, bossVulnT:0, lastBossDPS:0
@@ -1415,7 +1423,8 @@ const G={
 // the starting-boss pick survives sessions, like controller colours do
 // (clamped against the roster at use time — RUSH_WAVES fills in later)
 try{const v=Math.floor(+localStorage.getItem('ph_rushstart'));if(v>=1)G.rushStart=v;}catch(e){}
-function xpNeed(){
+function xpNeed(L){
+  if(L==null)L=G.level;
   // 0.6+0.4n runs slightly ahead of the wave-quota slope (0.65+0.35n): big
   // parties also bank extra gems from crates, elites and boss levels, so the
   // need has to outpace the quota or 4p out-levels solo by wave 10.
@@ -1425,16 +1434,30 @@ function xpNeed(){
   // Quadratic need holds late levels at ~1.3-1.6 farm waves apart, so each
   // spike is anticipated; weapon evolutions repay the ~2 picks this costs.
   const n=Math.max(1,G.players.length);
-  if(isCampaign())return Math.floor((8+G.level*9+0.35*G.level*G.level)*(0.6+0.4*n));
-  return Math.floor((6+G.level*4)*(0.6+0.4*n));
+  if(isCampaign())return Math.floor((8+L*9+0.35*L*L)*(0.6+0.4*n));
+  return Math.floor((6+L*4)*(0.6+0.4*n));
+}
+// CLASSIC banks its level-ups: xp keeps pooling during the fight and the
+// drafts fire back-to-back in the wave break. This reports how many drafts
+// the pool already affords, and progress toward one more.
+function bankedLevels(){
+  let lv=G.level,xp=G.xp,k=0,nd=xpNeed(lv);
+  while(xp>=nd&&k<30){xp-=nd;k++;lv++;nd=xpNeed(lv);}
+  return {banked:k,frac:clamp(xp/nd,0,1)};
 }
 function hpScale(){
   if(isCampaign())return 1+(effWave()-1)*0.55+(G.level-1)*0.10;
   return 1+G.time*0.012+(G.level-1)*0.06;
 }
 function dmgScale(){
-  if(isCampaign())return 1+effWave()*0.09;
-  return 1+G.time*0.0035;
+  // campaign: quadratic, fitted by tools/balance-model.mjs so one chaser hit
+  // climbs from ~9.5% of a player's max hp at wave 2 to ~16% by wave 18 —
+  // party hp roughly doubles over a run (rallies, charms) and the old linear
+  // 1+0.09w let late mobs fall to a smaller relative bite than wave-2 chaff.
+  // endless: slope raised 0.0035 → 0.005; golden-boon max-hp growth was
+  // outrunning the old curve from ~6 minutes on (balance-model endless probe).
+  if(isCampaign()){const w=effWave();return 1+0.076*w+0.0048*w*w;}
+  return 1+G.time*0.005;
 }
 function flash(msg){G.flashMsg=msg;G.flashT=2.2;}
 function subFlash(msg,t){G.subFlash=msg;G.subFlashT=t||2.2;}
@@ -1522,7 +1545,10 @@ function startRun(mode){
   G.mode=mode;
   G.deaths=0;G.bossKills=0;G.bossTimes=[];G.buffTally={};G.runLogged=false;
   G.bossDmgAcc=0;G.bossVulnT=0;G.lastBossDPS=0;
-  G.arena=null;G.creep=null;G.cleanT=0;
+  G.arena=null;G.creep=null;G.voidTiles=null;G.cleanT=0;G.wavePat=null;
+  G.bankSeen=0;G.bankFlash=0;
+  G.mobDmgAcc=0;G.fightT=0;G.waveDPS=0;G.killsWave=0;
+  G.slotChest=null;G.reel=null;G.lastJack=false;G.vacuumT=0;
   G.flashMsg=null;G.flashT=0;G.subFlash=null;G.subFlashT=0;
   G.tileOverride.clear();chunkCanvases.clear();
   pads.forEach((pi,i)=>{G.players.push(makePlayer(i,pi,(i%2)*30-15,Math.floor(i/2)*30-15));});
@@ -1581,26 +1607,32 @@ function startRun(mode){
 function resetRun(){startRun(G.mode);}
 
 // ---------- classic waves ----------
+// pattern: notebook wave choreography (see WAVE_PATTERNS). Every trash wave
+// after the opener carries one; the base spawner drip is thinned to make room.
+// lv:{b,x} is the wave's XP budget in LEVELS — b is what any party that clears
+// the wave earns, x is the execution ceiling on top (band farming, the ring
+// champion). Gems are priced at runtime via xpNeed(current level), so the
+// budget scales with party size and self-corrects a behind-schedule party.
 const CLASSIC_WAVES=[
-{n:14,dur:30,mix:{chaser:1},elite:0},
-{n:20,dur:35,mix:{chaser:1,swarm:0.7},elite:0},
-{n:26,dur:40,mix:{chaser:1,swarm:0.8,spitter:0.5},elite:0},
-{n:32,dur:45,mix:{chaser:1,swarm:0.8,spitter:0.7,tank:0.15},elite:0},
+{n:14,dur:30,mix:{chaser:1},elite:0,lv:{b:1,x:0}},
+{n:20,dur:35,mix:{chaser:1,swarm:0.7},elite:0,pattern:'swarm',lv:{b:3,x:0}},
+{n:26,dur:40,mix:{chaser:1,swarm:0.8,spitter:0.5},elite:0,pattern:'band',lv:{b:2,x:3}},
+{n:32,dur:45,mix:{chaser:1,swarm:0.8,spitter:0.7,tank:0.15},elite:0,pattern:'jumpers',lv:{b:2,x:0}},
 {boss:0,dur:90},
-{n:34,dur:45,mix:{chaser:1,swarm:0.9,spitter:0.7,tank:0.2,bomber:0.3},elite:0},
-{n:40,dur:48,mix:{chaser:0.9,swarm:1.1,spitter:0.7,tank:0.2,bomber:0.4},elite:0.02},
-{n:46,dur:50,mix:{chaser:0.8,swarm:0.9,spitter:0.9,tank:0.35,bomber:0.4},elite:0.03},
-{n:52,dur:52,mix:{chaser:0.8,swarm:1.0,spitter:0.9,tank:0.35,bomber:0.5},elite:0.06},
+{n:34,dur:45,mix:{chaser:1,swarm:0.9,spitter:0.7,tank:0.2,bomber:0.3},elite:0,pattern:'polarity',lv:{b:2,x:1}},
+{n:40,dur:48,mix:{chaser:0.9,swarm:1.1,spitter:0.7,tank:0.2,bomber:0.4},elite:0.02,pattern:'band',lv:{b:2,x:3}},
+{n:46,dur:50,mix:{chaser:0.8,swarm:0.9,spitter:0.9,tank:0.35,bomber:0.4},elite:0.03,pattern:'encircle',lv:{b:1,x:3}},
+{n:52,dur:52,mix:{chaser:0.8,swarm:1.0,spitter:0.9,tank:0.35,bomber:0.5},elite:0.06,pattern:'swarm',lv:{b:3,x:1}},
 {boss:1,dur:100},
-{n:54,dur:52,mix:{chaser:0.7,swarm:1.0,spitter:1.0,tank:0.4,bomber:0.5},elite:0.05},
-{n:58,dur:55,mix:{chaser:0.7,swarm:1.1,spitter:1.0,tank:0.45,bomber:0.6},elite:0.06},
-{n:62,dur:55,mix:{chaser:0.6,swarm:1.0,spitter:1.1,tank:0.5,bomber:0.6},elite:0.08},
-{n:66,dur:58,mix:{chaser:0.6,swarm:1.0,spitter:1.1,tank:0.6,bomber:0.7},elite:0.08},
+{n:54,dur:52,mix:{chaser:0.7,swarm:1.0,spitter:1.0,tank:0.4,bomber:0.5},elite:0.05,pattern:'jumpers',lv:{b:2,x:1}},
+{n:58,dur:55,mix:{chaser:0.7,swarm:1.1,spitter:1.0,tank:0.45,bomber:0.6},elite:0.06,pattern:'polarity',lv:{b:3,x:1}},
+{n:62,dur:55,mix:{chaser:0.6,swarm:1.0,spitter:1.1,tank:0.5,bomber:0.6},elite:0.08,pattern:'band',lv:{b:3,x:4}},
+{n:66,dur:58,mix:{chaser:0.6,swarm:1.0,spitter:1.1,tank:0.6,bomber:0.7},elite:0.08,pattern:'encircle',lv:{b:2,x:4}},
 {boss:2,dur:110},
-{n:70,dur:58,mix:{chaser:0.5,swarm:1.1,spitter:1.1,tank:0.6,bomber:0.7},elite:0.09},
-{n:74,dur:60,mix:{chaser:0.5,swarm:1.2,spitter:1.2,tank:0.65,bomber:0.8},elite:0.10},
-{n:78,dur:60,mix:{chaser:0.5,swarm:1.2,spitter:1.2,tank:0.7,bomber:0.8},elite:0.11},
-{n:84,dur:62,mix:{chaser:0.4,swarm:1.3,spitter:1.2,tank:0.8,bomber:0.9},elite:0.14},
+{n:70,dur:58,mix:{chaser:0.5,swarm:1.1,spitter:1.1,tank:0.6,bomber:0.7},elite:0.09,pattern:'swarm',lv:{b:5,x:2}},
+{n:74,dur:60,mix:{chaser:0.5,swarm:1.2,spitter:1.2,tank:0.65,bomber:0.8},elite:0.10,pattern:'polarity',lv:{b:4,x:2}},
+{n:78,dur:60,mix:{chaser:0.5,swarm:1.2,spitter:1.2,tank:0.7,bomber:0.8},elite:0.11,pattern:'jumpers',lv:{b:3,x:1}},
+{n:84,dur:62,mix:{chaser:0.4,swarm:1.3,spitter:1.2,tank:0.8,bomber:0.9},elite:0.14,pattern:'encircle',lv:{b:4,x:6}},
 {boss:3,dur:125}];
 // BOSS RUSH: the whole boss roster back to back, nothing in between. Every
 // "wave" is a boss wave, so the classic wave machine drives it unchanged.
@@ -1650,6 +1682,32 @@ const rushTTK=w=>RUSH_TTK0+(RUSH_TTK1-RUSH_TTK0)*(clamp(w,1,waveCount())-1)/Math
 // picks) — plus the jump on the boss right after a capstone hands out its
 // signature spell. Fitted against headless runs (tools/test-rush.mjs).
 const rushGrowth=w=>((w-1)%6===0&&w>1)?1.28:1.12;
+// classic boss pacing: target fight length per boss, ramping ~2 min → 2.5.
+// The static hp table (CLASSIC_BOSSES) is priced for a median party by
+// tools/balance-model.mjs (measured party dps at each boss × these targets);
+// bosses 2-4 additionally floor their hp on the party's measured output on
+// the previous kill — same mechanism as rush — so an over-drafted party
+// can't melt the back half of the campaign.
+const CLASSIC_TTK=[120,130,140,150];
+// measured dps growth between consecutive classic bosses (five farm waves,
+// the boss-kill level burst, and — after boss 1 — the ultimate unlock).
+// Geomean of tools/balance-model.mjs runs; g1→2 is deliberately far under
+// its measured ~9× (a level-4 boss-1 kit says little about the wave-10
+// party), so Geminox is priced by the static table, while bosses 3-4 are
+// floor-priced from the party's real output. g2→3 raised 2.0 → 2.6 by
+// owner call 2026-08-06: Pyraxis died too fast in playtests — it hits
+// well, it just needs the bigger pool to make its phase-2 kit play out.
+// 2026-08-26, lv-budget economy: classic no longer prices bosses off this
+// growth chain (see CLASSIC_RHO note in spawnClassicBoss) — kept only
+// because rush shares the roster machinery.
+const CLASSIC_GROWTH=[2.6,2.6,1.8];
+// bossDPS/waveDPS per classic boss, probe-measured; ttkMul applies on top.
+// Geminox's ρ is far below its raw ratio: its heal/pylon kit stretches
+// fights NON-linearly as the pool grows, so the pool must stay small.
+// Recalibrated 2026-08-26 after tiered mobs (husks/barges): tanky minorities
+// absorb AoE with little overkill, so the saturated waveDPS read jumped ~2×
+// closer to true throughput and every ρ had to come down with it.
+const CLASSIC_RHO=[0.75,0.45,1.2,1.85];
 // classic and rush share the wave machine, the arena and the boss roster
 const isCampaign=()=>G.mode!=='endless';
 const waveTable=()=>G.mode==='rush'?RUSH_WAVES:CLASSIC_WAVES;
@@ -1828,6 +1886,11 @@ function starHit(x,y,n){
       star:1+(Math.random()<0.4?1:0),prism:1+((Math.random()*PRISM.length)|0)});
   }
 }
+// G.fx has no hard cap the way G.particles does; cosmetic-only pushes ask
+// here first so a 4-player illusion party can't grow the list without bound.
+// Damage-bearing fx (mzone, rburn, strail, soulvoid, ...) NEVER go through
+// this gate — dropping those would drop their damage.
+function fxRoom(){return G.fx.length<220;}
 function starRing(x,y,r,n,col,prism){
   if(G.particles.length>800)return;
   for(let i=0;i<n;i++){
@@ -1838,7 +1901,10 @@ function starRing(x,y,r,n,col,prism){
   }
 }
 function dropLoot(e){
-  const gems=e.boss?14:(Math.random()<0.15?2:1);
+  if(!e.boss&&e.xp<=0)return; // xp:0 mobs (pattern chaff) drop nothing
+  // ring champions fountain like a boss — their gem burst is a whole wave's
+  // execution jackpot
+  const gems=(e.boss||e.champ)?14:(Math.random()<0.15?2:1);
   const per=Math.max(1,Math.round(e.xp/gems));
   for(let i=0;i<gems;i++){
     if(G.gems.length>350){G.gems[(Math.random()*G.gems.length)|0].v+=per;continue;}
@@ -1858,6 +1924,7 @@ function dropLoot(e){
     if(G.mode==='classic')G.xp+=xpNeed();
     if(isCampaign())G.pickups.push({x:e.x,y:e.y,type:'pod',t:0});
   }else if(e.type==='tank'&&Math.random()<0.35)G.pickups.push({x:e.x,y:e.y,type:'heart',t:0});
+  else if(Math.random()<0.006)G.pickups.push({x:e.x,y:e.y,type:'vacuum',t:0});
   else if(Math.random()<0.02)G.pickups.push({x:e.x,y:e.y,type:'heart',t:0});
 }
 function damageEnemy(e,dmg,owner){
@@ -1866,9 +1933,15 @@ function damageEnemy(e,dmg,owner){
   // Bizarre Mirage: a dazed foe takes +30% from the WHOLE party — the
   // Illusion school's collaboration window
   if(e.stunT>0)dmg*=1.3;
-  // the rush prices the next boss off the party's measured output on this one
-  // (overkill excluded, adds excluded — only the health bar that gates the wave)
-  if(e.boss&&G.mode==='rush')G.bossDmgAcc+=Math.min(dmg,Math.max(0,e.hp));
+  // the campaign prices the next boss off the party's measured output on this
+  // one (overkill excluded, adds excluded — only the health bar that gates
+  // the wave). Rush always did this; classic now uses the same reading.
+  if(e.boss&&isCampaign())G.bossDmgAcc+=Math.min(dmg,Math.max(0,e.hp));
+  // wave patterns price their density off this: the party's measured
+  // mob-clearing output, per wave (same philosophy as boss floor-pricing).
+  // Saturated frames only (≥8 targets up): with 3 mobs on screen the read
+  // measures the spawner's throughput, not the party's capability.
+  if(!e.boss&&isCampaign()&&G.enemies.length>=8)G.mobDmgAcc+=Math.min(dmg,Math.max(0,e.hp));
   e.hp-=dmg;e.flash=0.08;
   addText(e.x,e.y-e.r-3,Math.round(dmg),'#ffd23e');
   sfx('hit');
@@ -1889,12 +1962,15 @@ function damageEnemy(e,dmg,owner){
   if(e.hp<=0){
     e.dead=true;
     if(owner)owner.kills++;
+    if(!e.boss)G.killsWave++;
     // NECROMANCY takes something from every death: the soul leaves the body
     // and drifts back to the necromancer. It is pure decoration on its own,
     // but it is also the only visible sign LEECHED GIFT is paying out, so it
     // fires for the whole school and brightens when the passive is held.
+    // one wisp per kill, two while LEECHED GIFT is paying out: this fires on
+    // EVERY death, so it is the single hottest emitter in a necro run
     if(owner&&owner.school==='necro'&&G.particles.length<780){
-      const n=owner.pas&&owner.pas.leech?3:2;
+      const n=owner.pas&&owner.pas.leech?2:1;
       for(let i=0;i<n;i++){
         const dx=owner.x-e.x,dy=owner.y-e.y-8,dd=Math.hypot(dx,dy)||1;
         G.particles.push({x:e.x+(Math.random()*10-5),y:e.y+(Math.random()*8-4),
@@ -1923,12 +1999,12 @@ function damageEnemy(e,dmg,owner){
     // chain reaction is the whole point of the spell
     if(e.plagued){
       const pl=e.plagued;
-      addParticles(e.x,e.y,'#b6d94a',18,110);
-      addSparkles(e.x,e.y,'#6fe84a',8,60);
+      addParticles(e.x,e.y,'#b6d94a',12,110);
+      addSparkles(e.x,e.y,'#6fe84a',5,60);
       G.fx.push({kind:'boom',col:'#b6d94a',x:e.x,y:e.y,r:pl.r,t:0.3,dur:0.3});
       G.fx.push({kind:'rot',ground:1,x:e.x,y:e.y,r:pl.r*0.5,t:1.8,dur:1.8});
       // the body comes apart: pale shards thrown clear of the burst
-      for(let i=0;i<7;i++){
+      for(let i=0;i<4;i++){
         const a=Math.random()*TAU,s=60+Math.random()*70;
         G.particles.push({x:e.x,y:e.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-40,
           t:0.6+Math.random()*0.4,col:Math.random()<0.5?'#d8e8b0':'#8a9a6a',
@@ -1958,11 +2034,12 @@ function damageEnemy(e,dmg,owner){
       if(isCampaign()&&e.def){
         if(e.def.onDeath)e.def.onDeath(e);
         G.bossKills++;G.bossTimes.push(G.time);
+        // dps over time the boss could actually be hurt: shield/burrow/flight
+        // windows don't count, so a mechanic-heavy fight doesn't read as a
+        // weak party and soften the next boss. Read in both campaign modes —
+        // classic bosses 2-4 now floor their hp on it like rush always has.
+        G.lastBossDPS=G.bossDmgAcc/Math.max(15,G.bossVulnT);
         if(G.mode==='rush'){
-          // dps over time the boss could actually be hurt: shield/burrow/flight
-          // windows don't count, so a mechanic-heavy fight doesn't read as a
-          // weak party and soften the next boss
-          G.lastBossDPS=G.bossDmgAcc/Math.max(15,G.bossVulnT);
           // only the four raid-tier capstones leave their signature behind —
           // a relic per kill compounded party dps ~1.4x a boss and boss hp
           // had to balloon to keep up
@@ -2073,7 +2150,8 @@ function breakCrate(c){
   if(r<bp){
     const types=['speed','regen','maxhp','damage','magnet'];
     G.pickups.push({x:c.x,y:c.y,type:types[(Math.random()*types.length)|0],t:0});
-  }else if(r<bp+0.2)G.pickups.push({x:c.x,y:c.y,type:'heart',t:0});
+  }else if(r<bp+0.07)G.pickups.push({x:c.x,y:c.y,type:'vacuum',t:0});
+  else if(r<bp+0.27)G.pickups.push({x:c.x,y:c.y,type:'heart',t:0});
   else for(let i=0;i<4;i++)G.gems.push({x:c.x+(Math.random()*12-6),y:c.y+(Math.random()*12-6),v:2,t:0});
 }
 
@@ -2192,6 +2270,30 @@ function spellHits(id,lv){const d=spellDef(id);return d.h+Math.floor((d.hp||0)*(
 // sprite — the spell did nothing at all until level 4 or so. It now covers
 // contact range from the first cast and grows to FLAME SIGIL's reach.
 function auraRad(id,lv){return (id==='decay'?36:32)+lv*5;}
+// CONSTANT FLAME's fan: reach and spread both climb, so the card goes from a
+// short defensive puff to a wide torrent that clears a lane in front of you.
+// `len` is the distance the sparks live for, `half` the half-angle of the fan.
+function coneGeom(lv){return {len:66+lv*11,half:0.40+lv*0.035};}
+// METEOR SHOWER's landing: shake, smoke, embers, and a scorch mark that
+// outlives the impact so the ground remembers. Lives here (not at the cast
+// site) because the stone detonates wherever its flight actually ends —
+// on a body it met en route, not only at the mark it was thrown at.
+function metImpact(mx,my,r){
+  G.shake=Math.max(G.shake,3.5);
+  if(fxRoom())G.fx.push({kind:'scorch',ground:1,x:mx,y:my,r,seed:mx,t:1.6,dur:1.6});
+  addParticles(mx,my,'#ff9040',8,110);
+  addParticles(mx,my,'#fff6c8',3,70);
+  for(let s=0;s<5;s++){
+    const a=Math.random()*TAU;
+    G.particles.push({x:mx,y:my,vx:Math.cos(a)*(40+Math.random()*70),
+      vy:Math.sin(a)*(40+Math.random()*70)-50,t:0.5+Math.random()*0.5,
+      col:Math.random()<0.3?'#fff6c8':(Math.random()<0.5?'#ff5a3d':'#ffb62e'),
+      size:1+(Math.random()<0.4?1:0),drag:2.4});
+  }
+  for(let s=0;s<3;s++)G.particles.push({x:mx+(Math.random()*20-10),y:my+(Math.random()*12-6),
+    vx:(Math.random()*2-1)*12,vy:-22-Math.random()*24,t:0.8+Math.random()*0.5,
+    col:Math.random()<0.5?'#6b5a4a':'#3a3028',size:2,drag:1.3});
+}
 function spellDmg(p,id,lv,mul){
   const d=spellDef(id);
   let dmg=(d.a+d.b*lv)*p.dmgMul*mul;
@@ -2273,30 +2375,38 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
         const off=(i%2?1:-1)*(0.45+0.38*Math.floor(i/2))*(1+Math.random()*0.2);
         const a=ang+clamp(off,-1.9,1.9);
         G.bullets.push({x:ox,y:oy,vx:Math.cos(a)*215,vy:Math.sin(a)*215,
-          r:crit?4:3,dmg,life:2.8,owner:p,col,
+          r:crit?3:2,dmg,life:2.8,owner:p,col,
           home:6.5,homeR:340,tgt:null,ghost:1,starHit:1,
           trail:true,trailCol:col,starTrail:true,star:1,wake:[],
           glow:true,prism:1+((Math.random()*PRISM.length)|0)});
-        addStars(ox+Math.cos(a)*8,oy+Math.sin(a)*8,'#ffffff',2,70,true);
+        addStars(ox+Math.cos(a)*8,oy+Math.sin(a)*8,'#ffffff',1,70,true);
       };
       throwStar(0);
       for(let i=1;i<n;i++)after(i*0.05,()=>throwStar(i));
-      starRing(ox,oy,16,8,'#ffffff',true);
+      starRing(ox,oy,14,3,'#ffffff',true);
       sfx('arcbolt');
       crText(ox,oy);
       break;}
     case 'lance':{ // lava ray: a molten line through the rank
-      const tgt=nearestEnemy(ox,oy,300);
+      const tgt=nearestEnemy(ox,oy,360);
       if(!tgt)return false;
       const a=Math.atan2(tgt.y-oy,tgt.x-ox);
-      const len=110+spellHits(id,lv)*28;
+      // the card is a LANCE: its answer to a crowd is REACH, not girth. It
+      // should spear a whole column front to back, not mow a swathe — so the
+      // extra targets come from the line running further, and the beam itself
+      // stays a thin molten thread.
+      const len=180+spellHits(id,lv)*42;
       const ex=ox+Math.cos(a)*len,ey=oy+Math.sin(a)*len;
-      G.fx.push({kind:'lance',fat:1,x1:ox,y1:oy,x2:ex,y2:ey,col:'#ff5a3d',col2:'#ffb62e',t:0.3,dur:0.3});
-      // a ray that "burns through the rank" has to be wide enough to catch a
-      // rank: the v0.1 hitbox was 9px and routinely clipped one enemy. 16 was
-      // still narrow enough that the card benched BELOW the free MAGIC MISSILE
-      // in a crowd (106 vs 152) — a school starter losing to the baseline.
-      const W=22;
+      // Narrow on purpose, and narrowest at rank 1. Widening this to a flat 22
+      // did fix the card's numbers, but it bought them the wrong way — a fat
+      // beam reads as a flamethrower and stops being a lance. Reach is where
+      // the targets come from; the width is what GROWS, so the card starts as
+      // a hairline that spears one file and ends as a bar that takes a rank
+      // with it. lv1 5px -> lv6 11px -> 13px evolved.
+      const W=4+lv*1.1;
+      // the art is driven off the real hitbox so the beam can never look wider
+      // than it hits — the old draw bloomed to 26px over a 16px box
+      G.fx.push({kind:'lance',w:W,x1:ox,y1:oy,x2:ex,y2:ey,col:'#ff5a3d',col2:'#ffb62e',t:0.3,dur:0.3});
       queryEnemies((ox+ex)/2,(oy+ey)/2,len/2+40,e=>{
         const dx=ex-ox,dy=ey-oy,L2=dx*dx+dy*dy||1;
         let t=((e.x-ox)*dx+(e.y-oy)*dy)/L2;t=clamp(t,0,1);
@@ -2309,64 +2419,89 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
       });
       // molten spatter along the whole beam, hottest at the muzzle, with the
       // embers dragging so the ray leaves a hanging wall of heat behind it
-      for(let i=0;i<18;i++){
-        const t=i/18,hx=ox+(ex-ox)*t,hy=oy+(ey-oy)*t;
+      for(let i=0;i<10;i++){
+        const t=i/10,hx=ox+(ex-ox)*t,hy=oy+(ey-oy)*t;
         G.particles.push({x:hx+(Math.random()*10-5),y:hy+(Math.random()*10-5),
           vx:(Math.random()*2-1)*40,vy:-24-Math.random()*50,t:0.4+Math.random()*0.5,
           col:Math.random()<0.4?'#fff6c8':(Math.random()<0.5?'#ff5a3d':'#ffb62e'),
           size:1+(Math.random()<0.3?1:0),drag:1.9});
       }
       // smoke rising off the scar
-      for(let i=0;i<5;i++){
+      for(let i=0;i<3;i++){
         const t=Math.random(),hx=ox+(ex-ox)*t,hy=oy+(ey-oy)*t;
         G.particles.push({x:hx,y:hy,vx:(Math.random()*2-1)*10,vy:-18-Math.random()*20,
           t:0.7+Math.random()*0.5,col:'#4a3a30',size:2,drag:1.2});
       }
-      addParticles(ox+Math.cos(a)*14,oy+Math.sin(a)*14,'#fff6c8',12,90);
+      addParticles(ox+Math.cos(a)*14,oy+Math.sin(a)*14,'#fff6c8',7,90);
       G.shake=Math.max(G.shake,3);
       sfx('lavaray');crText(tgt.x,tgt.y);
       break;}
-    case 'meteor':{ // meteor shower: staggered falling impacts
+    case 'meteor':{ // meteor shower: stones hurled by the caster
       const tgt=nearestEnemy(ox,oy,320);
       if(!tgt)return false;
       const n=spellHits(id,lv);
       sfx('cinder');
+      // launched FROM the wizard, not called from the sky: the old version
+      // dropped ground-ring markers drawn with the same sprite and telegraph
+      // as boss meteors, and players dodged their own spell. A stone that
+      // visibly flies out of the caster can't be mistaken for incoming fire.
       for(let i=0;i<n;i++)after(i*0.12,()=>{
         if(p.dead)return;
         const tg=nearestEnemy(tgt.x,tgt.y,130)||tgt;
         const mx=tg.x+(Math.random()*2-1)*46,my=tg.y+(Math.random()*2-1)*46;
-        G.fx.push({kind:'rmet',ground:1,own:p,x:mx,y:my,r:26+lv*2.5,dmg,t:0.5,dur:0.5,col});
-        // every stone lands with its own little shock: shake, smoke, embers,
-        // and a scorch mark that outlives the impact so the ground remembers
-        after(0.5,()=>{
-          G.shake=Math.max(G.shake,3.5);
-          G.fx.push({kind:'scorch',ground:1,x:mx,y:my,r:26+lv*2.5,seed:mx,t:1.6,dur:1.6});
-          addParticles(mx,my,'#ff9040',12,110);
-          addParticles(mx,my,'#fff6c8',5,70);
-          for(let s=0;s<8;s++){
-            const a=Math.random()*TAU;
-            G.particles.push({x:mx,y:my,vx:Math.cos(a)*(40+Math.random()*70),
-              vy:Math.sin(a)*(40+Math.random()*70)-50,t:0.5+Math.random()*0.5,
-              col:Math.random()<0.3?'#fff6c8':(Math.random()<0.5?'#ff5a3d':'#ffb62e'),
-              size:1+(Math.random()<0.4?1:0),drag:2.4});
-          }
-          for(let s=0;s<5;s++)G.particles.push({x:mx+(Math.random()*20-10),y:my+(Math.random()*12-6),
-            vx:(Math.random()*2-1)*12,vy:-22-Math.random()*24,t:0.8+Math.random()*0.5,
-            col:Math.random()<0.5?'#6b5a4a':'#3a3028',size:2,drag:1.3});
-        });
+        // life is EXACTLY the flight time to the mark — any slack and a
+        // close-range stone sails past its target before bursting
+        const dx=mx-p.x,dy=my-p.y,dd=Math.hypot(dx,dy)||1,spd=340;
+        G.bullets.push({x:p.x,y:p.y,vx:dx/dd*spd,vy:dy/dd*spd,r:4,dmg,
+          life:dd/spd,tx:mx,ty:my,owner:p,col,rocket:true,aoe:26+lv*2.5,
+          ghost:1,met:1,trail:true,trailCol:i%2?'#ffb62e':'#ff5a3d',sparkTrail:true});
       });
       crText(tgt.x,tgt.y);
       break;}
-    case 'aura':{ // constant flame / decaying presence: the caster IS the weapon
+    case 'cone':{ // constant flame: a fan of burning sparks, EMBER FAN's shape
+      // The translucent wedge this used to draw was the only smooth-shaded
+      // hitbox in a game made of pixels — it read as another game's effect.
+      // It is now the vanilla fan: real sparks with real hitboxes, thrown a
+      // little faster than EMBER FAN throws them, and AIMED — the fan turns
+      // onto the nearest foe instead of following the stick, so the card can
+      // be held while you kite.
+      const g=coneGeom(lv);
+      const tgt=nearestEnemy(ox,oy,g.len+40);
+      if(!tgt)return false;
+      const a=Math.atan2(tgt.y-oy,tgt.x-ox);
+      const n=spellHits(id,lv);
+      // reach is coneGeom's len: pick the life from the speed so the sparks
+      // burn out exactly where the old wedge ended
+      const spd=250;
+      for(let i=0;i<n;i++){
+        const sa=a+(i-(n-1)/2)*(2*g.half/Math.max(1,n-1));
+        const s=spd+Math.random()*40;
+        G.bullets.push({x:ox,y:oy,vx:Math.cos(sa)*s,vy:Math.sin(sa)*s,
+          r:crit?3:2,dmg,life:g.len/spd,owner:p,col,
+          trail:true,trailCol:Math.random()<0.4?'#ff5a3d':col});
+      }
+      // muzzle embers, hottest at the mouth
+      for(let i=0;i<3;i++){
+        const sa=a+(Math.random()*2-1)*g.half,s=90+Math.random()*90;
+        G.particles.push({x:ox+Math.cos(a)*6,y:oy+Math.sin(a)*6,
+          vx:Math.cos(sa)*s,vy:Math.sin(sa)*s-16,t:0.24+Math.random()*0.22,
+          col:Math.random()<0.3?'#fff6c8':(Math.random()<0.5?'#ff5a3d':'#ffb62e'),
+          size:1+(Math.random()<0.25?1:0),drag:2.6});
+      }
+      sfx('spread');
+      crText(ox,oy);
+      break;}
+    case 'aura':{ // decaying presence: the caster IS the weapon
       const rad=auraRad(id,lv);
       queryEnemies(ox,oy,rad,e=>{
         if(dist2(ox,oy,e.x,e.y)<(rad+e.r)*(rad+e.r))damageEnemy(e,dmg,p);
       });
       // a field you stand inside has to look occupied, not outlined: fill the
-      // whole disc, not just the rim, and pay for a few bright motes. These
-      // auras cast several times a second, so the per-cast count is small and
-      // the density comes from the rate — three is already a storm.
-      for(let i=0;i<3;i++){
+      // whole disc, not just the rim, and pay for a couple of bright motes.
+      // These auras cast several times a second, so the per-cast count has to
+      // stay LOW — the density comes from the rate, and three per cast was
+      // already a wall of pixels with two players standing in each other.
+      for(let i=0;i<2;i++){
         const a=Math.random()*TAU;
         if(id==='decay'){ // rot wisps drift UP out of the ground
           const rr=rad*Math.sqrt(Math.random());
@@ -2385,13 +2520,13 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
       }
       // one grave-violet soul / white-hot cinder per few casts, to give the
       // field a highlight the eye can land on
-      if(Math.random()<0.55){
+      if(Math.random()<0.35){
         const a=Math.random()*TAU;
-        if(id==='decay')addSparkles(ox+Math.cos(a)*rad*0.7,oy+Math.sin(a)*rad*0.7,'#c9a4ff',2,26);
-        else addSparkles(ox+Math.cos(a)*rad*0.8,oy+Math.sin(a)*rad*0.8,'#fff6c8',2,30);
+        if(id==='decay')addSparkles(ox+Math.cos(a)*rad*0.7,oy+Math.sin(a)*rad*0.7,'#c9a4ff',1,26);
+        else addSparkles(ox+Math.cos(a)*rad*0.8,oy+Math.sin(a)*rad*0.8,'#fff6c8',1,30);
       }
       // rot leaves a stain: a slow violet-green decal under DECAYING PRESENCE
-      if(id==='decay'&&Math.random()<0.10)
+      if(id==='decay'&&Math.random()<0.05)
         G.fx.push({kind:'rot',ground:1,x:ox+(Math.random()*rad-rad/2),y:oy+(Math.random()*rad-rad/2),
           r:8+Math.random()*10,t:2.2,dur:2.2});
       break;}
@@ -2412,15 +2547,14 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
         // each bloom re-picks: the burst chases the crowd instead of stacking
         const t2=i?(nearestEnemy(tgt.x,tgt.y,150)||tgt):tgt;
         const bx=t2.x+(i?(Math.random()*2-1)*26:0),by=t2.y+(i?(Math.random()*2-1)*26:0);
-        G.fx.push({kind:'sbloom',x:bx,y:by,r:R,pts:10,seed:i*1.3,t:0.4,dur:0.4});
-        starRing(bx,by,R*0.5,12,'#ffffff',true);
-        starRing(bx,by,R*0.9,8,'#ffffff',true);
-        addStars(bx,by,'#ffffff',8,110,true);
+        if(fxRoom())G.fx.push({kind:'sbloom',x:bx,y:by,r:R,pts:10,seed:i*1.3,t:0.4,dur:0.4});
+        starRing(bx,by,R*0.5,4,'#ffffff',true);
+        addStars(bx,by,'#ffffff',2,110,true);
         marks.push(bx,by);
         queryEnemies(bx,by,R,e=>{
-          if(dist2(bx,by,e.x,e.y)<(R+e.r)*(R+e.r)){damageEnemy(e,dmg,p);starHit(e.x,e.y,3);}
+          if(dist2(bx,by,e.x,e.y)<(R+e.r)*(R+e.r)){damageEnemy(e,dmg,p);starHit(e.x,e.y,1);}
         });
-        if(marks.length>=4&&i===n-1)
+        if(marks.length>=4&&i===n-1&&fxRoom())
           G.fx.push({kind:'constel',line:marks.slice(),x:bx,y:by,t:0.45,dur:0.45});
       });
       crText(tgt.x,tgt.y);
@@ -2435,8 +2569,8 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
         // white-hot core under a coloured arc, each link a step further round
         // the ramp — the current visibly refracts as it travels
         G.fx.push({kind:'zap',col:prismCol(i+2),glow:1,x1:px,y1:py,x2:cur.x,y2:cur.y,t:0.22,dur:0.22});
-        addStars(cur.x,cur.y,'#ffffff',5,55,true);
-        starHit(cur.x,cur.y,4);
+        addStars(cur.x,cur.y,'#ffffff',3,55,true);
+        starHit(cur.x,cur.y,2);
         damageEnemy(cur,dmg,p);
         link.push(cur.x,cur.y);
         hitSet.add(cur);px=cur.x;py=cur.y;
@@ -2449,7 +2583,7 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
         cur=next;
       }
       // the path the current took, held on screen for a beat as a constellation
-      if(link.length>=6)G.fx.push({kind:'constel',line:link,x:px,y:py,t:0.45,dur:0.45});
+      if(link.length>=6&&fxRoom())G.fx.push({kind:'constel',line:link,x:px,y:py,t:0.45,dur:0.45});
       sfx('zap');crText(first.x,first.y);
       break;}
     case 'mirage':{ // bizarre mirage: a dream that dazes AND devours
@@ -2465,14 +2599,15 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
       const R=44+lv*4,stunDur=lv>6?2.0:1.5;
       // the dream opens as a wide prismatic dome and then stays on the ground
       // for as long as the daze lasts, so you can see the window you bought
-      G.fx.push({kind:'sbloom',x:tgt.x,y:tgt.y,r:R*1.25,pts:16,t:0.55,dur:0.55});
-      G.fx.push({kind:'sbloom',x:tgt.x,y:tgt.y,r:R*0.6,pts:10,seed:2.1,t:0.4,dur:0.4});
-      G.fx.push({kind:'sring',x:tgt.x,y:tgt.y,r:R,ground:1,seed:1.7,t:stunDur,dur:stunDur});
+      if(fxRoom()){
+        G.fx.push({kind:'sbloom',x:tgt.x,y:tgt.y,r:R*1.25,pts:16,t:0.55,dur:0.55});
+        G.fx.push({kind:'sbloom',x:tgt.x,y:tgt.y,r:R*0.6,pts:10,seed:2.1,t:0.4,dur:0.4});
+        G.fx.push({kind:'sring',x:tgt.x,y:tgt.y,r:R,ground:1,seed:1.7,t:stunDur,dur:stunDur});
+      }
       G.fx.push({kind:'mzone',ground:1,own:p,x:tgt.x,y:tgt.y,r:R,dps:dmg,
         stun:stunDur,tick:0,t:stunDur,dur:stunDur,col});
-      starRing(tgt.x,tgt.y,R*0.6,20,'#ffffff',true);
-      starRing(tgt.x,tgt.y,R*0.95,14,'#ffffff',true);
-      addStars(tgt.x,tgt.y,'#ffffff',18,130,true);
+      starRing(tgt.x,tgt.y,R*0.6,14,'#ffffff',true);
+      addStars(tgt.x,tgt.y,'#ffffff',10,130,true);
       pflash(0.32);
       let n=0;
       queryEnemies(tgt.x,tgt.y,R,e=>{
@@ -2482,7 +2617,7 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
         // bosses only stagger — their scripts must not desync — but the
         // vulnerability window still opens for everyone
         e.stunT=Math.max(e.stunT||0,e.boss?0.4:stunDur);n++;
-        starHit(e.x,e.y-e.r,5);
+        starHit(e.x,e.y-e.r,3);
       });
       if(n&&!echo)addText(tgt.x,tgt.y-14,'DAZED!',prismCol(G.time*8));
       sfx('mirage');
@@ -2495,12 +2630,13 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
       // it arrives the way a copy should: a bloom of light that resolves into
       // something that was already standing there. An ultimate earns the beat
       // of slow-motion and the screen-level wash.
-      G.fx.push({kind:'sbloom',x:ox,y:oy,r:62,pts:14,t:0.5,dur:0.5});
-      G.fx.push({kind:'sbloom',x:ox,y:oy,r:34,pts:8,seed:2.4,t:0.36,dur:0.36});
-      starRing(ox,oy,20,12,'#ffffff',true);
-      starRing(ox,oy,34,16,'#ffffff',true);
-      starRing(ox,oy,50,20,'#ffffff',true);
-      addStars(ox,oy,'#ffffff',22,120,true);
+      if(fxRoom()){
+        G.fx.push({kind:'sbloom',x:ox,y:oy,r:62,pts:14,t:0.5,dur:0.5});
+        G.fx.push({kind:'sbloom',x:ox,y:oy,r:34,pts:8,seed:2.4,t:0.36,dur:0.36});
+      }
+      starRing(ox,oy,22,12,'#ffffff',true);
+      starRing(ox,oy,42,16,'#ffffff',true);
+      addStars(ox,oy,'#ffffff',14,120,true);
       if(!echo){pflash(0.55);setSlow(0.12);}
       sfx('phantomup');
       if(!echo)addText(ox,oy-16,'ASSASSIN!',prismCol(G.time*8));
@@ -2509,15 +2645,23 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
       const tgt=relicTarget(p,340);
       if(!tgt)return false;
       const mult=1+Math.floor(0.4*(lv-1));
-      G.fx.push({kind:'lance',fat:1,x1:ox,y1:oy,x2:tgt.x,y2:tgt.y,col:'#c04aff',col2:'#2a1030',t:0.28,dur:0.28});
-      G.fx.push({kind:'boom',col:'#c04aff',x:tgt.x,y:tgt.y,r:26+mult*6,t:0.3,dur:0.3});
-      addParticles(tgt.x,tgt.y,'#c04aff',14,110);
+      // Necromancy does not fire beams — it runs a nerve between two bodies.
+      // The old `lance` here was LAVA RAY's fat molten bar in violet, which
+      // read as Destruction wearing a different colour. This one is thin,
+      // twitchy and organic: a filament that re-fires along its own length.
+      G.fx.push({kind:'nerve',x1:ox,y1:oy,x2:tgt.x,y2:tgt.y,seed:Math.random()*99,
+        t:0.42,dur:0.42});
+      addParticles(tgt.x,tgt.y,'#c04aff',8,90);
       addSparkles(tgt.x,tgt.y,'#e8b8ff',6,70);
+      // sparks shed along the whole filament, not just at the far end
+      for(let i=0;i<7;i++){
+        const t=Math.random();
+        addSparkles(ox+(tgt.x-ox)*t,oy+(tgt.y-oy)*t,Math.random()<0.5?'#9fe84a':'#c04aff',1,26);
+      }
       // agony rises off the victim as violet wisps
       for(let i=0;i<4;i++)G.particles.push({x:tgt.x+(Math.random()*14-7),y:tgt.y,
         vx:(Math.random()*2-1)*10,vy:-30-Math.random()*20,t:0.7,col:'#8a5cff',size:2,drag:1.3});
       damageEnemy(tgt,dmg*mult,p);
-      G.shake=Math.max(G.shake,2);
       sfx('inflict');crText(tgt.x,tgt.y);
       break;}
     case 'plague':{ // plague: a rotting mote that splashes, then arms its victim to burst
@@ -2864,6 +3008,8 @@ function applyBuff(p,type){
     case 'damage':p.dmgMul+=0.1;addText(p.x,p.y-12,'+DAMAGE','#ff8b3d');break;
     case 'magnet':p.magnet+=16;addText(p.x,p.y-12,'+MAGNET','#b06bff');break;
     case 'heart':p.hp=Math.min(p.maxhp,p.hp+35);addText(p.x,p.y-12,'+35 HP','#ff4d6d');sfx('heart');return;
+    // map-wide gem suction for a few seconds — one pickup, whole party's gems
+    case 'vacuum':G.vacuumT=3.5;flash('VACUUM!');addText(p.x,p.y-12,'VACUUM','#39d5ff');addSparkles(p.x,p.y,'#8ef0ff',18,90);sfx('douse');return;
     // an arcane mote stolen from ARCANOMAGUS before it could drink it back
     case 'spark':p.dmgMul+=0.06;addText(p.x,p.y-12,'+ARCANE','#c9a4ff');addSparkles(p.x,p.y,'#c9a4ff',12,70);sfx('levelup');return;
     case 'pod':{
@@ -2963,7 +3109,7 @@ function carveArena(){
   for(const k of dirty)chunkCanvases.delete(k);
 }
 function closeArena(){
-  G.arena=null;G.creep=null;
+  G.arena=null;G.creep=null;G.voidTiles=null;
   G.tileOverride.clear();
   chunkCanvases.clear();
 }
@@ -3332,10 +3478,10 @@ function tickBossFx(dt,alive){
             // anything that walks into the dream is caught by it too; bosses
             // keep the 0.4s stagger cap so their scripts can't desync
             if(!e.dead)e.stunT=Math.max(e.stunT||0,e.boss?0.4:Math.min(f.stun,f.t));
-            if(!e.dead&&Math.random()<0.5)starHit(e.x,e.y-e.r,2);
+            if(!e.dead&&Math.random()<0.3)starHit(e.x,e.y-e.r,1);
           });
         }
-        if(Math.random()<dt*22){
+        if(Math.random()<dt*5){
           const a=Math.random()*TAU,rr=f.r*Math.sqrt(Math.random());
           G.particles.push({x:f.x+Math.cos(a)*rr,y:f.y+Math.sin(a)*rr,
             vx:(Math.random()*2-1)*8,vy:-12-Math.random()*14,t:0.5+Math.random()*0.4,
@@ -3372,7 +3518,7 @@ function tickBossFx(dt,alive){
           const dd=Math.hypot(tg.x-f.x,tg.y-f.y)||1;
           f.x+=(tg.x-f.x)/dd*f.spd*dt;f.y+=(tg.y-f.y)/dd*f.spd*dt;
         }
-        if(Math.random()<dt*26)addStars(f.x,f.y+(Math.random()*10-5),'#ffffff',1,24,true);
+        if(Math.random()<dt*10)addStars(f.x,f.y+(Math.random()*10-5),'#ffffff',1,24,true);
         if(f.tick<=0){
           f.tick=0.25;
           queryEnemies(f.x,f.y,f.r,e=>{
@@ -3462,7 +3608,14 @@ function spawnSlagOffering(){
 // cost — Geminox's siphon regen alone out-healed the whole party. Rescale so
 // a heal always costs the seconds it originally cost.
 function bossHeal(e,pct){
-  const mul=G.mode==='rush'&&e.def?clamp((e.def.dur||100)/rushTTK(G.wave),0,1):1;
+  // heals are authored as % of max hp against each fight's original ~dur-second
+  // pool. Both campaign modes now run fights to a longer target TTK on much
+  // bigger pools, so an unscaled drain would out-race the party (Geminox's
+  // pylons healed 3× the hp over a 3× longer fight). Scale the % down by
+  // designed-dur / target-TTK, exactly as rush always did.
+  const ttk=G.mode==='rush'?rushTTK(G.wave)
+    :G.mode==='classic'?CLASSIC_TTK[clamp(Math.round(G.wave/5)-1,0,3)]:0;
+  const mul=ttk&&e.def?clamp((e.def.dur||100)/ttk,0,1):1;
   e.hp=Math.min(e.maxhp,e.hp+e.maxhp*pct*mul);
 }
 function armSlam(e,dur,r){
@@ -3484,7 +3637,7 @@ const SLAGMAW={
  // phase 1 only teaches slam/ring — keep it short and get to the fun rooted
  // phase: 9500 hp with the gate at 0.60 cuts phase 1 by ~30% and leaves the
  // phase-2 forge fight the same length it was at 11000/0.50
- id:'slagmaw',name:'SLAGMAW',hp:9500,r:20,sp:34,dmg:16,xp:120,
+ id:'slagmaw',name:'SLAGMAW',hp:9500,hpClassic:9500,r:20,sp:34,dmg:16,xp:120,
  spr:slagmawSprite,scale:2,barCol:'#ff7a1f',phaseCount:2,gates:[0.60],minCasts:2,
  transName:'THE FORGE OPENS',
  aiInit:()=>({mode:'intro',t:2.5,cast:null,castT:0,castLen:0,walk:2.2,next:'slam',cyc:0,pupT:12,step:0}),
@@ -3667,7 +3820,7 @@ function spawnSiphonPylon(x,y){
   return e;
 }
 const GEMINOX={
- id:'geminox',name:'GEMINOX',hp:12000,r:17,sp:32,dmg:22,xp:240,ttkMul:0.7,
+ id:'geminox',name:'GEMINOX',hp:12000,hpClassic:48000,r:17,sp:32,dmg:22,xp:240,ttkMul:0.7,
  spr:geminoxSprite,scale:2,barCol:'#7fd8ff',phaseCount:3,gates:[0.65,0.33],minCasts:2,
  transName:'THE TWINS TURN',
  aiInit:()=>({mode:'intro',t:2.5,cast:null,castT:0,castLen:0,mechT:4,mechGap:6.0,slagT:4.0,slagGap:4.0,boltT:1.8,boltGap:1.8,addT:11,cyc:0,next:'converge',pylT:9,pylons:[]}),
@@ -3862,7 +4015,7 @@ function moveFont(e,x,y){
   sfx('douse');
 }
 const PYRAXIS={
- id:'pyraxis',name:'PYRAXIS',hp:18000,r:22,sp:26,dmg:26,xp:400,
+ id:'pyraxis',name:'PYRAXIS',hp:18000,hpClassic:152000,r:22,sp:26,dmg:26,xp:400,
  spr:pyraxisSprite,scale:2,barCol:'#ff7a1a',phaseCount:3,gates:[0.66,0.33],minCasts:3,
  transName:'THE HEART CRACKS',
  aiInit:()=>({mode:'intro',t:2.5,cast:null,castT:0,castLen:0,smashT:5,sonsT:6,brandT:13,showerT:9,creepT:6,meltT:18,fontT:12,fontI:0,unmakeT:0.55,crown:null}),
@@ -4140,6 +4293,36 @@ function weSetPhase(e,ph){
   G.bossTint=WE_TINTS[i];
   e.ai.pal=i;
 }
+// the WORLDEATER eats the arena: each phase gate permanently consumes the
+// outermost `depth`-tile band into void. Deliberately NOT G.creep — creep is
+// Pyraxis's, gets cleared by safes/meltdown and applies a mud slow; the void
+// is forever, uncleansable, and does not slow (a slow would stack with the
+// maw pull past what a player can out-run). Depth 6 on the smallest arena
+// still leaves a ~448×176px safe interior; pillars and the P4 heart ring
+// both sit well inside it.
+function weDevourEdge(depth){
+  const A=G.arena;if(!A)return;
+  G.voidTiles=G.voidTiles||new Set();
+  const t0x=Math.floor((A.x-A.w/2)/TILE),t1x=Math.floor((A.x+A.w/2)/TILE);
+  const t0y=Math.floor((A.y-A.h/2)/TILE),t1y=Math.floor((A.y+A.h/2)/TILE);
+  for(let ty=t0y;ty<=t1y;ty++)for(let tx=t0x;tx<=t1x;tx++){
+    const d=Math.min(tx-t0x,t1x-tx,ty-t0y,t1y-ty);
+    if(d<depth)G.voidTiles.add(tx+','+ty);
+  }
+}
+// COLLAPSING MAW: it inhales — every player is dragged toward the boss while
+// a ring collapses inward with a few safe gaps. Pull 68 < player speed 85:
+// the pull can be fought radially but not out-sprinted, so the intended play
+// is rotating INTO a gap, not racing outward. Movement-based by design —
+// spells auto-target, so the players' only lever is where they stand.
+function armMaw(e,gaps,opt){
+  opt=opt||{};
+  const dur=opt.dur||2.6,rmax=opt.rmax||300;
+  bossCast(e,'maw','COLLAPSING MAW',dur);
+  e.ai.mawPull=dur;e.ai.mawSpd=opt.pull||68;
+  pushRing(e,e.x,e.y,{rmax,spd:rmax/dur,dir:-1,gaps,gapW:1.0,pct:0.14,w:12,dur,t:dur,col:'#8a5cff'});
+  sfx('gazeopen');subFlash('COLLAPSING MAW — ESCAPE THROUGH A GAP',dur);
+}
 function armLeap(e,alive,cast,r,rmax,gaps){
   const t=alive[(Math.random()*alive.length)|0];
   if(!t)return;
@@ -4180,19 +4363,34 @@ function armGaze(e,cast,active,pct){
   sfx('gazeopen');subFlash('BREAK LINE OF SIGHT — USE THE PILLARS',cast);
 }
 const WORLDEATER={
- id:'worldeater',name:'THE WORLDEATER',hp:24000,r:22,sp:28,dmg:28,xp:700,
+ id:'worldeater',name:'THE WORLDEATER',hp:24000,hpClassic:200000,r:22,sp:28,dmg:28,xp:700,
  spr:worldeaterSpr[0],scale:2,barCol:'#ffb62e',phaseCount:4,gates:[0.72,0.45,0.20],minCasts:3,
  transName:'IT REMEMBERS',
  aiInit:()=>({mode:'intro',t:2.5,cast:null,castT:0,castLen:0,pal:0,
-   leapT:4.5,spitT:2.4,thrallT:9,mechT:7,cycT:5,cyc:0,ringT:3.2,gazeT:6,fallT:5,addT:11,
-   enrageT:30,lastTick:99,wipes:0,charge:'none',chT:0,cvx:1,cvy:0,alt:0}),
+   leapT:4.5,spitT:2.1,thrallT:9,mechT:7,cycT:5,cyc:0,ringT:3.2,gazeT:6,fallT:5,addT:11,
+   enrageT:30,lastTick:99,wipes:0,charge:'none',chT:0,cvx:1,cvy:0,alt:0,
+   mawT:8,mawPull:0,mawSpd:68,pulseT:0,pulseLen:3.5,pulseTick:99,voidTick:0,p4alt:0}),
  onPhase(e,ph){
    const a=e.ai;
    weSetPhase(e,ph);
    setSlow(ph===4?0.9:0.45);G.shake=Math.max(G.shake,ph===4?14:10);
    if(a.hg==='stun')e.vulnMul=1; // never carry a stun bonus across a phase gate
    a.hg='none';a.hgT=10;
-   if(ph===2){e.sp=22;a.mechT=1.5;a.ringT=3.2;a.addT=4;sfx('crack');}
+   // every gate: it eats a band of the arena, exhales roaming void, and
+   // winds up a REMEMBRANCE pulse (~5.5s out — 2s frozen transition + 3.5s).
+   // Wanderers need no cleanup bookkeeping: the generic gate fx-cut kills the
+   // previous set right before this runs, and boss death filters f.boss fx.
+   weDevourEdge(ph===2?2:ph===3?4:6);
+   subFlash('THE EDGE IS DEVOURED — IT INHALES',4);
+   a.pulseT=3.5;a.pulseLen=3.5;a.pulseTick=99;
+   {
+     const wn=ph===4?3:ph; // 2, 3, 3
+     for(let i=0;i<wn;i++){
+       const pt=spawnPointArena();
+       if(pt)pushWander(e,pt.x,pt.y,{r:20,spd:38,pct:0.04,chase:0,t:999,dur:999,col:'#8a5cff'});
+     }
+   }
+   if(ph===2){e.sp=22;a.mechT=1.5;a.ringT=2.6;a.addT=4;sfx('crack');}
    else if(ph===3){e.sp=22;a.gazeT=6;a.fallT=5;a.addT=9;sfx('gazeopen');}
    else if(ph===4){
      // the doom clock rides the fight-length target: at rush pacing the last
@@ -4217,6 +4415,63 @@ const WORLDEATER={
  // behind. Only two can be lost; the rest hold.
  tick(e,dt,alive){
    const a=e.ai;
+   // ---- always-on concurrent layer (all phases): this is the fix for the
+   // fight feeling empty — bossCast freezes pick() and all its timers, so
+   // anything living here keeps pressuring THROUGH the casts ----
+   // REMEMBRANCE: the phase-gate mini-oblivion, wound up by onPhase
+   if(a.pulseT>0){
+     a.pulseT-=dt;
+     if(!a.cast){e.castName='REMEMBRANCE';e.skullIcon=1;e.castP=1-clamp(a.pulseT,0,a.pulseLen)/a.pulseLen;}
+     const s=Math.ceil(a.pulseT);
+     if(s!==a.pulseTick&&s<=3&&s>0){a.pulseTick=s;sfx('telegraph');flash(''+s);}
+     if(Math.floor(a.pulseT*4)%2===0)G.shake=Math.max(G.shake,1.2);
+     if(a.pulseT<=0){
+       e.skullIcon=0;if(!a.cast){e.castName=null;e.castP=0;}
+       G.shake=12;sfx('oblivion');flash('REMEMBRANCE');
+       const A=G.arena;
+       G.fx.push({kind:'boom',x:A?A.x:e.x,y:A?A.y:e.y,r:A?Math.max(A.w,A.h)*0.6:400,t:0.5,dur:0.5});
+       for(const p of G.players)if(!p.dead){p.hurtCd=0;p.invuln=0;bossHit(p,0.20);}
+     }
+   }
+   // the devoured floor bites like Pyraxis creep, but forever
+   a.voidTick-=dt;
+   if(a.voidTick<=0&&G.voidTiles){
+     a.voidTick=0.35;
+     for(const p of alive)if(G.voidTiles.has(Math.floor(p.x/TILE)+','+Math.floor(p.y/TILE))){
+       bossHit(p,0.04);addParticles(p.x,p.y,'#8a5cff',2,30);
+     }
+   }
+   // COLLAPSING MAW pull: an extra collided step toward the boss each frame,
+   // composing with (not replacing) the player's own input
+   if(a.mawPull>0){
+     a.mawPull-=dt;
+     for(const p of alive){
+       const dx=e.x-p.x,dy=e.y-p.y,d=Math.hypot(dx,dy)||1;
+       if(d>e.r+12)moveCollide(p,dx/d*a.mawSpd*dt,dy/d*a.mawSpd*dt);
+       if(Math.random()<dt*10)addParticles(p.x,p.y,'#8a5cff',1,25);
+     }
+   }
+   // concurrent pressure that no longer pauses for casts: the P2 volley and
+   // the P3 debris — suppressed during the maw (pull+ring+extras is unfair)
+   if(e.phase===2){
+     a.ringT-=dt;
+     if(a.ringT<=0&&a.cast!=='maw'&&a.hg!=='stun'){a.ringT=2.6;ringVolley(e,10,'#ffb62e',78,Math.random()*TAU);}
+   }
+   if(e.phase===3){
+     a.fallT-=dt;
+     if(a.fallT<=0&&!a.gazeLive&&a.cast!=='maw'){
+       a.fallT=4;
+       const A=G.arena;
+       for(let i=0;i<4;i++){
+         const an=Math.random()*TAU,rr=110+Math.random()*90;
+         pushMet(e,(A?A.x:e.x)+Math.cos(an)*rr,(A?A.y:e.y)+Math.sin(an)*rr*0.62,24,1.3,0.15,{r:30,life:8,pct:0.04,col:e.barCol});
+       }
+       const tp=alive[(Math.random()*alive.length)|0];
+       if(tp)pushMet(e,tp.x,tp.y,24,1.3,0.15,{r:30,life:8,pct:0.04,col:e.barCol});
+       sfx('cinder');
+     }
+   }
+   // ---- hateful charge machine, phases 2-3 only ----
    if(e.phase<2||e.phase>3)return;
    if(a.hg==='fix'){
      a.hgT-=dt;
@@ -4283,10 +4538,12 @@ const WORLDEATER={
      if(t)bossWalk(e,t.x,t.y,28);
      a.spitT-=dt;
      if(a.spitT<=0&&t){
-       a.spitT=2.4;
+       a.spitT=2.1;
+       // five-bullet fan (was three): P1 was the emptiest stretch of the
+       // whole campaign — per-bullet damage unchanged, the wall got wider
        const an=Math.atan2(t.y-e.y,t.x-e.x);
-       for(let i=-1;i<=1;i++){
-         const g=an+i*0.22;
+       for(let i=-2;i<=2;i++){
+         const g=an+i*0.20;
          G.ebullets.push({x:e.x,y:e.y,vx:Math.cos(g)*90,vy:Math.sin(g)*90,r:3,dmg:e.dmg*0.35,life:3.2,col:'#ffb62e',boss:1});
        }
      }
@@ -4303,24 +4560,27 @@ const WORLDEATER={
        }
      }
      a.leapT-=dt;
-     if(a.leapT<=0){a.leapT=7;armLeap(e,alive,1.5,48,340,3);}
+     if(a.leapT<=0){a.leapT=6;armLeap(e,alive,1.5,48,340,3);}
    }else if(e.phase===2){
      if(t)bossWalk(e,t.x,t.y,22);
-     a.ringT-=dt;
-     if(a.ringT<=0){a.ringT=3.2;ringVolley(e,10,'#ffb62e',78,Math.random()*TAU);}
+     // ring volley lives in tick() now — it fires through casts
      a.addT-=dt;
      if(a.addT<=0){a.addT=11;for(let i=0;i<2;i++){const s=spawnEnemy('spitter',e.x+(i?70:-70),e.y);s.life=30;}}
+     a.mawT-=dt;
+     if(a.mawT<=0&&!a.gazeLive){a.mawT=13;armMaw(e,2);return;}
      a.mechT-=dt;
      if(a.mechT<=0){
-       a.mechT=7;
+       a.mechT=5.5;
        if((a.alt++)%2===0)armBrand(e,alive,2.6,38,0.14,1.2);
        else armRip(e,alive,3.2);
      }
    }else if(e.phase===3){
      if(t&&!a.gazeLive)bossWalk(e,t.x,t.y,22);
+     a.mawT-=dt;
+     if(a.mawT<=0&&!a.gazeLive){a.mawT=14;armMaw(e,3);return;}
      a.gazeT-=dt;
      if(a.gazeT<=0){
-       a.gazeT=16;a.gazeLive=1;
+       a.gazeT=10;a.gazeLive=1;
        armGaze(e,2.5,2.0,0.06);
        const n=Math.min(3,alive.length),A=G.arena;
        for(let i=0;i<n;i++){
@@ -4331,18 +4591,7 @@ const WORLDEATER={
        after(4.5,()=>{a.gazeLive=0;});
        return;
      }
-     a.fallT-=dt;
-     if(a.fallT<=0&&!a.gazeLive){
-       a.fallT=5;
-       const A=G.arena;
-       for(let i=0;i<4;i++){
-         const an=Math.random()*TAU,rr=110+Math.random()*90;
-         pushMet(e,(A?A.x:e.x)+Math.cos(an)*rr,(A?A.y:e.y)+Math.sin(an)*rr*0.62,24,1.3,0.15,{r:30,life:8,pct:0.04,col:e.barCol});
-       }
-       const tp=alive[(Math.random()*alive.length)|0];
-       if(tp)pushMet(e,tp.x,tp.y,24,1.3,0.15,{r:30,life:8,pct:0.04,col:e.barCol});
-       sfx('cinder');
-     }
+     // debris fall lives in tick() now — it keeps falling through casts
      a.addT-=dt;
      if(a.addT<=0){
        a.addT=9;
@@ -4379,7 +4628,13 @@ const WORLDEATER={
        const step=(a.cyc++)%4;
        if(step===0)armLeap(e,alive,1.2,40,300,3);
        else if(step===1)armBrand(e,alive,2.0,32,0.12,0.6);
-       else if(step===2)armBurst(e,8,150,22,0.13);
+       else if(step===2){
+         // alternate the centre burst with a softer maw — P4 already stacks
+         // the doom clock, so the pull is gentler here (first knob to turn
+         // if the finale over-wipes)
+         if(((a.p4alt++)%2)===0)armBurst(e,8,150,22,0.13);
+         else armMaw(e,3,{rmax:260,dur:2.2,pull:55});
+       }
        else armGaze(e,1.4,1.8,0.05);
        return;
      }
@@ -4451,6 +4706,11 @@ const WORLDEATER={
      // the shadow fx is already ticking; nothing to resolve but the eye closing
      after(a.gazeActive||2,()=>{a.gazeLive=0;});
    }
+   if(k==='maw'){
+     // the collapsing ring already dealt its hit; the maw just snaps shut
+     G.fx.push({kind:'boom',x:e.x,y:e.y,r:44,t:0.3,dur:0.3});
+     G.shake=Math.max(G.shake,6);sfx('slam');
+   }
  },
  draw(g,x,y,e){
    const a=e.ai;
@@ -4464,7 +4724,7 @@ const WORLDEATER={
    }
  },
  onDeath(e){
-   G.creep=null;
+   G.creep=null;G.voidTiles=null;
    musStop();sfx('wefall');setSlow(1.2);
    G.shake=18;
    G.fx.push({kind:'boom',x:e.x,y:e.y,r:240,t:0.6,dur:0.6});
@@ -6481,7 +6741,11 @@ function spawnClassicBoss(i){
   // power outruns the roster's own hp curve — this keeps late fights from
   // melting in twenty seconds while the opening ones drag
   const rushMul=G.mode==='rush'?1+0.10*(G.wave-1):1;
-  let hp=d.hp*rushMul*((4*n-1)/3)*(1+0.06*Math.max(0,G.level-(2+effWave())));
+  // hpClassic: the classic campaign prices these four off measured median
+  // party dps × CLASSIC_TTK (tools/balance-model.mjs solve); rush keeps the
+  // roster hp column — its own measured floor does the adapting there
+  const baseHp=(G.mode==='classic'&&d.hpClassic)||d.hp;
+  let hp=baseHp*rushMul*((4*n-1)/3)*(1+0.06*Math.max(0,G.level-(2+effWave())));
   // BOSS RUSH pacing: the previous kill measured what the party actually
   // deals; the next boss gets the hp that output — grown by the payout it
   // just banked — needs rushTTK() seconds to chew through. Measured dps
@@ -6493,6 +6757,15 @@ function spawnClassicBoss(i){
   // wall-clock fight still lands inside the target band
   if(G.mode==='rush'&&G.lastBossDPS>0)
     hp=Math.max(hp,G.lastBossDPS*rushGrowth(G.wave)*rushTTK(G.wave)*(d.ttkMul||1));
+  // classic bosses: priced off the party's FRESH saturated wave-clearing read
+  // (G.waveDPS, measured the wave before this fight) — not off the previous
+  // boss's fight, whose burst-y TTK made pricing chain-unstable (a 35s lucky
+  // boss-1 kill over-priced Geminox into a stall; a slow one melted it).
+  // CLASSIC_RHO = measured bossDPS/waveDPS per boss (probe, 2026-08-26,
+  // geomean of solo+4p): focus fire and the nearestEnemy boss bias beat
+  // travel/overkill losses by different margins per fight length.
+  if(G.mode==='classic'&&G.waveDPS>0)
+    hp=Math.max(hp,CLASSIC_RHO[i]*G.waveDPS*CLASSIC_TTK[i]*(d.ttkMul||1));
   G.bossDmgAcc=0;G.bossVulnT=0;
   // the roster's dmg column reads as % of the party's max hp: flat damage was
   // obsolete within a few bosses of charm/rally hp growth, and the 12%/6%
@@ -6517,18 +6790,519 @@ function spawnClassicBoss(i){
   return e;
 }
 
+// ============================================================
+// WAVE PATTERNS — notebook choreography v1
+// Five spawn patterns that give each trash wave an identity. Each is a small
+// state machine ticked from the wave machine's 'fight' state; the mobs it
+// spawns are ordinary enemies (they count in the on-screen total and must die
+// or despawn before the wave clears). Marching mobs carry mvx/mvy/msp, which
+// the enemy loop reads in place of player-seeking.
+// ============================================================
+const jumperSprite=makeSprite([
+'..CCC..',
+'.CWCWC.',
+'.CCCCC.',
+'C.CCC.C',
+'C.....C'
+],{C:'#4ac8d8',W:'#10202a'});
+const PATTERN_NAMES={band:'THE BAND',polarity:'POLARITY',swarm:'THE SWARM',jumpers:'JUMPERS',encircle:'THE ENCIRCLE'};
+// share of the normal spawn drip a pattern wave keeps — the pattern brings the rest
+const PATTERN_QUOTA={band:0.75,polarity:0.65,swarm:0.6,jumpers:0.75,encircle:0.45};
+// ---- the number spine ----
+// Density: counts scale with the party's MEASURED clearing output (G.waveDPS)
+// against the output the base counts were tuned at, so every pattern keeps
+// its engagement time while the body count climbs — struggling to kill 20 at
+// wave 2 and mowing 200 at wave 16 is the progression fantasy, by design.
+const REF_DPS=55; // solo wave-2 clearing output baseline (calibrated by sim)
+function dpsFactor(){
+  const n=Math.max(1,G.players.length);
+  const ref=REF_DPS*(0.55+0.45*n);
+  return G.waveDPS>0?clamp(G.waveDPS/ref,1,14):1;
+}
+// XP: budgets are authored in LEVELS (lv:{b,x} on the wave table) and priced
+// here at the party's current position, so party size and schedule deficits
+// are absorbed by construction.
+function lvGems(k,from){
+  let L=from!=null?from:G.level+bankedLevels().banked,s=0;
+  for(let i=0;i<k;i++)s+=xpNeed(L+i);
+  return s;
+}
+function mixAvgXp(def){
+  const m=def.mix||{chaser:1};let s=0,w=0;
+  for(const k in m){s+=m[k]*ETYPES[k].xp;w+=m[k];}
+  return s/Math.max(0.001,w);
+}
+// integer gem draw whose expected value spreads the pattern's pool over its
+// planned spawn count
+function patXp(P){
+  if(!P.planned||P.xpPool<=0)return 0;
+  const v=P.xpPool/P.planned,f=Math.floor(v);
+  return f+(Math.random()<v-f?1:0);
+}
+function initWavePattern(id,def){
+  const d=def.dur,n=Math.max(1,G.players.length),F=dpsFactor();
+  const P={id,ei:0,events:[],capBonus:20,F};
+  const lv=def.lv||{b:1,x:0};
+  const L0=G.level+bankedLevels().banked;
+  // base budget minus what the thinned drip already pays with natural mob xp;
+  // the execution bonus rides only on earnable pattern kills
+  const base=Math.max(0,lvGems(lv.b,L0)-Math.round(G.waveQuota*mixAvgXp(def)));
+  const bonus=lvGems(lv.x,L0+lv.b);
+  if(id==='band'){
+    P.events=[0.12*d,0.45*d,0.75*d];P.capBonus=Math.round(80*Math.min(F,5));
+    P.int=Math.max(0.010,0.03/F);
+    P.planned=Math.round(3*5.0/P.int*1.2);
+    P.xpPool=base+bonus; // escaped mobs forfeit their share — that IS the skill axis
+  }else if(id==='polarity'){
+    P.events=[0.15*d];P.capBonus=Math.round(60*Math.min(F,5));
+    P.window=d*0.6;
+    // influx per second scales with LIVE camera-edge height at spawn time;
+    // this rate is per 90px of edge, both sides combined
+    P.rate0=Math.min(1.3*F,520/P.window);
+    P.planned=Math.round(P.rate0*(G.cam.h/90)*P.window*1.2);
+    P.xpPool=base+bonus;
+  }else if(id==='swarm'){
+    P.events=[0.15*d,0.45*d,0.72*d];P.capBonus=Math.round(170*Math.min(F,6));
+    P.burst=Math.round((26+8*n)*F);
+    P.trickle=1.2+2.5*(F-1); // gentle at wave 2, a carpet once output is measured
+    // planned counts every xp draw: chaff 1 each, husks 3 each (~1/8 of spawns)
+    P.planned=Math.round((3*P.burst+P.trickle*0.7*d)*1.25);
+    P.xpPool=base+bonus;
+  }else if(id==='jumpers'){
+    P.events=[0.12*d,0.40*d,0.66*d];
+    P.pack=Math.ceil((2+n)*Math.sqrt(F));
+    P.planned=3*P.pack;
+    P.xpPool=base+bonus;
+  }else if(id==='encircle'){
+    P.events=[0.10*d];P.capBonus=Math.round(100*Math.min(F,3));
+    P.xpPool=base;   // the wall pays the base level
+    P.champXp=bonus; // the champion carries the whole execution jackpot
+  }
+  return P;
+}
+function tickWavePattern(dt,maxAlive){
+  const P=G.wavePat;if(!P)return;
+  const alive=G.players.filter(p=>!p.dead);
+  const room=()=>G.enemies.length<maxAlive+40;
+  if(P.ei<P.events.length&&G.waveT>=P.events[P.ei]
+     &&!(P.id==='band'&&P.band)&&!(P.id==='polarity'&&P.pol)){
+    P.ei++;
+    if(P.id==='band')bandArm(P);
+    else if(P.id==='polarity')polarityFire(P,alive);
+    else if(P.id==='swarm')swarmBurst(P,room);
+    else if(P.id==='jumpers')jumperPack(P,alive,room);
+    else if(P.id==='encircle')encircleStart(P,alive);
+  }
+  // the VS carpet: swarm waves also trickle continuously between bursts
+  if(P.id==='swarm'&&P.ei>0&&G.waveT<waveDef(G.wave).dur*0.85){
+    P.tAcc=(P.tAcc||0)+dt*P.trickle;
+    while(P.tAcc>=1){P.tAcc--;if(!room())break;swarmSpawnOne(P);}
+  }
+  if(P.band)bandTick(P,dt,room);
+  if(P.pol)polarityTick(P,dt);
+  if(P.circ)encircleTick(P,dt,alive);
+}
+// 1) THE BAND — an alarm on one screen edge, then a torrent of swarmers
+// floods a lane straight across. A hazard if you stand in it, a farm if you
+// camp its edge. Band mobs never target players and dissolve past the far side.
+// The lane is an infinite line: only its lateral coordinate is fixed in world
+// space; spawn and despawn track the CURRENT camera edges, and the alert sign
+// is anchored to the screen edge the torrent pours from.
+function bandArm(P){
+  const c=G.cam,side=(Math.random()*4)|0;
+  const b={side,half:42,dx:0,dy:0,coord:0,warnT:2.5,beepT:0,torT:0,spawnT:0};
+  if(side<2){b.dx=side===0?1:-1;b.coord=c.y+(Math.random()-0.5)*c.h*0.7;}
+  else{b.dy=side===2?1:-1;b.coord=c.x+(Math.random()-0.5)*c.w*0.7;}
+  P.band=b;
+  sfx('telegraph');
+}
+function bandTick(P,dt,room){
+  const b=P.band,c=G.cam;
+  if(b.warnT>0){
+    b.warnT-=dt;b.beepT-=dt;
+    // the alarm bell accentuates as the torrent closes in
+    if(b.beepT<=0){b.beepT=0.10+0.40*Math.max(0,b.warnT/2.5);sfx('telegraph');}
+    if(b.warnT<=0){b.torT=5.0;flash(PATTERN_NAMES.band+'!');subFlash('OUT OF THE LANE — OR FARM ITS EDGE',3);sfx('wavestart');}
+    return;
+  }
+  if(b.torT>0){
+    b.torT-=dt;b.spawnT-=dt;
+    while(b.spawnT<=0&&room()){
+      b.spawnT+=P.int;
+      const u=(Math.random()*2-1)*(b.half-6);
+      let x,y;
+      if(b.dx){x=b.dx>0?c.x-c.w/2-60:c.x+c.w/2+60;y=b.coord+u;}
+      else{y=b.dy>0?c.y-c.h/2-60:c.y+c.h/2+60;x=b.coord+u;}
+      const e=spawnEnemy('swarm',x,y);
+      b.n=(b.n||0)+1;
+      if(b.n%10===0){
+        // a barge in the current: heavy, slower, worth three draws — killing
+        // into the lane means picking these out of the flow
+        e.hp*=8;e.scale=1.4;e.xp=patXp(P)+patXp(P)+patXp(P);
+        e.msp=125;
+      }else{
+        e.hp*=0.8;
+        e.xp=patXp(P); // its slice of the wave budget — escape and it's forfeit
+        e.msp=165;
+      }
+      e.maxhp=e.hp;
+      e.bandMob=1;e.flow=1; // pure current: no collision, no separation, just flow
+      e.mvx=b.dx;e.mvy=b.dy;
+      e.life=(Math.max(c.w,c.h)+160)/125+3;
+    }
+    if(b.spawnT<=0)b.spawnT=P.int; // room() denied: don't burst on re-open
+  }
+  let liveBand=false;
+  for(const e of G.enemies){
+    if(!e.bandMob||e.dead)continue;
+    liveBand=true;
+    // past the far edge of the CURRENT view: gone, no loot
+    const out=b.dx?(b.dx>0?e.x>c.x+c.w/2+80:e.x<c.x-c.w/2-80)
+                  :(b.dy>0?e.y>c.y+c.h/2+80:e.y<c.y-c.h/2-80);
+    if(out){e.dead=true;addParticles(e.x,e.y,'#8fa3b8',3,40);}
+  }
+  if(b.torT<=0&&!liveBand)P.band=null;
+}
+// 2) POLARITY — two hordes march at each other, ignoring the party (the
+// Slagmaw-offering walk). Every orange/green touch fuses into an elite that
+// DOES hunt. The play is killing one side before the lines meet.
+// A CONTINUOUS slow influx along both vertical screen edges, tracking the
+// LIVE camera: a spread-out party (zoomed-out camera) faces a taller front
+// and proportionally more marchers, so hugging together is the defensive
+// play. Near the midline, opposite charges attract; a touch fuses into a
+// hunting elite. A marcher that crosses unopposed turns chaser.
+function polarityFire(P,alive){
+  P.pol={t:P.window,acc:2+Math.max(1,alive.length),orange:[],green:[]};
+  flash(PATTERN_NAMES.polarity+'!');
+  subFlash('KILL ONE SIDE BEFORE THE LINES MEET',3.2);
+  sfx('spreadcall');
+}
+function polRelease(e){e.msp=undefined;e.polCol=null;e.polSide=undefined;}
+function polaritySpawn(P,side){
+  const c=G.cam;
+  const x=side?c.x+c.w/2+50:c.x-c.w/2-50;
+  const y=c.y+(Math.random()-0.5)*c.h*0.92;
+  const e=spawnEnemy('chaser',x,y);
+  P.pol.n=(P.pol.n||0)+1;
+  if(P.pol.n%5===0){e.hp*=4;e.scale=1.25;e.xp=patXp(P)+patXp(P);}
+  else{e.hp*=1.35;e.xp=patXp(P);}
+  e.maxhp=e.hp;
+  e.polSide=side;e.polCol=side?'#6fe84a':'#ff9040';
+  e.msp=30;e.mvx=side?-1:1;e.mvy=0;
+  (side?P.pol.green:P.pol.orange).push(e);
+}
+function polarityTick(P,dt){
+  const v=P.pol,c=G.cam;
+  v.t-=dt;
+  if(v.t>0){
+    v.acc+=dt*P.rate0*(c.h/90); // camera height IS the spawn budget
+    while(v.acc>=1&&G.enemies.length<520){v.acc--;polaritySpawn(P,Math.random()<0.5?0:1);}
+  }
+  v.orange=v.orange.filter(e=>!e.dead&&e.polSide!==undefined);
+  v.green=v.green.filter(e=>!e.dead&&e.polSide!==undefined);
+  const mid=c.x;
+  for(const e of v.orange.concat(v.green)){
+    e.mvx=e.polSide?-1:1;e.mvy=0;
+    // crossed the midline unopposed: the current turns on the party
+    if(e.polSide===0&&e.x>mid+30)polRelease(e);
+    else if(e.polSide===1&&e.x<mid-30)polRelease(e);
+  }
+  // magnetic attraction near the midline makes the fuses actually happen —
+  // and reads as the pattern's physics
+  const near=e=>Math.abs(e.x-mid)<130;
+  const on=v.orange.filter(near),gn=v.green.filter(near);
+  for(const o of on){
+    let best=null,bd=110*110;
+    for(const g of gn){
+      if(g.dead)continue;
+      const d=dist2(o.x,o.y,g.x,g.y);
+      if(d<bd){bd=d;best=g;}
+    }
+    if(!best)continue;
+    const d=Math.sqrt(bd)||1;
+    const ax=(best.x-o.x)/d,ay=(best.y-o.y)/d;
+    o.mvx=o.mvx*0.55+ax*0.45;o.mvy=ay*0.45;
+    best.mvx=best.mvx*0.55-ax*0.45;best.mvy=-ay*0.45;
+    const rr=o.r+best.r+2;
+    if(bd<rr*rr){
+      o.dead=true;best.dead=true;
+      const x=(o.x+best.x)/2,y=(o.y+best.y)/2;
+      // lighter elite than the wave-table 2.6×: a fully-missed influx fuses
+      // many of these — the punishment is the crowd, not each body
+      spawnEnemy('chaser',x,y,1.8);
+      addText(x,y-10,'FUSED!','#ff5a3d');
+      addParticles(x,y,'#ff9040',10,90);addParticles(x,y,'#6fe84a',10,90);
+      sfx('crack');G.shake=Math.max(G.shake,3);
+    }
+  }
+  if(v.t<=0&&!v.orange.length&&!v.green.length)P.pol=null;
+}
+// 3) THE SWARM — the screen floods. Early waves run the carve-through power
+// fantasy (paper hp); from wave 16 the flood holds its hp and the party
+// corrals up and survives it instead.
+function swarmSpawnOne(P){
+  const pt=spawnPoint();if(!pt)return;
+  const hard=G.wave>=16;
+  const e=spawnEnemy('swarm',pt.x,pt.y);
+  P.n=(P.n||0)+1;
+  if(P.n%8===0){
+    // husk: the tanky minority that survives the AoE wash and keeps walking —
+    // count-scaling alone can't threaten a chain/blast kit (more bodies just
+    // feed the chains), so the pressure lives in these
+    e.hp*=hard?8:4.5;e.maxhp=e.hp;
+    e.scale=1.35;e.sp*=0.8;
+    e.xp=patXp(P)+patXp(P)+patXp(P);
+  }else{
+    e.hp*=hard?1.15:0.55;e.maxhp=e.hp;
+    // carve floods SHAMBLE: base swarm speed (76) nearly matches the player
+    // (85), and fifty fast bodies envelop a level-1 kit before it can mow.
+    // The late survive-variant keeps its legs.
+    if(!hard)e.sp*=0.72;
+    e.xp=patXp(P); // the flood carries the wave's level budget
+  }
+}
+function swarmBurst(P,room){
+  for(let i=0;i<P.burst;i++){
+    if(!room())break;
+    swarmSpawnOne(P);
+  }
+  if(P.ei===1){flash(PATTERN_NAMES.swarm+'!');subFlash(G.wave>=16?'HOLD TOGETHER AND SURVIVE':'CARVE THROUGH THEM',3);}
+  else flash('SURGE!');
+  sfx('boss');
+}
+// 4) JUMPERS — hopping creatures that telegraph a landing ring, vanish from
+// auto-target while airborne, and land in a small (forgiving) blast.
+function jumperPack(P,alive,room){
+  for(let i=0;i<P.pack;i++){
+    if(!room())break;
+    const pt=spawnPoint();if(!pt)continue;
+    const e=spawnEnemy('chaser',pt.x,pt.y);
+    e.spr=jumperSprite;e.r=4.5;e.sp=26;
+    // beefy on purpose: they spawn off-camera under auto-fire and must live
+    // long enough to be SEEN hopping — chaser hp melted before the first leap
+    e.hp*=4*Math.max(1,P.F*0.6);e.maxhp=e.hp;e.dmg=10*dmgScale();
+    e.xp=patXp(P); // few bodies, chunky gems
+    e.jump={st:'ground',t:0.6+Math.random()*0.9};
+  }
+  if(P.ei===1){flash(PATTERN_NAMES.jumpers+'!');subFlash('WATCH THE LANDING RINGS',3);}
+  sfx('telegraph');
+}
+// 5) THE ENCIRCLE — a ring of hard-to-kill mobs closes on the party. Fire
+// auto-targets whatever is nearest, so walking at one point together stacks
+// the party's damage on that segment: the breach is a positioning play.
+// Failure floor: the ring never squeezes below Rmin, and gives up (breaking
+// into ordinary tanks) once the party escapes or it has squeezed for 8s.
+function encircleStart(P,alive){
+  const c=G.cam;
+  let cx=c.x,cy=c.y;
+  if(alive.length){
+    cx=0;cy=0;
+    for(const p of alive){cx+=p.x;cy+=p.y;}
+    cx/=alive.length;cy/=alive.length;
+  }
+  // a WALL, not a picket fence: mob count comes from the circumference at
+  // ~24px shoulder-to-shoulder spacing, and the ring packs denser as it
+  // contracts. Tight enough a radius that it forms in full view.
+  // radius covers the WHOLE party (a spread player starting outside the ring
+  // used to trip the escape-break instantly and dissolve the wall unseen)
+  let far=0;
+  for(const p of alive)far=Math.max(far,Math.hypot(p.x-cx,p.y-cy));
+  const R=Math.max(Math.min(c.w,c.h)*0.52,far+90);
+  const N=clamp(Math.ceil(TAU*R/24),30,90);
+  // the ring closes in 5 BIG lunges — ~22px stomps every 4.5s that the whole
+  // wall visibly takes together; ten 11px steps read as jostling, not closing
+  P.circ={cx,cy,R,Rmin:95,step:(R-95)/5,pulseT:4.5,lungeT:0,outT:0,minT:0,N};
+  P.planned=N;
+  for(let i=0;i<N;i++){
+    const an=i*TAU/N;
+    const e=spawnEnemy('tank',cx+Math.cos(an)*R,cy+Math.sin(an)*R);
+    e.hp*=0.6;e.maxhp=e.hp;e.xp=patXp(P); // the wall pays the base budget
+    e.circ=1;e.circAng=an;e.msp=20;e.mvx=0;e.mvy=0;
+  }
+  // the champion: starts at the ring's center, hunts whoever is closest.
+  // Killing it pays the wave's entire execution jackpot as a gem fountain.
+  if(P.champXp>0){
+    const ch=spawnEnemy('tank',cx,cy);
+    ch.scale=2.4;ch.r=13;ch.sp=20;ch.elite=true;
+    ch.hp=Math.max(500,(G.waveDPS||120)*6);ch.maxhp=ch.hp;
+    ch.dmg*=1.3;ch.xp=P.champXp;ch.champ=1;
+    addText(cx,cy-20,'CHAMPION','#ffd23e');
+    addParticles(cx,cy,'#ffd23e',24,120);
+  }
+  flash(PATTERN_NAMES.encircle+'!');
+  subFlash('BREAK THROUGH — AND FELL THE CHAMPION',3.4);
+  sfx('boss');
+}
+function encircleTick(P,dt,alive){
+  const C=P.circ;
+  // the ring drifts after the party slowly — sprinting through a breach escapes it
+  if(alive.length){
+    let px=0,py=0;
+    for(const p of alive){px+=p.x;py+=p.y;}
+    px/=alive.length;py/=alive.length;
+    C.cx+=clamp(px-C.cx,-24*dt,24*dt);C.cy+=clamp(py-C.cy,-24*dt,24*dt);
+  }
+  C.pulseT-=dt;
+  if(C.lungeT>0)C.lungeT-=dt;
+  if(C.pulseT<=0&&C.R>C.Rmin){
+    C.pulseT=4.5;C.lungeT=0.9;
+    C.R=Math.max(C.Rmin,C.R-C.step);
+    G.shake=Math.max(G.shake,5);sfx('slam');
+  }
+  if(C.R<=C.Rmin)C.minT+=dt;
+  let alive_circ=0;
+  for(const e of G.enemies){
+    if(!e.circ||e.dead)continue;
+    alive_circ++;
+    const sx=C.cx+Math.cos(e.circAng)*C.R,sy=C.cy+Math.sin(e.circAng)*C.R;
+    const d=Math.hypot(sx-e.x,sy-e.y)||1;
+    e.mvx=(sx-e.x)/d;e.mvy=(sy-e.y)/d;
+    // during the lunge the whole wall dashes to its new slot as one motion
+    e.msp=clamp(d*2.2,C.lungeT>0?34:12,80);
+  }
+  const any=alive_circ>0;
+  let out=alive.length>0;
+  for(const p of alive)if(dist2(p.x,p.y,C.cx,C.cy)<(C.R+40)*(C.R+40)){out=false;break;}
+  C.outT=out?C.outT+dt:0;
+  // escaping only breaks the ring if a breach exists (a wall mob died) —
+  // kiting around inside an intact wall must not dissolve the pattern
+  if(!any||(C.outT>1.5&&alive_circ<C.N)||C.minT>8){
+    // survivors hunt on foot but dissolve if they never arrive — a broken
+    // 60-mob wall must not become a ten-minute mop-up
+    for(const e of G.enemies)if(e.circ){e.circ=0;e.msp=undefined;e.life=14;}
+    if(any){flash('THE RING BREAKS!');sfx('zap');}
+    P.circ=null;
+  }
+}
+// ---------- lucky chest ----------
+// A pseudo-random pickup with a VS-chest-style edge pointer. The visible
+// machine is identical for every party; the HIDDEN weights shift with
+// schedule deficit (the lv budget table IS the schedule) and spawning is
+// gated on engagement — it quietly tops up a struggling-but-fighting party
+// and never pays AFK. Prizes are XP only: the reward feeds the banked
+// counter, it never bypasses the draft.
+function schedLevel(){
+  let s=1;
+  for(let w=1;w<G.wave;w++){
+    const d=waveDef(w);
+    if(d.lv)s+=d.lv.b;else if(d.boss!==undefined)s+=2;
+  }
+  return s;
+}
+function slotDeficit(){return clamp(schedLevel()-(G.level+bankedLevels().banked),0,4);}
+function tickSlotChest(dt){
+  if(G.mode!=='classic'||G.slotChest||G.reel)return;
+  const def=waveDef(G.wave);
+  if(def.boss!==undefined||G.waveT<def.dur*0.2||G.waveT>def.dur*0.8)return;
+  const engaged=G.killsWave>0.25*Math.max(1,G.waveSpawned);
+  const p=0.012+(engaged?0.05*slotDeficit()/4:0); // per second
+  if(Math.random()>=dt*p)return;
+  const alive=G.players.filter(q=>!q.dead);
+  if(!alive.length)return;
+  let cx=0,cy=0;
+  for(const q of alive){cx+=q.x;cy+=q.y;}
+  cx/=alive.length;cy/=alive.length;
+  const an=Math.random()*TAU,dd=240+Math.random()*80;
+  const x=cx+Math.cos(an)*dd,y=cy+Math.sin(an)*dd;
+  if(solidAt(x,y))return;
+  G.slotChest={x,y,t:0};
+  sfx('crate');
+}
+function rollSlot(){
+  const k=slotDeficit()/4;
+  let wJack=0.10+0.20*k;
+  const wNice=0.35+0.10*k;
+  if(G.lastJack)wJack=0; // no back-to-back jackpots: streaks get screenshotted
+  const r=Math.random();
+  const tier=r<wJack?2:(r<wJack+wNice?1:0);
+  G.lastJack=tier===2;
+  return tier;
+}
+function slotPayout(tier,x,y){
+  const total=Math.round(xpNeed()*[0.35,0.8,1.6][tier]);
+  const n=8+tier*6,per=Math.max(1,Math.round(total/n));
+  for(let i=0;i<n;i++){
+    const an=Math.random()*TAU,rr=6+Math.random()*26;
+    G.gems.push({x:x+Math.cos(an)*rr,y:y+Math.sin(an)*rr,v:per,t:0});
+  }
+  flash(tier===2?'JACKPOT!':(tier===1?'LUCKY!':'A FEW GEMS...'));
+  sfx(tier===2?'levelup':'pickup');
+  addParticles(x,y,'#ffd23e',10+tier*14,120);
+}
+
+// world-space pattern visuals, drawn under the enemies
+function renderWavePattern(ctx,W2V,vw,vh){
+  const P=G.wavePat;
+  if(P&&P.band){
+    // the lane is infinite: paint it across the whole view at its world
+    // lateral coordinate; the alert sign hugs the screen edge it pours from
+    const b=P.band;
+    const warn=b.warnT>0,pl=0.5+0.5*Math.sin(G.time*(warn?6+10*(1-b.warnT/2.5):12));
+    ctx.fillStyle='#ff5a3d';ctx.strokeStyle='#ff5a3d';ctx.lineWidth=1;
+    if(b.dx){
+      const yA=W2V(0,b.coord-b.half)[1],yB=W2V(0,b.coord+b.half)[1];
+      ctx.globalAlpha=warn?0.10+0.10*pl:0.14;
+      ctx.fillRect(0,yA,vw,yB-yA);
+      ctx.globalAlpha=warn?0.5+0.4*pl:0.8;
+      ctx.setLineDash([6,6]);
+      ctx.beginPath();ctx.moveTo(0,yA);ctx.lineTo(vw,yA);ctx.moveTo(0,yB);ctx.lineTo(vw,yB);ctx.stroke();
+    }else{
+      const xA=W2V(b.coord-b.half,0)[0],xB=W2V(b.coord+b.half,0)[0];
+      ctx.globalAlpha=warn?0.10+0.10*pl:0.14;
+      ctx.fillRect(xA,0,xB-xA,vh);
+      ctx.globalAlpha=warn?0.5+0.4*pl:0.8;
+      ctx.setLineDash([6,6]);
+      ctx.beginPath();ctx.moveTo(xA,0);ctx.lineTo(xA,vh);ctx.moveTo(xB,0);ctx.lineTo(xB,vh);ctx.stroke();
+    }
+    ctx.setLineDash([]);ctx.globalAlpha=1;
+    // alert sign anchored to the incoming screen edge, at the lane's height,
+    // shaking harder as the alarm accelerates
+    const jit=warn?(1-b.warnT/2.5)*3:1;
+    let ix,iy;
+    if(b.dx){ix=b.dx>0?14:vw-14;iy=clamp(W2V(0,b.coord)[1],16,vh-16);}
+    else{iy=b.dy>0?16:vh-16;ix=clamp(W2V(b.coord,0)[0],14,vw-14);}
+    const jx=ix+(Math.random()-0.5)*jit,jy=iy+(Math.random()-0.5)*jit;
+    ctx.fillStyle=pl>0.5||!warn?'#ffe94a':'#ff5a3d';
+    ctx.beginPath();ctx.moveTo(jx,jy-9);ctx.lineTo(jx+8,jy+6);ctx.lineTo(jx-8,jy+6);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#1a0f08';ctx.fillRect(Math.round(jx)-1,jy-5,2,6);ctx.fillRect(Math.round(jx)-1,jy+3,2,2);
+  }
+  // (the encircle draws nothing: the wall of bodies IS the circle)
+  // jumper landing telegraphs
+  for(const e of G.enemies){
+    if(e.dead||!e.jump)continue;
+    const j=e.jump;
+    if(j.st!=='tele'&&j.st!=='air')continue;
+    const q=W2V(j.lx,j.ly),pr=j.st==='air'?1:1-j.t/0.8;
+    ctx.globalAlpha=0.5;
+    ctx.strokeStyle='#ff5a3d';ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(q[0],q[1],26,0,TAU);ctx.stroke();
+    ctx.globalAlpha=0.25;
+    ctx.fillStyle='#ff5a3d';
+    ctx.beginPath();ctx.arc(q[0],q[1],26*clamp(pr,0,1),0,TAU);ctx.fill();
+    ctx.globalAlpha=1;
+  }
+}
+
 // ---------- wave machine ----------
 function nextWave(){
   G.wave++;
   const def=waveDef(G.wave);
   G.waveState='pre';G.waveT=0;G.cleanT=0;G.waveSpawned=0;G.wavePulses=[];
+  G.wavePat=null;
+  G.mobDmgAcc=0;G.fightT=0;G.killsWave=0;G.slotChest=null;G.reel=null;
   if(def.boss!==undefined)G.waveQuota=0;
   else{
     const n=Math.max(1,G.players.length);
     G.waveQuota=Math.round(def.n*(0.65+0.35*n));
+    // a pattern wave thins the base drip and drops the generic SURGE pulses:
+    // the pattern IS the choreography
+    if(G.mode==='classic'&&def.pattern){
+      G.waveQuota=Math.max(6,Math.round(G.waveQuota*PATTERN_QUOTA[def.pattern]));
+      G.wavePat=initWavePattern(def.pattern,def);
+    }
     G.waveSpawnGap=(def.dur*0.72)/G.waveQuota;
     G.waveSpawnT=0;
-    G.wavePulses=[0.35,0.70];
+    G.wavePulses=G.wavePat?[]:[0.35,0.70];
   }
   sfx(def.boss!==undefined?'boss':'wavestart');
   G.shake=def.boss!==undefined?6:2;
@@ -6539,6 +7313,7 @@ function enrageStragglers(){
   let n=0;
   for(const e of G.enemies){
     if(e.boss)continue;
+    if(e.circ)continue; // a ring in formation is choreography, not a straggler
     e.huntLv=(e.huntLv||0)+1;e.hunted=true;e.slow=1;
     if(e.huntLv===1)e.sp*=1.7;
     else if(e.huntLv===2)e.sp*=1.25;
@@ -6559,6 +7334,7 @@ function enrageStragglers(){
 function startIntermission(){
   const boss=isBossWave(G.wave);
   G.waveState='inter';G.waveT=0;G.interLen=G.mode==='rush'?9:(boss?12:8);
+  G.wavePat=null;
   closeArena();
   G.crates=G.crates.filter(c=>dist2(c.x,c.y,G.cam.x,G.cam.y)<900*900);
   const c=G.cam,alive=Math.max(1,G.players.filter(p=>!p.dead).length);
@@ -6587,6 +7363,7 @@ function startIntermission(){
 }
 function startOutro(){
   G.waveState='outro';G.waveT=0;
+  G.wavePat=null;
   closeArena();
   G.ebullets.length=0;G.enemies.length=0;G.fx=G.fx.filter(f=>!f.boss);
   G.shake=10;sfx('victory');flash('THE HORDE IS BROKEN');
@@ -6594,7 +7371,7 @@ function startOutro(){
 function updateClassicWaves(dt){
   G.waveT+=dt;
   const def=waveDef(G.wave),n=Math.max(1,G.players.length);
-  const maxAlive=Math.round((26+G.wave*3)*(0.65+0.35*n));
+  const maxAlive=Math.round((26+G.wave*3)*(0.65+0.35*n))+(G.wavePat?G.wavePat.capBonus:0);
   switch(G.waveState){
     case 'pre':
       if(G.waveT>=2.0){
@@ -6604,6 +7381,9 @@ function updateClassicWaves(dt){
       }
       break;
     case 'fight':{
+      if(G.enemies.length>=8)G.fightT+=dt; // saturated time — see damageEnemy
+      if(G.wavePat)tickWavePattern(dt,maxAlive);
+      tickSlotChest(dt);
       if(G.waveSpawned<G.waveQuota&&G.enemies.length<maxAlive){
         G.waveSpawnT-=dt;
         if(G.waveSpawnT<=0){
@@ -6622,7 +7402,12 @@ function updateClassicWaves(dt){
         }
       }
       if(G.waveSpawned>=G.waveQuota){
-        if(G.enemies.length===0){G.waveState='clear';G.waveT=0;G.cleanT=0;sfx('wavecomplete');}
+        if(G.enemies.length===0){
+          // bank the measured clearing output for next wave's density pricing
+          const d=G.mobDmgAcc/Math.max(4,G.fightT);
+          if(d>0)G.waveDPS=G.waveDPS?G.waveDPS*0.5+d*0.5:d;
+          G.waveState='clear';G.waveT=0;G.cleanT=0;G.wavePat=null;sfx('wavecomplete');
+        }
         else{G.cleanT+=dt;if(G.cleanT>8){G.cleanT=0;enrageStragglers();}}
       }
       break;}
@@ -6734,6 +7519,18 @@ function update(dt){
     if(G.levelupPicks.every(x=>x.done))finishLevelup();
     return;
   }
+  if(G.state==='slot'){
+    // full-screen slot moment: the sim pauses like a draft, everyone watches
+    const r=G.reel;
+    if(!r){G.state='play';storePadStates(pads);return;}
+    r.t+=dt;r.tick-=dt;
+    if(r.t<1.9&&r.tick<=0){r.tick=0.07;sfx('select');} // reel clatter
+    for(const s of [0.9,1.4,1.9])if(r.t>=s&&r.t-dt<s)sfx('pickup');
+    if(r.t>=2.15&&!r.paid){r.paid=true;slotPayout(r.tier,r.x,r.y);}
+    if(r.paid)for(const pad of pads)if(confirmPressed(pad))r.t=Math.max(r.t,3.3);
+    if(r.t>=3.3){G.reel=null;G.state='play';}
+    storePadStates(pads);return;
+  }
 
   // ---- playing ----
   for(const pad of pads){
@@ -6748,6 +7545,7 @@ function update(dt){
   if(G.subFlashT>0)G.subFlashT-=dt;
   if(G.shake>0)G.shake=Math.max(0,G.shake-dt*14);
   if(G.pflash>0)G.pflash=Math.max(0,G.pflash-dt*2.6);
+  if(G.vacuumT>0)G.vacuumT-=dt;
 
   for(let i=G.timers.length-1;i>=0;i--){
     const t=G.timers[i];
@@ -6793,7 +7591,7 @@ function update(dt){
 
     queryEnemies(p.x,p.y,44,e=>{
       const rr=e.r+p.r;
-      if(dist2(p.x,p.y,e.x,e.y)<rr*rr){
+      if(!e.air&&dist2(p.x,p.y,e.x,e.y)<rr*rr){
         if(e.type==='bomber'){if(e.fuse<0)e.fuse=0.6;}
         // hugging a boss floors at 12% maxhp per tick for the same reason as
         // the bullet floor: flat touch dmg can't keep up with charm-fed hp
@@ -6880,7 +7678,7 @@ function update(dt){
 
     if(e.boss&&e.def){
       const a=e.ai,d=e.def;
-      if(G.mode==='rush'&&e===G.boss&&e.vulnMul!==0)G.bossVulnT+=dt;
+      if(isCampaign()&&e===G.boss&&e.vulnMul!==0)G.bossVulnT+=dt;
       if(d.tick&&a.mode==='active')d.tick(e,dt,alive);
       if(a.mode!=='transition'&&e.gates.length&&e.hp/e.maxhp<=e.gates[0]&&e.casts>=d.minCasts){
         e.gates.shift();e.phase++;
@@ -6943,6 +7741,37 @@ function update(dt){
       if(ai.sumT<=0){ai.sumT=10;spawnEnemy('spitter',e.x-20,e.y);spawnEnemy('spitter',e.x+20,e.y);}
       if(dd<90)sp=0;
     }
+    else if(e.jump){
+      // hop cycle: walk → telegraphed landing ring → airborne (untargetable,
+      // no touch) → small blast on landing. The forgiving cousin of a boss slam.
+      const j=e.jump;
+      if(j.st==='ground'){
+        j.t-=dt;
+        // hops ARE the locomotion: leap up to 180px along the line to the
+        // target, chaining arcs across the field (the notebook doodle)
+        if(j.t<=0&&tgt){
+          const hop=Math.min(Math.max(40,dd-14),180);
+          j.st='tele';j.t=0.8;
+          j.lx=e.x+vx*hop+(Math.random()*24-12);
+          j.ly=e.y+vy*hop+(Math.random()*24-12);
+          sfx('telegraph');
+        }
+      }else if(j.st==='tele'){
+        sp=0;j.t-=dt;
+        if(j.t<=0){j.st='air';j.t=0.6;j.jx=e.x;j.jy=e.y;e.vulnMul=0;e.air=1;}
+      }else{
+        sp=0;j.t-=dt;
+        const pr=clamp(1-j.t/0.6,0,1);
+        e.x=j.jx+(j.lx-j.jx)*pr;e.y=j.jy+(j.ly-j.jy)*pr;
+        e.hopY=30*Math.sin(Math.PI*pr);
+        if(j.t<=0){
+          e.hopY=0;e.air=0;e.vulnMul=1;
+          j.st='ground';j.t=1.6+Math.random()*1.6;
+          explode(e.x,e.y,26,0,undefined,e.dmg);
+          G.shake=Math.max(G.shake,2);
+        }
+      }
+    }
     else if(e.type==='spitter'){
       if(dd<130)sp=-sp*0.6;
       else if(dd<160)sp=0;
@@ -6964,14 +7793,17 @@ function update(dt){
       if(e.dripT<=0){e.dripT=1.2;pushPool(null,e.x,e.y,12,5,0.04,'#ff7a1a','circle');}
     }
 
+    // wave-pattern marchers (band torrent, polarity lines, the encircle ring)
+    // ignore the party and walk their own route
+    if(e.msp!=null){vx=e.mvx;vy=e.mvy;sp=e.msp*(e.slowT>0?e.slow:1);}
     if(e.ovr){vx=e.ovx;vy=e.ovy;sp=e.osp;e.ovr=0;}
     else if(e.def)sp=0;
     if(e.dead)continue;
-    if(e.boss){e.x+=vx*sp*dt;e.y+=vy*sp*dt;}
+    if(e.boss||e.flow){e.x+=vx*sp*dt;e.y+=vy*sp*dt;} // flow mobs stream through everything
     else if(sp!==0)moveCollide(e,vx*sp*dt,vy*sp*dt);
 
     const cell=grid.get(gridKey(Math.floor(e.x/GRID),Math.floor(e.y/GRID)));
-    if(cell&&cell.length>1&&!e.boss){
+    if(cell&&cell.length>1&&!e.boss&&!e.flow){
       const o=cell[(Math.random()*cell.length)|0];
       if(o!==e&&!o.dead&&!o.boss){
         const d2=dist2(e.x,e.y,o.x,o.y),rr=e.r+o.r;
@@ -7008,14 +7840,20 @@ function update(dt){
       b.wake.push(b.x,b.y);
       if(b.wake.length>WAKE_MAX)b.wake.splice(0,b.wake.length-WAKE_MAX);
     }
-    if(b.trail&&Math.random()<(b.starTrail?0.9:0.6)&&G.particles.length<850){
+    if(b.trail&&Math.random()<(b.starTrail?0.25:0.6)&&G.particles.length<850){
       if(b.starTrail) // arcane bolts shed a wake of little prismatic stars
         G.particles.push({x:b.x+(Math.random()*4-2),y:b.y+(Math.random()*4-2),
           vx:-b.vx*0.08,vy:-b.vy*0.08-8,t:0.3+Math.random()*0.25,col:b.trailCol,
           size:1,star:1,drag:3,prism:b.prism?1+((Math.random()*PRISM.length)|0):0});
       else G.particles.push({x:b.x,y:b.y,vx:0,vy:0,t:0.2,col:b.trailCol||'#b3a184',size:1,spark:b.sparkTrail});
     }
-    if(b.life<=0){if(b.rocket)explode(b.x,b.y,b.aoe,b.dmg,b.owner);b.dead=true;continue;}
+    if(b.life<=0){
+      // frame quantization can carry a bullet a few px past where its life
+      // ran out; a meteor bursts at its mark, so snap back before exploding
+      if(b.met){b.x=b.tx;b.y=b.ty;}
+      if(b.rocket){explode(b.x,b.y,b.aoe,b.dmg,b.owner);if(b.met)metImpact(b.x,b.y,b.aoe);}
+      b.dead=true;continue;
+    }
     // ghost bolts pass through rock: a seeker that banks into a pillar mid-turn
     // and dies there reads as broken, not as terrain mattering
     if(!b.ghost&&solidAt(b.x,b.y)){
@@ -7023,6 +7861,10 @@ function update(dt){
       else addParticles(b.x,b.y,'#8b929c',3,40);
       b.dead=true;continue;
     }
+    // a hurled meteor is a lob: it sails OVER the horde and bursts at its
+    // mark. Detonating on the first body it grazed made every stone land on
+    // the front rank and nothing deeper ever got hit.
+    if(b.met)continue;
     let hit=null;
     queryEnemies(b.x,b.y,b.r,e=>{
       if(hit)return;
@@ -7043,9 +7885,11 @@ function update(dt){
       // which is the entire card. Bosses shrug it off (their death already
       // pays everything).
       if(b.plague&&!hit.boss)hit.plagued=b.plague;
-      if(b.rocket)explode(b.x,b.y,b.aoe,b.dmg,b.owner);
+      if(b.rocket){explode(b.x,b.y,b.aoe,b.dmg,b.owner);if(b.met)metImpact(b.x,b.y,b.aoe);}
       else damageEnemy(hit,b.dmg,b.owner);
-      if(b.starHit){starHit(b.x,b.y,6);starRing(b.x,b.y,10,6,'#ffffff',true);}
+      // a volley is many bolts: this fires once per bolt per impact, so it has
+      // to stay cheap or a single cast pays for it n times over
+      if(b.starHit)starHit(b.x,b.y,3);
       b.dead=true;
     }
   }
@@ -7075,7 +7919,13 @@ function update(dt){
     }
     if(best){
       const d=Math.sqrt(bd2);
-      if(d<best.magnet){
+      if(G.vacuumT>0){
+        // vacuum: every gem on the map races in, far ones fastest
+        const pull=Math.max(420,d*2.2);
+        g.x+=(best.x-g.x)/d*pull*dt;
+        g.y+=(best.y-g.y)/d*pull*dt;
+        if(Math.random()<dt*8)addSparkles(g.x,g.y,'#8ef0ff',1,30);
+      }else if(d<best.magnet){
         const pull=lerp(60,320,1-d/best.magnet);
         g.x+=(best.x-g.x)/d*pull*dt;
         g.y+=(best.y-g.y)/d*pull*dt;
@@ -7095,6 +7945,20 @@ function update(dt){
           for(const q of G.players)applyBuff(q,pk.type);
         }else applyBuff(p,pk.type);
         addSparkles(p.x,p.y-4,'#ffe94a',8,70);break;
+      }
+    }
+  }
+
+  // ---- lucky chest touch: the roll takes over the screen (state 'slot') ----
+  if(G.slotChest){
+    const s=G.slotChest;
+    s.t+=dt;
+    if(Math.random()<dt*3)addSparkles(s.x,s.y-4,'#ffd23e',1,20);
+    for(const p of G.players){
+      if(p.dead)continue;
+      if(dist2(s.x,s.y,p.x,p.y)<13*13){
+        G.reel={x:s.x,y:s.y,t:0,tick:0,tier:rollSlot(),paid:false};
+        G.slotChest=null;G.state='slot';sfx('crate');break;
       }
     }
   }
@@ -7156,8 +8020,12 @@ function update(dt){
     if(G.bossT<=0){G.bossT=170;if(!G.boss)spawnBoss();}
   }else updateClassicWaves(dt);
 
-  // level-ups never interrupt a boss fight, and never resurrect a finished run
+  // level-ups never interrupt a boss fight, and never resurrect a finished run.
+  // CLASSIC banks them further: no draft mid-wave — xp pools up (the HUD badge
+  // counts the banked drafts) and the whole stack is drafted in the wave break,
+  // so the fight is never interrupted and the break becomes the payoff.
   const canLevel=G.state==='play'&&!(isCampaign()&&G.waveState==='boss');
+  const xpGate=G.mode!=='classic'||G.waveState==='clear'||G.waveState==='inter';
   // back-paid boss pods (a skip start in BOSS RUSH), spent between the levels
   // those same kills owed the party so both run out together
   if(canLevel&&G.podDebt>0&&(G.freeLevels===0||G.freeLevels<=G.podDebt*G.podEvery)){
@@ -7165,7 +8033,17 @@ function update(dt){
     for(const p of G.players)applyBuff(p,'pod');
   }
   else if(canLevel&&G.freeLevels>0){G.freeLevels--;startLevelup(true);}
-  else if(canLevel&&G.xp>=xpNeed())startLevelup();
+  else if(canLevel&&xpGate&&G.xp>=xpNeed())startLevelup();
+
+  // banked-draft fanfare: when another level banks mid-wave, the HUD counter
+  // pops (G.bankFlash drives the badge scale/burst in the render pass)
+  if(G.state==='play'){
+    const bk0=bankedLevels().banked;
+    if(G.bankSeen==null)G.bankSeen=bk0;
+    if(bk0>G.bankSeen){G.bankFlash=0.8;sfx('pickup');}
+    G.bankSeen=bk0;
+    if(G.bankFlash>0)G.bankFlash-=dt;
+  }
 
   storePadStates(pads);
 }
@@ -7181,7 +8059,10 @@ function spawnBoss(){
   const e={
     type:kind,spr:kind==='brute'?tankSprite:spitSprite,x:pt.x,y:pt.y,
     r:kind==='brute'?17:13,hp,maxhp:hp,
-    sp:kind==='brute'?30:36,dmg:(kind==='brute'?20:12)*dmgScale(),xp:40,
+    // dmg base 20/12 → 24/15: the balance-model endless probe showed boss
+    // pressure sagging against golden-boon max-hp growth; endless bosses stay
+    // short-lived by design, so their threat has to live in the hit, not the TTK
+    sp:kind==='brute'?30:36,dmg:(kind==='brute'?24:15)*dmgScale(),xp:40,
     flash:0,fuse:-1,shootT:2,orbCd:{},slow:1,boss:true,scale:kind==='brute'?2.4:2.6,
     name:kind==='brute'?'BRUTE KING':'WARLOCK',barCol:'#e33',phase:1,phaseCount:1,huntLv:0,life:-1,
     ai:{t:3,mode:'walk',tx:0,ty:0,sumT:6}
@@ -7417,12 +8298,20 @@ function drawFx(f,W2V,g){
       }
       break;}
     case 'rmet':{
+      // relic rain (CINDER CROWN / DEADSTAR): used to borrow the boss-meteor
+      // telegraph wholesale — same cinderSprite, same shrinking ring — and
+      // players dodged their own relic. Anticlockwise pips = friendly, the
+      // same idiom as the 'safe' ring; no falling sprite, no boss language.
       const rgb=hexRgb(f.col);
       g.fillStyle='rgba('+rgb+',0.18)';
       g.beginPath();g.arc(x,y,f.r,0,TAU);g.fill();
       g.strokeStyle='rgba('+rgb+',0.9)';g.lineWidth=2;
       g.beginPath();g.arc(x,y,Math.max(1,f.r*(1-k)),0,TAU);g.stroke();
-      drawSpriteC(g,cinderSprite,x,y-52*k,1+2*k);
+      g.fillStyle=f.col;
+      for(let i=0;i<4;i++){
+        const a=-G.time*4+i*TAU/4; // anticlockwise = safe
+        g.fillRect(Math.round(x+Math.cos(a)*f.r)-1,Math.round(y+Math.sin(a)*f.r)-1,2,2);
+      }
       break;}
     case 'soulvoid':{ // the maw: a rot-green whirl, souls spiralling inward
       const rgb=hexRgb(f.col);
@@ -7438,27 +8327,30 @@ function drawFx(f,W2V,g){
         g.fillRect(Math.round(x+Math.cos(a)*rr)-1,Math.round(y+Math.sin(a)*rr)-1,2,2);
       }
       break;}
-    case 'lance':{ // lava ray / inflict pain: a fat glowing line, gone in a blink
+    case 'lance':{ // lava ray: a glowing line, gone in a blink
       const a1=W2V(f.x1,f.y1),a2=W2V(f.x2,f.y2);
       g.globalAlpha=k;
-      // `fat` beams (the lava ray) bloom on cast and collapse to a thread —
-      // the hitbox is 16px wide, so the art has to look 16px wide
-      const w0=f.fat?10+16*k:6;
-      g.strokeStyle='rgba('+hexRgb(f.col2)+','+(0.45*k).toFixed(3)+')';g.lineWidth=w0+6;
+      // The beam blooms on cast and collapses to a thread. `w` is the caster's
+      // REAL hitbox width, so the art can never claim more reach across than
+      // the spell has — the old draw bloomed to 26px over a 16px box, which is
+      // most of why the ray read as fat no matter how far the hitbox came down.
+      const w0=f.w?f.w*(0.55+0.75*k):6;
+      const halo=Math.max(2,w0*0.35);
+      g.strokeStyle='rgba('+hexRgb(f.col2)+','+(0.40*k).toFixed(3)+')';g.lineWidth=w0+halo;
       g.beginPath();g.moveTo(a1[0],a1[1]);g.lineTo(a2[0],a2[1]);g.stroke();
       g.strokeStyle=f.col2;g.lineWidth=w0;
       g.beginPath();g.moveTo(a1[0],a1[1]);g.lineTo(a2[0],a2[1]);g.stroke();
-      g.strokeStyle=f.col;g.lineWidth=Math.max(2,w0*0.5);
+      g.strokeStyle=f.col;g.lineWidth=Math.max(1,w0*0.5);
       g.beginPath();g.moveTo(a1[0],a1[1]);g.lineTo(a2[0],a2[1]);g.stroke();
-      g.strokeStyle='#fff6c8';g.lineWidth=f.fat?Math.max(1,3*k):1;
+      g.strokeStyle='#fff6c8';g.lineWidth=f.w?Math.max(1,w0*0.22):1;
       g.beginPath();g.moveTo(a1[0],a1[1]);g.lineTo(a2[0],a2[1]);g.stroke();
       g.globalAlpha=1;
       break;}
     case 'phantom':{ // the assassin: its victim's silhouette, prismatic and flickering
       if(Math.floor(G.time*14)%4===0)break; // it flickers — it isn't really there
       const sw=f.spr.width*f.scale,sh=f.spr.height*f.scale;
-      // three offset afterimages walking the ramp, then the copy itself
-      for(let i=3;i>=1;i--){
+      // one offset afterimage walking the ramp, then the copy itself
+      for(let i=1;i>=1;i--){
         g.globalAlpha=0.13;
         g.fillStyle=prismCol(i*2+G.time*7);
         g.fillRect(Math.round(x-sw/2)-i*2,Math.round(y-sh/2),sw,sh);
@@ -7648,6 +8540,59 @@ function drawFx(f,W2V,g){
       g.beginPath();g.arc(x,y,f.r*(0.5+0.5*(1-k)),0,TAU);g.fill();
       g.globalAlpha=1;
       break;}
+    case 'nerve':{
+      // NECROMANCY's filament: a thin, twitchy line of nerve rather than a
+      // beam of light. Many short segments jittering perpendicular to the run
+      // re-randomised every frame (skittery), a colour that pulses green into
+      // violet along its length, a couple of dead-end branches forking off it,
+      // and bright nodes firing at random points like signal down an axon.
+      // It was authored deliberately faint and read as nothing at all against
+      // a lit floor: the whole cast is one 0.34s flash, so "subtle" here just
+      // means "missed". It keeps the twitchy filament shape but now carries a
+      // solid bright core and near-opaque strands.
+      const a1=W2V(f.x1,f.y1),a2=W2V(f.x2,f.y2);
+      const dx=a2[0]-a1[0],dy=a2[1]-a1[1],L=Math.hypot(dx,dy)||1;
+      const nx=-dy/L,ny=dx/L;                    // perpendicular
+      const segs=Math.max(6,Math.min(20,Math.round(L/9)));
+      const run=(amp,alpha,wid,off)=>{
+        g.lineWidth=wid;
+        g.beginPath();g.moveTo(a1[0],a1[1]);
+        for(let i=1;i<=segs;i++){
+          const t=i/segs;
+          // pinned at both ends, loosest in the middle
+          const j=(Math.random()*2-1)*amp*Math.sin(t*Math.PI);
+          g.lineTo(a1[0]+dx*t+nx*(j+off),a1[1]+dy*t+ny*(j+off));
+        }
+        g.strokeStyle=alpha;g.stroke();
+      };
+      const pulse=0.5+0.5*Math.sin(G.time*17+(f.seed||0));
+      const green='rgba(159,232,74,',violet='rgba(192,74,255,';
+      // a dark halo first, so the filament separates from a bright floor
+      run(5,'rgba(26,10,40,'+(0.55*k).toFixed(3)+')',5,0);
+      run(5,(pulse>0.5?violet:green)+(0.55*k).toFixed(3)+')',3,0);
+      run(3,(pulse>0.5?green:violet)+(0.95*k).toFixed(3)+')',2,0);
+      // the core: near-white, barely jittered, so there is always a hard line
+      run(1.5,'rgba(245,225,255,'+(0.92*k).toFixed(3)+')',1,0);
+      // two ghost filaments running alongside, so it reads as a bundle
+      run(6,'rgba(120,170,70,'+(0.55*k).toFixed(3)+')',1.5,3);
+      run(6,'rgba(168,120,255,'+(0.55*k).toFixed(3)+')',1.5,-3);
+      // branches: short dead ends forking off at random points
+      for(let b=0;b<4;b++){
+        const t=0.2+Math.random()*0.6,bl=4+Math.random()*10,sg=(Math.random()<0.5?1:-1);
+        const bx=a1[0]+dx*t,by=a1[1]+dy*t;
+        g.strokeStyle=(Math.random()<0.5?green:violet)+(0.85*k).toFixed(3)+')';
+        g.lineWidth=1.5;g.beginPath();g.moveTo(bx,by);
+        g.lineTo(bx+nx*bl*sg+dx/L*(Math.random()*8-4),by+ny*bl*sg+dy/L*(Math.random()*8-4));
+        g.stroke();
+      }
+      // signal nodes firing down the length
+      for(let i=0;i<5;i++){
+        const t=Math.random(),px=Math.round(a1[0]+dx*t),py=Math.round(a1[1]+dy*t);
+        g.fillStyle=Math.random()<0.5?'#d8ffb0':'#e8b8ff';
+        g.fillRect(px-2,py-1,5,3);g.fillRect(px-1,py-2,3,5);
+      }
+      g.lineWidth=1;
+      break;}
     case 'scorch':{
       // DESTRUCTION's residue: a dark blast mark that cools from ember-orange
       // to soot, so a meteor barrage visibly chews up the ground it lands on
@@ -7781,6 +8726,16 @@ function render(){
       stripes(ctx,px,py,TILE,TILE,'rgba(63,224,90,0.35)',G.time);
     }
   }
+  // devoured floor (ground) — the Worldeater's permanent void band
+  if(G.voidTiles){
+    for(const k of G.voidTiles){
+      const pr=k.split(','),tx=+pr[0],ty=+pr[1];
+      const px=tx*TILE-ox,py=ty*TILE-oy;
+      if(px<-20||py<-20||px>vw+20||py>vh+20)continue;
+      ctx.drawImage(voidTileSprite,px,py,TILE,TILE);
+      stripes(ctx,px,py,TILE,TILE,'rgba(138,92,255,0.30)',G.time);
+    }
+  }
   // arena floor + border
   if(G.arena){
     const a=G.arena,p0=W2V(a.x-a.w/2,a.y-a.h/2);
@@ -7826,11 +8781,23 @@ function render(){
       ctx.beginPath();ctx.arc(q[0],q[1],11,0,TAU);ctx.stroke();
     }
   }
+  renderWavePattern(ctx,W2V,vw,vh);
   for(const e of G.enemies){
     const q=W2V(e.x,e.y),x=q[0],y=q[1];
     if(x<-60||y<-60||x>vw+60||y>vh+60)continue;
     const s=e.scale||1;
-    const yy=y-((e.spr.height*s)/2-e.r);
+    const hopY=e.hopY||0;
+    const yy=y-((e.spr.height*s)/2-e.r)-hopY;
+    if(e.polCol){
+      ctx.globalAlpha=0.35;ctx.fillStyle=e.polCol;
+      ctx.beginPath();ctx.arc(x,y,e.r+3,0,TAU);ctx.fill();
+      ctx.globalAlpha=1;
+    }
+    if(hopY>1){
+      ctx.globalAlpha=0.3;ctx.fillStyle='#000';
+      ctx.beginPath();ctx.ellipse(x,y,e.r,e.r*0.5,0,0,TAU);ctx.fill();
+      ctx.globalAlpha=1;
+    }
     if(e.flash>0&&!e.boss){
       ctx.globalAlpha=0.6;drawSpriteC(ctx,e.spr,x,yy,s);ctx.globalAlpha=1;
       ctx.fillStyle='rgba(255,255,255,0.7)';
@@ -7873,9 +8840,10 @@ function render(){
         ctx.fillStyle=ow.evo?'#fff6c8':'#d8f8ff';ctx.fillRect(gx,gy-1,1,2);
       }
     }
-    // school aura rings: fire-orange for Constant Flame, rot-green for
-    // Decaying Presence — the ring matches the aura's real hitbox
-    for(const aid of ['cflame','decay']){
+    // school aura ring: rot-green for Decaying Presence, matching its real
+    // hitbox. CONSTANT FLAME used to own a ring here too; it is an aimed fan
+    // now and its sparks are ordinary bullets.
+    for(const aid of ['decay']){
       const aw=p.weapons[aid];
       if(!aw)continue;
       const alv=Math.min(aw.lv,6)+(aw.evo?2:0);
@@ -7897,7 +8865,7 @@ function render(){
       // Ambient fill, emitted per FRAME (like the Knowledge Aura ring below):
       // the cast tick is far too slow a heartbeat to keep a standing field
       // looking occupied, and these motes are cosmetic — no damage rides them.
-      if(Math.random()<0.55&&G.particles.length<760){
+      if(Math.random()<0.3&&G.particles.length<760){
         const a=Math.random()*TAU,rr=rad*Math.sqrt(Math.random());
         G.particles.push({x:p.x+Math.cos(a)*rr,y:p.y+Math.sin(a)*rr,
           vx:(Math.random()*2-1)*(rot?6:14),vy:rot?-14-Math.random()*14:-24-Math.random()*18,
@@ -7909,23 +8877,25 @@ function render(){
     // Knowledge Aura: a big, deliberately visible blue ring of insight —
     // allies standing inside share the caster's haste
     if(p.pas.ka){
-      ctx.strokeStyle='rgba(255,255,255,'+(0.30+0.12*Math.sin(G.time*2.4))+')';
-      ctx.lineWidth=1;
-      ctx.beginPath();ctx.arc(x,y,KA_RADIUS,0,TAU);ctx.stroke();
+      // one quiet dashed ring, four rim stars: the aura has to stay legible
+      // (its radius is gameplay) without owning an 80px disc of the screen —
+      // with a full party inside it the old two-ring/eight-glyph version was
+      // most of what the eye saw
       ctx.setLineDash([3,5]);
+      ctx.globalAlpha=0.5;
       ctx.strokeStyle=prismCol(G.time*4);
+      ctx.lineWidth=1;
       ctx.beginPath();ctx.arc(x,y,KA_RADIUS-3,G.time*0.7,G.time*0.7+TAU);ctx.stroke();
+      ctx.globalAlpha=1;
       ctx.setLineDash([]);
-      // eight stars drifting the rim: the haste ring should look like a ring
-      // of insight, not a debug circle
-      for(let i=0;i<8;i++){
-        const a=G.time*0.5+i*TAU/8;
+      for(let i=0;i<4;i++){
+        const a=G.time*0.5+i*TAU/4;
         const gx=Math.round(x+Math.cos(a)*KA_RADIUS),gy=Math.round(y+Math.sin(a)*KA_RADIUS);
         ctx.fillStyle=prismCol(i+G.time*6);
         ctx.fillRect(gx-2,gy,5,1);ctx.fillRect(gx,gy-2,1,5);
         ctx.fillStyle='#fff';ctx.fillRect(gx,gy,1,1);
       }
-      if(Math.random()<0.10){
+      if(Math.random()<0.04){
         const a=Math.random()*TAU;
         addStars(p.x+Math.cos(a)*KA_RADIUS,p.y+Math.sin(a)*KA_RADIUS,'#ffffff',1,14,true);
       }
@@ -7936,18 +8906,16 @@ function render(){
       const spots=p.pas.mirror>=4?[[-13,-5],[13,-5]]:[[-13,-5]];
       spots.forEach((s,i)=>{
         const mx=x+s[0],my=y-2+s[1]+((p.anim%1)<0.5?0:-1);
-        // a chromatic split behind the ghost — the copy looks refracted out of
-        // the caster rather than pasted next to them
-        ctx.globalAlpha=0.16;
-        ctx.fillStyle=prismCol(1+G.time*6+i*2);ctx.fillRect(mx-6,my-9,8,14);
-        ctx.fillStyle=prismCol(4+G.time*6+i*2);ctx.fillRect(mx-2,my-9,8,14);
-        ctx.globalAlpha=(i?0.30:0.45)+0.09*Math.sin(G.time*3+i*2);
+        // fainter than the caster, one prismatic wash over the sprite — the
+        // old chromatic-split rects behind each ghost read as two MORE bodies
+        // in an already crowded school
+        ctx.globalAlpha=(i?0.22:0.35)+0.09*Math.sin(G.time*3+i*2);
         drawSpriteC(ctx,playerSprites[p.col],mx,my);
-        ctx.globalAlpha=0.20;
+        ctx.globalAlpha=0.12;
         ctx.fillStyle=prismCol(G.time*7+i*3);
         ctx.fillRect(mx-4,my-7,8,14);
         ctx.globalAlpha=1;
-        if(Math.random()<0.09)addStars(p.x+s[0],p.y+s[1]-4,'#ffffff',1,18,true);
+        if(Math.random()<0.04)addStars(p.x+s[0],p.y+s[1]-4,'#ffffff',1,18,true);
       });
     }
   }
@@ -7960,11 +8928,11 @@ function render(){
     // blending in this renderer, so overlap is what sells brightness)
     const n=w.length/2;
     for(let pass=0;pass<3;pass++){
-      ctx.lineWidth=[3,2,1][pass];
+      ctx.lineWidth=[2,1,1][pass];
       ctx.lineCap='round';
       for(let i=1;i<n;i++){
         const f=i/n; // 0 at the oldest sample, 1 at the bolt
-        const a=f*f*[0.22,0.45,0.85][pass];
+        const a=f*f*[0.16,0.34,0.7][pass];
         if(a<0.02)continue;
         ctx.strokeStyle=pass===2?'rgba(255,255,255,'+a.toFixed(3)+')'
           :'rgba('+hexRgb(b.prism?prismCol(b.prism+i*0.7+G.time*11):(b.trailCol||b.col))+','+a.toFixed(3)+')';
@@ -7976,22 +8944,37 @@ function render(){
   }
   for(const b of G.bullets){
     const q=W2V(b.x,b.y);
-    if(b.star){
-      // a seeking star, not a pellet: long prismatic arms that breathe, a
-      // faint halo ring, diagonals a frame apart so the whole volley shimmers
-      const r=b.r,arm=r*2+2,col=prismCol((b.prism||1)+G.time*15);
-      ctx.strokeStyle='rgba('+hexRgb(col)+',0.30)';
-      ctx.beginPath();ctx.arc(q[0],q[1],r+2,0,TAU);ctx.stroke();
+    if(b.met){
+      // a hurled stone: dark rock core in a bleed of fire. Deliberately NOT
+      // the ground-ring + falling-cinder language — that telegraph now
+      // belongs to boss meteors alone.
+      const r=b.r;
+      ctx.fillStyle=b.col;
+      ctx.fillRect(Math.round(q[0]-r-1),Math.round(q[1]-1),r*2+2,2);
+      ctx.fillRect(Math.round(q[0]-1),Math.round(q[1]-r-1),2,r*2+2);
+      ctx.fillStyle='#7a4a30';
+      ctx.fillRect(Math.round(q[0]-1),Math.round(q[1]-1),3,3);
+      ctx.fillStyle='#fff2c0';
+      ctx.fillRect(Math.round(q[0]),Math.round(q[1]),1,1);
+    }else if(b.star){
+      // a seeking star, not a pellet: prismatic arms that breathe, a faint
+      // halo ring, diagonals a frame apart so the whole volley shimmers.
+      // Kept TIGHT on purpose — at r*2+2 arms and a 3x3 core these read as
+      // fireballs rather than starlight, and a full volley swallowed the
+      // screen. The arms are the silhouette; the glow is the wake behind them.
+      const r=b.r,arm=r+1,col=prismCol((b.prism||1)+G.time*15);
+      ctx.strokeStyle='rgba('+hexRgb(col)+',0.22)';
+      ctx.beginPath();ctx.arc(q[0],q[1],r+1,0,TAU);ctx.stroke();
       ctx.fillStyle=col;
       ctx.fillRect(q[0]-arm,q[1],arm*2+1,1);
       ctx.fillRect(q[0],q[1]-arm,1,arm*2+1);
-      const d=Math.max(1,r-1);
       if(Math.floor(G.time*14+q[0])&1){
+        const d=Math.max(1,r-1);
         ctx.fillRect(q[0]-d,q[1]-d,1,1);ctx.fillRect(q[0]+d,q[1]-d,1,1);
         ctx.fillRect(q[0]-d,q[1]+d,1,1);ctx.fillRect(q[0]+d,q[1]+d,1,1);
       }
       ctx.fillStyle='#ffffff';
-      ctx.fillRect(q[0]-1,q[1]-1,3,3);
+      ctx.fillRect(q[0],q[1],1,1);
     }else if(b.glow){
       // spell bolts are light, not pellets: a coloured cross that bleeds past
       // the hitbox, a white-hot core, and (illusion) a hue that walks the ramp
@@ -8043,7 +9026,24 @@ function render(){
       ctx.fillStyle='#ff3c3c';ctx.fillRect(Math.round(ax)-2,Math.round(ay)-2,4,4);
     }
   }
-
+  // lucky chest, its VS-style edge pointer, and the slot reel
+  if(G.slotChest){
+    const s=G.slotChest,q=W2V(s.x,s.y);
+    const bob=Math.round(Math.sin(s.t*4)*1.5),pl=0.6+0.4*Math.sin(s.t*6);
+    ctx.fillStyle='rgba(255,210,62,'+(0.25*pl).toFixed(3)+')';
+    ctx.beginPath();ctx.arc(q[0],q[1]-2+bob,10+2*pl,0,TAU);ctx.fill();
+    drawSpriteC(ctx,crateSprite,q[0],q[1]+bob);
+    ctx.fillStyle='#ffd23e';
+    ctx.fillRect(q[0]-1,q[1]-12+bob,3,3);ctx.fillRect(q[0]+1,q[1]-9+bob,1,2);ctx.fillRect(q[0],q[1]-6+bob,1,1);
+    if(q[0]<sx+8||q[1]<sy+8||q[0]>sx+w-8||q[1]>sy+h-8){
+      const ax=clamp(q[0],sx+10,sx+w-10),ay=clamp(q[1],sy+10,sy+h-10);
+      const an=Math.atan2(q[1]-ay,q[0]-ax);
+      ctx.save();ctx.translate(ax,ay);ctx.rotate(an);
+      ctx.fillStyle=pl>0.8?'#fff2c0':'#ffd23e';
+      ctx.beginPath();ctx.moveTo(7,0);ctx.lineTo(-4,-5);ctx.lineTo(-4,5);ctx.closePath();ctx.fill();
+      ctx.restore();
+    }
+  }
   blit(sx,sy,w,h);
 
   // UI pass: window-space coordinates (the exact blitted rect), drawn straight
@@ -8065,6 +9065,7 @@ function render(){
   }
   renderHUD(w,h);
   if(G.state==='levelup')renderLevelup(w,h);
+  if(G.state==='slot')renderSlot(w,h);
   if(G.state==='paused'){
     sctx.fillStyle='rgba(0,0,0,0.5)';sctx.fillRect(0,0,w,h);
     text(sctx,'PAUSED',w/2,h/2-10,20,'#fff','center');
@@ -8189,7 +9190,12 @@ function renderHUD(vw,vh){
     text(ctx,label,vw/2-48*k,5*k,F(9),isBossWave(G.wave)?'#e33':'#ffe94a');
     text(ctx,fmtTime(G.time),vw/2+48*k,5*k,F(9),'#fff','right');
     if(G.waveState==='fight')text(ctx,((G.waveQuota-G.waveSpawned)+G.enemies.length)+' LEFT',vw/2,17*k,F(6),'#b3a184','center');
-    else if(G.waveState==='inter')text(ctx,(G.mode==='rush'?'NEXT BOSS IN ':'NEXT WAVE IN ')+Math.ceil(G.interLen-G.waveT),vw/2,17*k,F(7),'#57e86b','center');
+    else if(G.waveState==='inter'){
+      // announce the coming wave's pattern: the break is the anticipation beat
+      const nd=G.wave<waveCount()?waveDef(G.wave+1):null;
+      const tag=nd&&nd.pattern&&G.mode==='classic'?' — '+PATTERN_NAMES[nd.pattern]:'';
+      text(ctx,(G.mode==='rush'?'NEXT BOSS IN ':'NEXT WAVE IN ')+Math.ceil(G.interLen-G.waveT)+tag,vw/2,17*k,F(7),'#57e86b','center');
+    }
   }else{
     ctx.fillRect(vw/2-24*k,3*k,48*k,13*k);
     text(ctx,fmtTime(G.time),vw/2,5*k,F(10),'#fff','center');
@@ -8197,8 +9203,30 @@ function renderHUD(vw,vh){
   const bw=Math.min(300*k,vw*0.4),by=(isCampaign()?26:19)*k;
   ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(vw/2-bw/2-1,by,bw+2,6*k);
   ctx.fillStyle='#2a1b42';ctx.fillRect(vw/2-bw/2,by+k,bw,4*k);
-  ctx.fillStyle='#a76bff';ctx.fillRect(vw/2-bw/2,by+k,bw*clamp(G.xp/xpNeed(),0,1),4*k);
+  const bk=bankedLevels();
+  ctx.fillStyle=bk.banked>0?'#ffd23e':'#a76bff';ctx.fillRect(vw/2-bw/2,by+k,bw*bk.frac,4*k);
   text(ctx,'LV '+G.level,vw/2+bw/2+5*k,by-k,F(7),'#c9a4ff');
+  // banked drafts waiting for the wave break: gold, growing, pulsing — and a
+  // white pop with a sparkle burst the instant another level banks
+  if(bk.banked>0){
+    const fl=Math.max(0,G.bankFlash||0);
+    const pl=0.5+0.5*Math.sin(G.time*(4+Math.min(10,bk.banked*2)));
+    const fs=Math.round(Math.min(14,8+bk.banked)+fl*6);
+    const bx=vw/2-bw/2-5*k,byy=by-k-(fs-7)*k*0.5;
+    ctx.globalAlpha=0.5;
+    text(ctx,'+'+bk.banked,bx+k,byy+k,F(fs),'#6b3d00','right'); // glow underlay
+    ctx.globalAlpha=fl>0?1:0.7+0.3*pl;
+    text(ctx,'+'+bk.banked,bx,byy,F(fs),fl>0.35?'#ffffff':'#ffd23e','right');
+    ctx.globalAlpha=1;
+    if(fl>0){ // sparkle burst radiating from the badge
+      const r=(0.8-fl)*22*k+4;
+      ctx.fillStyle=fl>0.35?'#ffffff':'#ffd23e';
+      for(let i=0;i<6;i++){
+        const an=i*TAU/6+G.time*2;
+        ctx.fillRect(Math.round(bx-8*k+Math.cos(an)*r),Math.round(byy+4*k+Math.sin(an)*r*0.7),2,2);
+      }
+    }
+  }
 
   // wave banner
   if(isCampaign()&&(G.waveState==='pre'||G.waveState==='clear')){
@@ -8210,6 +9238,7 @@ function renderHUD(vw,vh){
       const head=G.mode==='rush'?'BOSS '+G.wave+' / '+waveCount():'WAVE '+G.wave+' / '+waveCount();
       text(ctx,head,vw/2,y,F(18),boss?'#e33':'#ffe94a','center');
       if(boss)text(ctx,bossRoster()[waveDef(G.wave).boss].name+' AWAKENS',vw/2,y+20*k,F(10),'#e33','center');
+      else if(waveDef(G.wave).pattern)text(ctx,PATTERN_NAMES[waveDef(G.wave).pattern],vw/2,y+20*k,F(10),'#39d5ff','center');
     }else{
       text(ctx,(G.mode==='rush'?'BOSS '+G.wave+' DOWN':'WAVE '+G.wave+' CLEAR'),vw/2,y,F(18),'#ffd23e','center');
     }
@@ -8249,6 +9278,82 @@ function renderHUD(vw,vh){
   }
   if(G.players.length<4)text(ctx,'FRIENDS: PRESS (A) TO DROP IN',vw-6*k,vh-11*k,F(6),'rgba(255,255,255,0.4)','right');
   renderSoundHint(vw,vh);
+}
+// Card text has to live inside its box. The UI font is Courier New bold —
+// monospace, advance 0.6em — so a width is just chars*0.6*size and we can fit
+// text without touching measureText. Names shrink to one line; descriptions
+// wrap, then shrink, then finally ellipsise. Wrap the TRANSLATED string: `tr`
+// keys off whole strings, so wrapping first would hand it fragments.
+const uiTextW=(str,size)=>str.length*size*0.6;
+function wrapText(str,maxW,size){
+  const words=String(str).split(' '),lines=[];
+  let cur='';
+  for(const w of words){
+    const t=cur?cur+' '+w:w;
+    if(!cur||uiTextW(t,size)<=maxW)cur=t;
+    else{lines.push(cur);cur=w;}
+  }
+  if(cur)lines.push(cur);
+  return lines;
+}
+// wrap at `size`, dropping a point at a time until it fits `maxLines`; if even
+// the floor cannot hold it, cut the last line rather than spill out of the card
+function fitText(str,maxW,size,maxLines,minSize){
+  let s=size,lines=wrapText(str,maxW,s);
+  while(lines.length>maxLines&&s>minSize)lines=wrapText(str,maxW,--s);
+  if(lines.length>maxLines){
+    lines=lines.slice(0,maxLines);
+    const last=lines[maxLines-1];
+    const room=Math.max(1,Math.floor(maxW/(s*0.6))-1);
+    lines[maxLines-1]=(last.length>room?last.slice(0,room):last)+'…';
+  }
+  return {lines,size:s};
+}
+function renderSlot(vw,vh){
+  const ctx=sctx; // UI draws on the native-res screen canvas (see uiBegin)
+  const k=vw/680,F=s=>Math.max(5,Math.round(s*k));
+  const r=G.reel;if(!r)return;
+  ctx.fillStyle='rgba(12,7,18,0.82)';ctx.fillRect(0,0,vw,vh);
+  const shake=r.t<1.9?Math.sin(r.t*40)*1.5*k:0;
+  text(ctx,'LUCKY CHEST',vw/2+shake,vh*0.14,F(18),'#ffd23e','center');
+  const cols=['#8fa3b8','#57e86b','#ffd23e'],settle=[0.9,1.4,1.9];
+  const bw=64*k,bh=74*k,gap=14*k;
+  const x0=vw/2-(bw*3+gap*2)/2,y0=vh/2-bh/2;
+  const syms=[gemSprite,heartSprite,bigGemSprite];
+  for(let i=0;i<3;i++){
+    const x=x0+i*(bw+gap),done=r.t>=settle[i];
+    ctx.fillStyle='#1a0f08';ctx.fillRect(x-3*k,y0-3*k,bw+6*k,bh+6*k);
+    ctx.fillStyle='#2a1b42';ctx.fillRect(x,y0,bw,bh);
+    ctx.strokeStyle=done?cols[r.tier]:'#5a4a6a';ctx.lineWidth=Math.max(2,2*k);
+    ctx.strokeRect(x,y0,bw,bh);
+    if(done){
+      drawSpriteC(ctx,r.tier===0?gemSprite:bigGemSprite,x+bw/2,y0+bh/2,(r.tier===2?4:3)*k);
+      if(r.tier===2){
+        ctx.globalAlpha=0.25+0.25*Math.sin(r.t*10+i);
+        ctx.fillStyle='#ffd23e';ctx.fillRect(x,y0,bw,bh);
+        ctx.globalAlpha=1;
+      }
+    }else{
+      // the spin: a column of symbols racing past the window, each reel a
+      // touch slower than the one before it
+      const idx=Math.floor(r.t*(14-i*3)+i*7)%3;
+      const yo=Math.sin(r.t*(30-i*6))*6*k;
+      drawSpriteC(ctx,syms[idx],x+bw/2,y0+bh/2+yo,3*k);
+      drawSpriteC(ctx,syms[(idx+1)%3],x+bw/2,y0+bh/2+yo-bh*0.42,2*k);
+      drawSpriteC(ctx,syms[(idx+2)%3],x+bw/2,y0+bh/2+yo+bh*0.42,2*k);
+    }
+  }
+  if(r.paid){
+    const names=['A FEW GEMS...','LUCKY!','JACKPOT!'];
+    ctx.globalAlpha=r.tier===0?1:0.6+0.4*Math.sin(r.t*8);
+    text(ctx,names[r.tier],vw/2,y0+bh+16*k,F(16),cols[r.tier],'center');
+    ctx.globalAlpha=1;
+    text(ctx,'PRESS A',vw/2,vh-22*k,F(7),'#b3a184','center');
+    if(r.tier===2)for(let i=0;i<22;i++){ // gold rain
+      ctx.fillStyle=i%2?'#ffd23e':'#fff2c0';
+      ctx.fillRect((i*97+((i*i)%13)*9)%vw,(r.t*120*k+i*53)%vh,2,2);
+    }
+  }
 }
 function renderLevelup(vw,vh){
   const ctx=sctx; // UI draws on the native-res screen canvas (see uiBegin)
@@ -8292,8 +9397,15 @@ function renderLevelup(vw,vh){
       ctx.lineWidth=selected?2:1;
       ctx.strokeRect(x+0.5,y+0.5,cardW-1,rowH-8*k-1);
       ctx.fillStyle=col;ctx.fillRect(x+5*k,y+6*k,6*k,6*k);
-      text(ctx,name,x+15*k,y+5*k,F(7),col);
-      text(ctx,desc,x+15*k,y+15*k,F(6),'#b3a184');
+      // text column: right of the colour chip, with a margin before the border
+      const tx=x+15*k,availW=cardW-20*k;
+      let ns=F(7);
+      while(ns>5&&uiTextW(tr(name),ns)>availW)ns--;
+      text(ctx,name,tx,y+5*k,ns,col);
+      const lineH=Math.max(6,F(6)+1);
+      const maxLines=Math.max(1,Math.floor((rowH-8*k-15*k)/lineH));
+      const fit=fitText(tr(desc),availW,F(6),maxLines,5);
+      fit.lines.forEach((ln,li)=>text(ctx,ln,tx,y+15*k+li*lineH,fit.size,'#b3a184'));
       if(pick.done&&selected)text(ctx,'OK!',x+cardW-22*k,y+5*k,F(7),'#57e86b');
     });
   });
@@ -8523,15 +9635,53 @@ function renderModeSelect(vw,vh){
 let last=performance.now();
 let slowT=0; // brief slow-motion for big moments (phase breaks, boss deaths)
 function setSlow(t){slowT=Math.max(slowT,t);}
+// dev frame-pacing overlay, open the game with ?perf — real jank (GC pauses,
+// raster, vsync misses) only exists in-browser; headless probes can't see it
+const PERF_HUD=/[?&]perf/.test(location.search);
+const perfS={hist:new Float32Array(120),i:0,longs:[]};
+function drawPerfHud(raw,up,rd){
+  const s=perfS;
+  s.hist[s.i%120]=raw;s.i++;
+  const t=performance.now();
+  if(raw>20)s.longs.push(t);
+  while(s.longs.length&&t-s.longs[0]>5000)s.longs.shift();
+  const n=Math.min(120,s.i);
+  let sum=0,worst=0;
+  for(let i=0;i<n;i++){sum+=s.hist[i];if(s.hist[i]>worst)worst=s.hist[i];}
+  const g=screenC.getContext('2d');
+  g.save();g.setTransform(1,0,0,1,0,0);
+  g.fillStyle='rgba(0,0,0,0.55)';g.fillRect(4,4,196,66);
+  g.font='10px monospace';
+  g.fillStyle='#8f8';
+  g.fillText((1000/(sum/n)).toFixed(0)+' fps   avg '+(sum/n).toFixed(1)+'ms',10,16);
+  g.fillStyle=worst>25?'#f66':'#cc8';
+  g.fillText('worst '+worst.toFixed(1)+'ms   >20ms: '+s.longs.length+' in 5s',10,28);
+  g.fillStyle='#8cf';
+  g.fillText('sim '+up.toFixed(1)+'ms  draw '+rd.toFixed(1)+'ms',10,40);
+  g.fillText('e:'+G.enemies.length+' b:'+G.bullets.length+' pt:'+G.particles.length+' fx:'+G.fx.length,10,52);
+  // 2-second sparkline, 1px per frame, 20ms = full bar
+  g.fillStyle='#6d6';
+  for(let i=0;i<n;i++){
+    const v=s.hist[(s.i-n+i+120)%120],h=Math.min(12,v*0.6);
+    if(v>20)g.fillStyle='#f66';
+    g.fillRect(10+i,64-h,1,h);
+    if(v>20)g.fillStyle='#6d6';
+  }
+  g.restore();
+}
 function frame(now){
-  let dt=Math.min(0.033,(now-last)/1000);
+  const rawMs=now-last;
+  let dt=Math.min(0.033,rawMs/1000);
   last=now;
   if(slowT>0){slowT-=dt;dt*=0.30;}
   // online guests never simulate: net.js patches G from host snapshots (inert when NET is off)
   if(typeof NET!=='undefined'&&NET.guestFrame&&NET.guestFrame(dt)){render();requestAnimationFrame(frame);return;}
+  const t0=PERF_HUD?performance.now():0;
   update(dt);
   if(G.state!=='title'&&G.state!=='modesel')updateCamera(dt);
+  const t1=PERF_HUD?performance.now():0;
   render();
+  if(PERF_HUD)drawPerfHud(rawMs,t1-t0,performance.now()-t1);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

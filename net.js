@@ -225,6 +225,7 @@ function encodeSnapshot(){
       if(b.glow)o.glow=1;
       if(b.prism)o.prism=b.prism;
       if(b.star)o.star=b.star;
+      if(b.met)o.met=1;
       if(b.trail){o.trail=1;if(b.trailCol)o.trailCol=b.trailCol;if(b.starTrail)o.starTrail=1;}
       return o;}),
     ebullets:G.ebullets.filter(function(b){return !b.dead;}).map(function(b){

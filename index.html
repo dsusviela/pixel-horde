@@ -1617,22 +1617,22 @@ const CLASSIC_WAVES=[
 {n:14,dur:30,mix:{chaser:1},elite:0,lv:{b:1,x:0}},
 {n:20,dur:35,mix:{chaser:1,swarm:0.7},elite:0,pattern:'swarm',lv:{b:3,x:0}},
 {n:26,dur:40,mix:{chaser:1,swarm:0.8,spitter:0.5},elite:0,pattern:'band',lv:{b:2,x:3}},
-{n:32,dur:45,mix:{chaser:1,swarm:0.8,spitter:0.7,tank:0.15},elite:0,pattern:'jumpers',lv:{b:2,x:0}},
+{n:32,dur:45,mix:{chaser:1,swarm:0.8,spitter:0.7,tank:0.15},elite:0,pattern:'dance',lv:{b:2,x:0}},
 {boss:0,dur:90},
-{n:34,dur:45,mix:{chaser:1,swarm:0.9,spitter:0.7,tank:0.2,bomber:0.3},elite:0,pattern:'polarity',lv:{b:2,x:1}},
+{n:34,dur:45,mix:{chaser:1,swarm:0.9,spitter:0.7,tank:0.2,bomber:0.3},elite:0,pattern:'creep',lv:{b:2,x:1}},
 {n:40,dur:48,mix:{chaser:0.9,swarm:1.1,spitter:0.7,tank:0.2,bomber:0.4},elite:0.02,pattern:'band',lv:{b:2,x:3}},
-{n:46,dur:50,mix:{chaser:0.8,swarm:0.9,spitter:0.9,tank:0.35,bomber:0.4},elite:0.03,pattern:'encircle',lv:{b:1,x:3}},
+{n:46,dur:50,mix:{chaser:0.8,swarm:0.9,spitter:0.9,tank:0.35,bomber:0.4},elite:0.03,pattern:'collapse',lv:{b:1,x:3}},
 {n:52,dur:52,mix:{chaser:0.8,swarm:1.0,spitter:0.9,tank:0.35,bomber:0.5},elite:0.06,pattern:'swarm',lv:{b:3,x:1}},
 {boss:1,dur:100},
-{n:54,dur:52,mix:{chaser:0.7,swarm:1.0,spitter:1.0,tank:0.4,bomber:0.5},elite:0.05,pattern:'jumpers',lv:{b:2,x:1}},
-{n:58,dur:55,mix:{chaser:0.7,swarm:1.1,spitter:1.0,tank:0.45,bomber:0.6},elite:0.06,pattern:'polarity',lv:{b:3,x:1}},
+{n:54,dur:52,mix:{chaser:0.7,swarm:1.0,spitter:1.0,tank:0.4,bomber:0.5},elite:0.05,pattern:'stonefall',lv:{b:2,x:1}},
+{n:58,dur:55,mix:{chaser:0.7,swarm:1.1,spitter:1.0,tank:0.45,bomber:0.6},elite:0.06,pattern:'wards',lv:{b:3,x:1}},
 {n:62,dur:55,mix:{chaser:0.6,swarm:1.0,spitter:1.1,tank:0.5,bomber:0.6},elite:0.08,pattern:'band',lv:{b:3,x:4}},
-{n:66,dur:58,mix:{chaser:0.6,swarm:1.0,spitter:1.1,tank:0.6,bomber:0.7},elite:0.08,pattern:'encircle',lv:{b:2,x:4}},
+{n:66,dur:58,mix:{chaser:0.6,swarm:1.0,spitter:1.1,tank:0.6,bomber:0.7},elite:0.08,pattern:'dance',lv:{b:2,x:4}},
 {boss:2,dur:110},
 {n:70,dur:58,mix:{chaser:0.5,swarm:1.1,spitter:1.1,tank:0.6,bomber:0.7},elite:0.09,pattern:'swarm',lv:{b:5,x:2}},
-{n:74,dur:60,mix:{chaser:0.5,swarm:1.2,spitter:1.2,tank:0.65,bomber:0.8},elite:0.10,pattern:'polarity',lv:{b:4,x:2}},
-{n:78,dur:60,mix:{chaser:0.5,swarm:1.2,spitter:1.2,tank:0.7,bomber:0.8},elite:0.11,pattern:'jumpers',lv:{b:3,x:1}},
-{n:84,dur:62,mix:{chaser:0.4,swarm:1.3,spitter:1.2,tank:0.8,bomber:0.9},elite:0.14,pattern:'encircle',lv:{b:4,x:6}},
+{n:74,dur:60,mix:{chaser:0.5,swarm:1.2,spitter:1.2,tank:0.65,bomber:0.8},elite:0.10,pattern:'creep',lv:{b:4,x:2}},
+{n:78,dur:60,mix:{chaser:0.5,swarm:1.2,spitter:1.2,tank:0.7,bomber:0.8},elite:0.11,pattern:'stonefall',lv:{b:3,x:1}},
+{n:84,dur:62,mix:{chaser:0.4,swarm:1.3,spitter:1.2,tank:0.8,bomber:0.9},elite:0.14,pattern:'collapse',lv:{b:4,x:6}},
 {boss:3,dur:125}];
 // BOSS RUSH: the whole boss roster back to back, nothing in between. Every
 // "wave" is a boss wave, so the classic wave machine drives it unchanged.
@@ -1924,7 +1924,9 @@ function dropLoot(e){
     if(G.mode==='classic')G.xp+=xpNeed();
     if(isCampaign())G.pickups.push({x:e.x,y:e.y,type:'pod',t:0});
   }else if(e.type==='tank'&&Math.random()<0.35)G.pickups.push({x:e.x,y:e.y,type:'heart',t:0});
-  else if(Math.random()<0.006)G.pickups.push({x:e.x,y:e.y,type:'vacuum',t:0});
+  // the vacuum is a RARE find — at 0.6% it showed up most waves and
+  // stopped feeling like a find at all
+  else if(Math.random()<0.001)G.pickups.push({x:e.x,y:e.y,type:'vacuum',t:0});
   else if(Math.random()<0.02)G.pickups.push({x:e.x,y:e.y,type:'heart',t:0});
 }
 function damageEnemy(e,dmg,owner){
@@ -2150,7 +2152,7 @@ function breakCrate(c){
   if(r<bp){
     const types=['speed','regen','maxhp','damage','magnet'];
     G.pickups.push({x:c.x,y:c.y,type:types[(Math.random()*types.length)|0],t:0});
-  }else if(r<bp+0.07)G.pickups.push({x:c.x,y:c.y,type:'vacuum',t:0});
+  }else if(r<bp+0.012)G.pickups.push({x:c.x,y:c.y,type:'vacuum',t:0}); // rare
   else if(r<bp+0.27)G.pickups.push({x:c.x,y:c.y,type:'heart',t:0});
   else for(let i=0;i<4;i++)G.gems.push({x:c.x+(Math.random()*12-6),y:c.y+(Math.random()*12-6),v:2,t:0});
 }
@@ -2388,8 +2390,33 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
       crText(ox,oy);
       break;}
     case 'lance':{ // lava ray: a molten line through the rank
-      const tgt=nearestEnemy(ox,oy,360);
-      if(!tgt)return false;
+      const near=nearestEnemy(ox,oy,360);
+      if(!near)return false;
+      // aim is the whole card: a thin lance fired at the NEAREST foe whiffed
+      // the pack behind it and read as random. Score the nearest handful of
+      // candidates by how many foes their line spears (boss counts triple —
+      // players can't aim) and shoot the fullest column. The ray's length
+      // and width below are unchanged; only where it points.
+      const cands=[];
+      for(const e of G.enemies){
+        if(e.dead||e.vulnMul===0)continue;
+        const d=dist2(ox,oy,e.x,e.y);
+        if(d<360*360)cands.push({e,d});
+      }
+      cands.sort((u,v)=>u.d-v.d);
+      const lenS=180+spellHits(id,lv)*42,WS=4+lv*1.1;
+      let tgt=near,bestScore=-1;
+      for(const c of cands.slice(0,8)){
+        const ca=Math.atan2(c.e.y-oy,c.e.x-ox),cx=Math.cos(ca),cy=Math.sin(ca);
+        let score=0;
+        for(const o of cands){
+          const t=(o.e.x-ox)*cx+(o.e.y-oy)*cy;
+          if(t<0||t>lenS)continue;
+          const px=ox+cx*t,py=oy+cy*t,w=WS+o.e.r;
+          if(dist2(o.e.x,o.e.y,px,py)<w*w)score+=o.e.boss?3:1;
+        }
+        if(score>bestScore){bestScore=score;tgt=c.e;}
+      }
       const a=Math.atan2(tgt.y-oy,tgt.x-ox);
       // the card is a LANCE: its answer to a crowd is REACH, not girth. It
       // should spear a whole column front to back, not mow a swathe — so the
@@ -2709,7 +2736,7 @@ function castSpell(p,id,lv,ox,oy,mul,echo){
       // tag: overlapping patches used to tick independently).
       G.fx.push({kind:'strail',own:p,gap:0,t:5,dur:5,dps:dmg,col:'#ff3c1e'});
       G.fx.push({kind:'boom',col:'#ffb62e',x:ox,y:oy,r:70,t:0.4,dur:0.4});
-      G.fx.push({kind:'rburn',ground:1,own:p,x:ox,y:oy,r:52,dps:dmg,tag:'ev'+p.idx,tick:0,t:2.6,dur:2.6,col:'#ff3c1e'});
+      G.fx.push({kind:'rburn',ground:1,soft:1,own:p,x:ox,y:oy,r:52,dps:dmg,tag:'ev'+p.idx,tick:0,t:2.6,dur:2.6,col:'#ff3c1e'});
       addParticles(ox,oy,'#ff5a3d',26,150);
       addParticles(ox,oy,'#fff6c8',10,90);
       for(let i=0;i<10;i++){
@@ -2901,7 +2928,11 @@ function buildOffers(p){
       else if(w.lv<WEAPONS[id].max)pool.push({kind:'up',id});
       else if(!w.evo&&!WEAPONS[id].ult)pool.push({kind:'evo',id});
     }
-    for(const pid of sc.passives){
+    // passives are multipliers on a kit — a crit chance or a burn bonus on
+    // one lv1 spell is a dead pick, and drafting them early made the school
+    // feel sluggish. They join the board once two school spells are owned.
+    const owned=sc.actives.filter(id=>p.weapons[id]).length;
+    if(owned>=2)for(const pid of sc.passives){
       if((p.pas[pid]||0)<PASSIVES[pid].ranks)pool.push({kind:'pas',id:pid});
     }
   }else for(const id of WEAPON_IDS){
@@ -3192,6 +3223,15 @@ function tickBossFx(dt,alive){
           addParticles(f.x,f.y,'#ffb62e',10,90);sfx('emberpop');
           for(const p of alive)if(dist2(p.x,p.y,f.x,f.y)<f.r*f.r)bossHit(p,f.pct);
           if(f.pool)pushPool(f.boss,f.x,f.y,f.pool.r,f.pool.life,f.pool.pct,f.pool.col||'#ff7a1f',f.pool.shape);
+          if(f.rock){
+            // the boulder stays: a 2x2 of rock that blocks bodies and sight
+            const tx=Math.floor(f.x/TILE),ty=Math.floor(f.y/TILE);
+            for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++)patSetTile(tx+dx,ty+dy,T_ROCK);
+            for(const p of G.players)unstick(p);
+            for(const e of G.enemies)if(!e.dead)unstick(e);
+            addParticles(f.x+TILE,f.y+TILE,'#c9b48a',16,110);
+            G.shake=Math.max(G.shake,6);sfx('crack');
+          }
         }
         break;
       case 'pool':
@@ -3279,6 +3319,13 @@ function tickBossFx(dt,alive){
             const dx=p.x-f.x,dy=p.y-f.y;
             const lx=dx*c-dy*sn,ly=dx*sn+dy*c;
             if(lx>-8&&lx<f.len&&Math.abs(ly)<f.w*0.5)bossHit(p,f.pct);
+          }
+          // the dance floor kills the horde too — the drip IS the harvest
+          if(f.mobs)for(const e of G.enemies){
+            if(e.dead||e.boss)continue;
+            const dx=e.x-f.x,dy=e.y-f.y;
+            const lx=dx*c-dy*sn,ly=dx*sn+dy*c;
+            if(lx>-8&&lx<f.len&&Math.abs(ly)<f.w*0.5)damageEnemy(e,e.hp*2+50,null);
           }
           for(let i=0;i<8;i++)
             addParticles(f.x+Math.cos(f.ang)*f.len*i/8,f.y+Math.sin(f.ang)*f.len*i/8,f.col,5,70);
@@ -3495,7 +3542,7 @@ function tickBossFx(dt,alive){
         if(o.dead){f.t=0;break;}
         if(f.gap<=0){
           f.gap=0.22;
-          G.fx.push({kind:'rburn',ground:1,own:o,x:o.x,y:o.y,r:44,dps:f.dps,
+          G.fx.push({kind:'rburn',ground:1,soft:1,own:o,x:o.x,y:o.y,r:44,dps:f.dps,
             tag:'ev'+o.idx,tick:0,t:2.6,dur:2.6,col:f.col});
           addParticles(o.x,o.y,Math.random()<0.5?'#ff5a3d':'#ffb62e',3,50);
           const a=Math.random()*TAU;
@@ -6805,9 +6852,13 @@ const jumperSprite=makeSprite([
 'C.CCC.C',
 'C.....C'
 ],{C:'#4ac8d8',W:'#10202a'});
-const PATTERN_NAMES={band:'THE BAND',polarity:'POLARITY',swarm:'THE SWARM',jumpers:'JUMPERS',encircle:'THE ENCIRCLE'};
+const PATTERN_NAMES={band:'THE BAND',polarity:'POLARITY',swarm:'THE SWARM',jumpers:'JUMPERS',encircle:'THE ENCIRCLE',
+  creep:'THE CREEP',dance:'THE DANCE',stonefall:'STONEFALL',collapse:'THE COLLAPSE',wards:'THE WARDS'};
 // share of the normal spawn drip a pattern wave keeps — the pattern brings the rest
-const PATTERN_QUOTA={band:0.75,polarity:0.65,swarm:0.6,jumpers:0.75,encircle:0.45};
+// terrain waves (v2): the floor is the choreography and the drip is the
+// harvest, so they keep most of it — except the creep, whose spores ARE the wave
+const PATTERN_QUOTA={band:0.75,polarity:0.65,swarm:0.6,jumpers:0.75,encircle:0.45,
+  creep:0.5,dance:0.7,stonefall:0.6,collapse:0.8,wards:0.6};
 // ---- the number spine ----
 // Density: counts scale with the party's MEASURED clearing output (G.waveDPS)
 // against the output the base counts were tuned at, so every pattern keeps
@@ -6851,7 +6902,8 @@ function initWavePattern(id,def){
   if(id==='band'){
     P.events=[0.12*d,0.45*d,0.75*d];P.capBonus=Math.round(80*Math.min(F,5));
     P.int=Math.max(0.010,0.03/F);
-    P.planned=Math.round(3*5.0/P.int*1.2);
+    P.lanes=n; // one torrent per player: a party faces a braid of lanes
+    P.planned=Math.round(3*5.0/P.int*1.2*n);
     P.xpPool=base+bonus; // escaped mobs forfeit their share — that IS the skill axis
   }else if(id==='polarity'){
     P.events=[0.15*d];P.capBonus=Math.round(60*Math.min(F,5));
@@ -6863,8 +6915,8 @@ function initWavePattern(id,def){
     P.xpPool=base+bonus;
   }else if(id==='swarm'){
     P.events=[0.15*d,0.45*d,0.72*d];P.capBonus=Math.round(170*Math.min(F,6));
-    P.burst=Math.round((26+8*n)*F);
-    P.trickle=1.2+2.5*(F-1); // gentle at wave 2, a carpet once output is measured
+    P.burst=Math.round((26+14*n)*F);
+    P.trickle=(1.2+2.5*(F-1))*(0.7+0.3*n); // gentle at wave 2, a carpet once output is measured
     // planned counts every xp draw: chaff 1 each, husks 3 each (~1/8 of spawns)
     P.planned=Math.round((3*P.burst+P.trickle*0.7*d)*1.25);
     P.xpPool=base+bonus;
@@ -6877,30 +6929,338 @@ function initWavePattern(id,def){
     P.events=[0.10*d];P.capBonus=Math.round(100*Math.min(F,3));
     P.xpPool=base;   // the wall pays the base level
     P.champXp=bonus; // the champion carries the whole execution jackpot
+  }else if(id==='creep'){
+    // Pyraxis rehearsal: spores seed a spreading floor; kill them to purge it
+    P.events=[0.10*d,0.40*d,0.66*d];
+    P.spores=2+2*n;P.sporeList=[];
+    P.planned=3*P.spores;
+    P.xpPool=base+bonus; // every gem sits on a spore
+  }else if(id==='dance'){
+    // Rotgrub rehearsal: four lanes erupt in order; the floor kills the drip
+    P.events=[0.12*d];P.capBonus=Math.round(60*Math.min(F,4));
+    P.planned=0;P.xpPool=0; // no pattern bodies: the drip is the harvest
+  }else if(id==='stonefall'){
+    // Stonefather rehearsal: boulders fall and become cover; a sniper needs LoS
+    P.events=[0.12*d,0.38*d,0.62*d];
+    P.rocks=3+2*n;P.snipers=[];P.perDrop=1+Math.floor(n/2);
+    P.planned=3*P.perDrop;
+    P.xpPool=base+bonus; // the three snipers carry it
+  }else if(id==='collapse'){
+    // Worldeater rehearsal: the void eats the field inward; every bite
+    // brings a burst from the live edge
+    P.events=[0.10*d];P.capBonus=Math.round(80*Math.min(F,5));
+    P.bites=5;P.burst=Math.round((6+3*n)*Math.min(F,4));
+    P.planned=P.bites*P.burst;
+    P.xpPool=base+bonus;
+  }else if(id==='wards'){
+    // Prismwarden rehearsal: stand in your colour when the pulse lands
+    P.events=[0.12*d];P.capBonus=Math.round(60*Math.min(F,4));
+    P.pulses=Math.max(3,Math.floor(d*0.7/6));
+    P.burst=Math.round((4+2*n)*Math.min(F,4));
+    P.planned=P.pulses*P.burst;
+    P.xpPool=base+bonus;
   }
   return P;
+}
+// a terrain wave's "arena": the camera window FROZEN at the event, so the
+// floor never slides under the party (band tracks the live camera on purpose)
+function patField(){
+  const c=G.cam,aspect=screenC.width/screenC.height||1.7;
+  const w=Math.max(320,c.w),h=w/aspect;
+  return {x:c.x,y:c.y,w,h};
+}
+// pattern-owned tile edits (stonefall boulders); closeArena() sweeps them
+function patSetTile(tx,ty,v){
+  if(tileAt(tx,ty)===v)return;
+  G.tileOverride.set(tx+','+ty,v);
+  chunkCanvases.delete(Math.floor(tx/CHUNK)+','+Math.floor(ty/CHUNK));
 }
 function tickWavePattern(dt,maxAlive){
   const P=G.wavePat;if(!P)return;
   const alive=G.players.filter(p=>!p.dead);
   const room=()=>G.enemies.length<maxAlive+40;
   if(P.ei<P.events.length&&G.waveT>=P.events[P.ei]
-     &&!(P.id==='band'&&P.band)&&!(P.id==='polarity'&&P.pol)){
+     &&!(P.id==='band'&&P.bands)&&!(P.id==='polarity'&&P.pol)){
     P.ei++;
     if(P.id==='band')bandArm(P);
     else if(P.id==='polarity')polarityFire(P,alive);
     else if(P.id==='swarm')swarmBurst(P,room);
     else if(P.id==='jumpers')jumperPack(P,alive,room);
     else if(P.id==='encircle')encircleStart(P,alive);
+    else if(P.id==='creep')creepSeed(P,alive,room);
+    else if(P.id==='dance')danceStart(P);
+    else if(P.id==='stonefall')stonefallDrop(P,alive,room);
+    else if(P.id==='collapse')collapseStart(P);
+    else if(P.id==='wards')wardsStart(P,alive);
   }
   // the VS carpet: swarm waves also trickle continuously between bursts
   if(P.id==='swarm'&&P.ei>0&&G.waveT<waveDef(G.wave).dur*0.85){
     P.tAcc=(P.tAcc||0)+dt*P.trickle;
     while(P.tAcc>=1){P.tAcc--;if(!room())break;swarmSpawnOne(P);}
   }
-  if(P.band)bandTick(P,dt,room);
+  if(P.bands)bandTick(P,dt,room);
   if(P.pol)polarityTick(P,dt);
   if(P.circ)encircleTick(P,dt,alive);
+  if(P.id==='creep')creepTick(P,dt,alive);
+  if(P.dance)danceTick(P,dt);
+  if(P.id==='stonefall')stonefallTick(P,dt,alive);
+  if(P.col)collapseTick(P,dt,alive,room);
+  if(P.wards)wardsTick(P,dt,alive,room);
+  // the floor bites without a boss to bite for it: creep and void DoT live in
+  // Pyraxis/Worldeater AI, so a terrain wave ticks its own
+  if(!G.boss&&(G.creep||G.voidTiles)){
+    P.floorTick=(P.floorTick||0)-dt;
+    if(P.floorTick<=0){
+      P.floorTick=0.35;
+      for(const p of alive){
+        const k=Math.floor(p.x/TILE)+','+Math.floor(p.y/TILE);
+        if(G.creep&&G.creep.has(k))bossHit(p,0.04);
+        if(G.voidTiles&&G.voidTiles.has(k)){bossHit(p,0.05);addParticles(p.x,p.y,'#8a5cff',2,30);}
+      }
+    }
+  }
+}
+// ================= TERRAIN WAVES (v2) =================
+// Each one rehearses a boss floor with the boss's own primitives, so the
+// language transfers 1:1. The rule that fixed v1: the intended play must be
+// the only HP-safe play AND the fastest xp — never a suggestion.
+const sporeSprite=makeSprite([
+'...GGG...','..GYYYG..','.GYWYYYG.','GYYYYYYYG','GYYYGYYYG','GYYYYYYYG','.GYYYYYG.','..GGGGG..','..S.S.S..'],
+{G:'#3fe05a',Y:'#8fd06a',W:'#eaffd0',S:'#1a3a1c'});
+// 6) THE CREEP — spores wander and seed Pyraxis creep around themselves
+// (mud slow + DoT). Killing a spore purges ITS patch; the gems are on the
+// spores, so hunting them is the farm.
+function creepSeed(P,alive,room){
+  G.creep=G.creep||new Set();
+  for(let i=0;i<P.spores;i++){
+    if(!room())break;
+    const pt=spawnPoint();if(!pt)continue;
+    const e=spawnEnemy('tank',pt.x,pt.y);
+    e.spr=sporeSprite;e.scale=1.6;e.r=7;e.sp=16;
+    e.hp*=1.6*Math.max(1,P.F*0.5);e.maxhp=e.hp;e.dmg=6*dmgScale();
+    e.xp=patXp(P)+patXp(P)+patXp(P);
+    e.spore={patch:new Set(),seedT:0.8,turnT:0};
+    // a slow wander into the field, not a hunt
+    const an=Math.atan2(G.cam.y-pt.y,G.cam.x-pt.x);
+    e.msp=16;e.mvx=Math.cos(an);e.mvy=Math.sin(an);
+    P.sporeList.push(e);
+  }
+  if(P.ei===1){flash(PATTERN_NAMES.creep+'!');subFlash('KILL THE SPORES — THEY EAT THE FLOOR',3.2);}
+  else flash('MORE SPORES!');
+  sfx('telegraph');
+}
+function creepTick(P,dt,alive){
+  if(!G.creep)return;
+  const cap=320+90*G.players.length;
+  for(const e of P.sporeList){
+    const sp=e.spore;
+    if(e.dead){
+      for(const k of sp.patch)G.creep.delete(k);
+      if(sp.patch.size){addParticles(e.x,e.y,'#3fe05a',14,90);addText(e.x,e.y-10,'PURGED','#c8ffd2');}
+      sp.patch.clear();continue;
+    }
+    sp.turnT-=dt;
+    if(sp.turnT<=0){sp.turnT=1.5+Math.random()*2;const an=Math.random()*TAU;e.mvx=Math.cos(an);e.mvy=Math.sin(an);}
+    // drift back toward the party if it wanders off-screen
+    const c=G.cam;
+    if(Math.abs(e.x-c.x)>c.w*0.55||Math.abs(e.y-c.y)>c.h*0.55){const an=Math.atan2(c.y-e.y,c.x-e.x);e.mvx=Math.cos(an);e.mvy=Math.sin(an);}
+    sp.seedT-=dt;
+    if(sp.seedT<=0&&G.creep.size<cap){
+      sp.seedT=0.45;
+      const tx=Math.floor(e.x/TILE),ty=Math.floor(e.y/TILE),k=tx+','+ty;
+      if(!G.creep.has(k)){G.creep.add(k);sp.patch.add(k);}
+      // the patch grows from its own edge, Pyraxis-style
+      const keys=Array.from(sp.patch);
+      for(let i=0;i<4&&keys.length;i++){
+        const pr=keys[(Math.random()*keys.length)|0].split(','),d=[[1,0],[-1,0],[0,1],[0,-1]][(Math.random()*4)|0];
+        const nk=(+pr[0]+d[0])+','+(+pr[1]+d[1]);
+        if(!G.creep.has(nk)&&G.creep.size<cap){G.creep.add(nk);sp.patch.add(nk);}
+      }
+    }
+  }
+  P.sporeList=P.sporeList.filter(e=>!e.dead);
+  // all spores down and nothing left to purge: the floor heals
+  if(!P.sporeList.length&&P.ei>=P.events.length&&G.creep.size===0)G.creep=null;
+}
+// 7) THE DANCE — Heigan's floor on the frozen camera: four lanes erupt in
+// order. The eruption kills the drip too, so walking the dance IS the farm.
+function danceStart(P){
+  const f=patField();
+  P.dance={f,lanes:4,lane:0,dir:1,beat:2.6,t:1.2,n:0};
+  flash(PATTERN_NAMES.dance+'!');subFlash('THE FLOOR ERUPTS IN ORDER — WALK IT',3.2);
+  sfx('telegraph');
+}
+function danceTick(P,dt){
+  const D=P.dance,def=waveDef(G.wave);
+  if(G.waveT>def.dur*0.88){P.dance=null;flash('THE FLOOR RESTS');return;}
+  // second half: the dance turns around and quickens, like the boss's P2
+  if(!D.p2&&G.waveT>def.dur*0.55){D.p2=1;D.dir*=-1;D.beat=2.1;flash('THE DANCE REVERSES!');sfx('crack');}
+  D.t-=dt;
+  if(D.t>0)return;
+  D.t=D.beat;
+  // the lanes are the SCREEN's lanes: they follow the camera like the band
+  // does, so stepping out of one is a screen move, not a world move
+  const f=patField(),lw=f.w/D.lanes;
+  const lx=f.x-f.w/2+lw*(D.lane+0.5);
+  pushLine(null,lx,f.y-f.h/2,Math.PI/2,{len:f.h,w:lw*0.92,pct:0.15,t:D.beat*0.55,dur:D.beat*0.55,
+    col:'#b6d94a',mobs:1});
+  D.lane+=D.dir;
+  if(D.lane>=D.lanes-1||D.lane<=0)D.dir*=-1;
+  sfx('telegraph');
+}
+// 8) STONEFALL — boulders drop on meteor rings and stay as rock: cover.
+// Cover matters because a sniper on the edge needs line of sight.
+function stonefallDrop(P,alive,room){
+  const f=patField();
+  for(let i=0;i<P.rocks;i++){
+    let x,y,ok=false;
+    for(let t=0;t<12&&!ok;t++){
+      x=f.x+(Math.random()-0.5)*f.w*0.8;y=f.y+(Math.random()-0.5)*f.h*0.8;
+      ok=!solidAt(x,y);
+      for(const p of alive)if(dist2(x,y,p.x,p.y)<50*50)ok=false;
+    }
+    if(!ok)continue;
+    G.fx.push({kind:'met',ground:1,boss:null,x,y,r:26,t:1.7,dur:1.7,pct:0.16,pool:null,col:'#c9b48a',rock:1});
+  }
+  for(let k=0;k<P.perDrop;k++){
+    if(!room())break;
+    const pt=spawnPoint();
+    if(pt){
+      const e=spawnEnemy('spitter',pt.x,pt.y,1);
+      e.elite=true;e.scale=1.5;e.r=7;e.sp=30;
+      e.hp*=6*Math.max(1,P.F*0.6);e.maxhp=e.hp;
+      e.xp=Math.round(P.xpPool/P.planned);
+      e.sniper=1;
+      P.snipers.push(e);
+      addText(e.x,e.y-14,'SNIPER','#ff6bd6');
+    }
+  }
+  if(P.ei===1){flash(PATTERN_NAMES.stonefall+'!');subFlash('TAKE COVER — BREAK ITS LINE OF SIGHT',3.2);}
+  else flash('STONEFALL!');
+  sfx('telegraph');
+}
+function stonefallTick(P,dt,alive){
+  // a sniper's laser sight: the line it will shoot down, drawn while it has LoS
+  for(const e of P.snipers){
+    if(e.dead)continue;
+    const p=nearestPlayer(e,alive);
+    if(!p)continue;
+    e.sightOn=losClear(e.x,e.y,p.x,p.y);
+    if(e.sightOn&&Math.random()<dt*30){
+      const t=Math.random();
+      G.particles.push({x:e.x+(p.x-e.x)*t,y:e.y+(p.y-e.y)*t,vx:0,vy:0,t:0.08,col:'#ff6bd6',size:1,drag:0});
+    }
+  }
+  P.snipers=P.snipers.filter(e=>!e.dead);
+}
+// 9) THE COLLAPSE — the void eats the frozen field inward, a band at a time.
+// Touch it and it bites and shoves you back in; every bite brings a burst.
+// The void is the SCREEN's edge, not a place in the world: it follows the
+// camera, so the playable area is literally the middle of what you can see
+// and shrinks with every bite. inset is the fraction of each screen edge
+// that is gone; 5 bites reach 0.30 (a 40%-wide, 40%-tall island).
+function collapseStart(P){
+  P.col={inset:0,step:0.06,max:0.30,t:3.5,bite:0,holdT:0};
+  flash(PATTERN_NAMES.collapse+'!');subFlash('THE SCREEN EATS ITSELF — STAY IN THE MIDDLE',3.2);
+  sfx('boss');
+}
+function collapseBite(P,room){
+  const C=P.col;
+  C.bite++;
+  C.inset=Math.min(C.max,C.inset+C.step);
+  G.shake=Math.max(G.shake,7);sfx('crack');
+  flash(C.bite>=P.bites?'NOTHING LEFT TO EAT':'IT BITES!');
+  // the burst pours in from the live edge and walks across the void
+  for(let i=0;i<P.burst;i++){
+    if(!room())break;
+    const pt=spawnPoint();if(!pt)continue;
+    const e=spawnEnemy(Math.random()<0.7?'chaser':'swarm',pt.x,pt.y);
+    e.hp*=1.2;e.maxhp=e.hp;e.xp=patXp(P);
+  }
+}
+function collapseTick(P,dt,alive,room){
+  const C=P.col;
+  if(C.bite<P.bites){
+    C.t-=dt;
+    if(C.t<=0){C.t=5;collapseBite(P,room);}
+  }else{
+    C.holdT+=dt;
+    if(C.holdT>10){P.col=null;flash('THE SCREEN RETURNS');sfx('douse');return;}
+  }
+  // outside the island: bite and shove back toward the screen's centre
+  if(C.inset>0){
+    const f=patField(),hw=f.w*(0.5-C.inset),hh=f.h*(0.5-C.inset);
+    C.tick=(C.tick||0)-dt;
+    const bite=C.tick<=0;
+    if(bite)C.tick=0.35;
+    for(const p of alive){
+      if(Math.abs(p.x-f.x)<=hw&&Math.abs(p.y-f.y)<=hh)continue;
+      const dx=f.x-p.x,dy=f.y-p.y,d=Math.hypot(dx,dy)||1;
+      moveCollide(p,dx/d*120*dt,dy/d*120*dt);
+      if(bite){bossHit(p,0.05);addParticles(p.x,p.y,'#8a5cff',3,40);}
+    }
+  }
+}
+// 10) THE WARDS — Prismwarden's colour check. Each player wears a colour;
+// coloured wards stand in the field; when the pulse lands, anyone outside
+// their own colour is hit. Then the wards move and the horde follows them.
+const WARD_COLS=['#ff4d6d','#57e86b','#39d5ff','#ffd23e'];
+function wardsStart(P,alive){
+  const f=patField();
+  P.wards={f,n:0,t:1.0,warn:0,rings:[]};
+  G.players.forEach((p,i)=>{p.wardCol=WARD_COLS[i%WARD_COLS.length];});
+  wardsPlace(P,alive);
+  flash(PATTERN_NAMES.wards+'!');subFlash('STAND IN YOUR COLOUR WHEN THE PULSE LANDS',3.4);
+  sfx('spreadcall');
+}
+function wardsPlace(P,alive){
+  const W=P.wards,f=W.f;
+  for(const r of W.rings)r.t=Math.min(r.t,0.3);
+  W.rings=[];
+  const cols=[];
+  for(const p of G.players)if(cols.indexOf(p.wardCol)<0)cols.push(p.wardCol);
+  const R=46;
+  cols.forEach((col,i)=>{
+    let x,y,ok=false;
+    for(let t=0;t<16&&!ok;t++){
+      x=f.x+(Math.random()-0.5)*f.w*0.7;y=f.y+(Math.random()-0.5)*f.h*0.7;
+      ok=!solidAt(x,y);
+      for(const q of W.rings)if(dist2(x,y,q.x,q.y)<(R*2+40)*(R*2+40))ok=false;
+    }
+    if(!ok){x=f.x+(i-(cols.length-1)/2)*R*2.6;y=f.y;}
+    const ring={kind:'ward',ground:1,boss:null,x,y,r:R,col,t:99,dur:99,seed:Math.random()*TAU};
+    G.fx.push(ring);W.rings.push(ring);
+  });
+  W.t=6;W.warn=0;
+}
+function wardsTick(P,dt,alive,room){
+  const W=P.wards;
+  if(W.n>=P.pulses){for(const r of W.rings)r.t=Math.min(r.t,0.3);P.wards=null;flash('THE COLOURS FADE');return;}
+  W.t-=dt;
+  // the count-in: 1.5s of quickening beeps, like the boss's cast bar
+  if(W.t<1.5&&W.t>0){W.warn-=dt;if(W.warn<=0){W.warn=0.1+0.3*W.t;sfx('telegraph');}}
+  for(const r of W.rings)r.pulse=W.t<1.5?1-W.t/1.5:0;
+  if(W.t>0)return;
+  W.n++;
+  // the pulse
+  let hit=0;
+  for(const p of alive){
+    let safe=false;
+    for(const r of W.rings)if(r.col===p.wardCol&&dist2(p.x,p.y,r.x,r.y)<r.r*r.r)safe=true;
+    if(!safe){bossHit(p,0.16);hit++;addParticles(p.x,p.y,'#ffffff',10,90);}
+    else{addSparkles(p.x,p.y,p.wardCol,8,60);}
+  }
+  G.fx.push({kind:'boom',col:'#ffffff',x:W.f.x,y:W.f.y,r:Math.max(W.f.w,W.f.h)*0.6,t:0.35,dur:0.35});
+  G.shake=Math.max(G.shake,6);sfx(hit?'slam':'douse');
+  flash(hit?'WRONG COLOUR!':'IN COLOUR!');
+  // the horde comes to the new wards: the colour brings company
+  wardsPlace(P,alive);
+  for(let i=0;i<P.burst;i++){
+    if(!room())break;
+    const pt=spawnPoint();if(!pt)continue;
+    const e=spawnEnemy('chaser',pt.x,pt.y);
+    e.hp*=1.3;e.maxhp=e.hp;e.xp=patXp(P);
+  }
 }
 // 1) THE BAND — an alarm on one screen edge, then a torrent of swarmers
 // floods a lane straight across. A hazard if you stand in it, a farm if you
@@ -6909,15 +7269,29 @@ function tickWavePattern(dt,maxAlive){
 // space; spawn and despawn track the CURRENT camera edges, and the alert sign
 // is anchored to the screen edge the torrent pours from.
 function bandArm(P){
-  const c=G.cam,side=(Math.random()*4)|0;
-  const b={side,half:42,dx:0,dy:0,coord:0,warnT:2.5,beepT:0,torT:0,spawnT:0};
-  if(side<2){b.dx=side===0?1:-1;b.coord=c.y+(Math.random()-0.5)*c.h*0.7;}
-  else{b.dy=side===2?1:-1;b.coord=c.x+(Math.random()-0.5)*c.w*0.7;}
-  P.band=b;
+  const c=G.cam;
+  P.bands=[];
+  // n lanes, each from its own edge and lateral coordinate, staggered so
+  // the alarms read one at a time and the torrents overlap mid-way
+  const axis=(Math.random()*2)|0; // 0: horizontal lanes, 1: vertical
+  for(let i=0;i<P.lanes;i++){
+    const side=axis*2+(Math.random()<0.5?0:1);
+    const b={side,half:42,dx:0,dy:0,coord:0,warnT:2.5+i*1.6,beepT:0,torT:0,spawnT:0};
+    // lateral slots spread across the screen so lanes never stack
+    const u=P.lanes===1?(Math.random()-0.5)*0.7:((i+0.5)/P.lanes-0.5)*0.85+(Math.random()-0.5)*0.1;
+    if(side<2){b.dx=side===0?1:-1;b.coord=c.y+u*c.h;}
+    else{b.dy=side===2?1:-1;b.coord=c.x+u*c.w;}
+    P.bands.push(b);
+  }
   sfx('telegraph');
 }
 function bandTick(P,dt,room){
-  const b=P.band,c=G.cam;
+  const c=G.cam;
+  for(const b of P.bands)bandTickOne(P,b,dt,room,c);
+  P.bands=P.bands.filter(b=>!b.done);
+  if(!P.bands.length)P.bands=null;
+}
+function bandTickOne(P,b,dt,room,c){
   if(b.warnT>0){
     b.warnT-=dt;b.beepT-=dt;
     // the alarm bell accentuates as the torrent closes in
@@ -6925,6 +7299,7 @@ function bandTick(P,dt,room){
     if(b.warnT<=0){b.torT=5.0;flash(PATTERN_NAMES.band+'!');subFlash('OUT OF THE LANE — OR FARM ITS EDGE',3);sfx('wavestart');}
     return;
   }
+  b.torT=b.torT||0;
   if(b.torT>0){
     b.torT-=dt;b.spawnT-=dt;
     while(b.spawnT<=0&&room()){
@@ -6946,7 +7321,7 @@ function bandTick(P,dt,room){
         e.msp=165;
       }
       e.maxhp=e.hp;
-      e.bandMob=1;e.flow=1; // pure current: no collision, no separation, just flow
+      e.bandMob=b;e.flow=1; // pure current: no collision, no separation, just flow
       e.mvx=b.dx;e.mvy=b.dy;
       e.life=(Math.max(c.w,c.h)+160)/125+3;
     }
@@ -6954,14 +7329,14 @@ function bandTick(P,dt,room){
   }
   let liveBand=false;
   for(const e of G.enemies){
-    if(!e.bandMob||e.dead)continue;
+    if(e.bandMob!==b||e.dead)continue;
     liveBand=true;
     // past the far edge of the CURRENT view: gone, no loot
     const out=b.dx?(b.dx>0?e.x>c.x+c.w/2+80:e.x<c.x-c.w/2-80)
                   :(b.dy>0?e.y>c.y+c.h/2+80:e.y<c.y-c.h/2-80);
     if(out){e.dead=true;addParticles(e.x,e.y,'#8fa3b8',3,40);}
   }
-  if(b.torT<=0&&!liveBand)P.band=null;
+  if(b.torT<=0&&!liveBand)b.done=true;
 }
 // 2) POLARITY — two hordes march at each other, ignoring the party (the
 // Slagmaw-offering walk). Every orange/green touch fuses into an elite that
@@ -7111,7 +7486,8 @@ function encircleStart(P,alive){
   const N=clamp(Math.ceil(TAU*R/24),30,90);
   // the ring closes in 5 BIG lunges — ~22px stomps every 4.5s that the whole
   // wall visibly takes together; ten 11px steps read as jostling, not closing
-  P.circ={cx,cy,R,Rmin:95,step:(R-95)/5,pulseT:4.5,lungeT:0,outT:0,minT:0,N};
+  // squeezes to contact — a ring you can dance inside is not a ring
+  P.circ={cx,cy,R,Rmin:36,step:(R-36)/6,pulseT:4.0,lungeT:0,outT:0,minT:0,N};
   P.planned=N;
   for(let i=0;i<N;i++){
     const an=i*TAU/N;
@@ -7140,7 +7516,7 @@ function encircleTick(P,dt,alive){
     let px=0,py=0;
     for(const p of alive){px+=p.x;py+=p.y;}
     px/=alive.length;py/=alive.length;
-    C.cx+=clamp(px-C.cx,-24*dt,24*dt);C.cy+=clamp(py-C.cy,-24*dt,24*dt);
+    C.cx+=clamp(px-C.cx,-70*dt,70*dt);C.cy+=clamp(py-C.cy,-70*dt,70*dt);
   }
   C.pulseT-=dt;
   if(C.lungeT>0)C.lungeT-=dt;
@@ -7166,7 +7542,7 @@ function encircleTick(P,dt,alive){
   C.outT=out?C.outT+dt:0;
   // escaping only breaks the ring if a breach exists (a wall mob died) —
   // kiting around inside an intact wall must not dissolve the pattern
-  if(!any||(C.outT>1.5&&alive_circ<C.N)||C.minT>8){
+  if(!any||(C.outT>1.5&&alive_circ<C.N)){
     // survivors hunt on foot but dissolve if they never arrive — a broken
     // 60-mob wall must not become a ten-minute mop-up
     for(const e of G.enemies)if(e.circ){e.circ=0;e.msp=undefined;e.life=14;}
@@ -7233,10 +7609,9 @@ function slotPayout(tier,x,y){
 // world-space pattern visuals, drawn under the enemies
 function renderWavePattern(ctx,W2V,vw,vh){
   const P=G.wavePat;
-  if(P&&P.band){
+  if(P&&P.bands)for(const b of P.bands){
     // the lane is infinite: paint it across the whole view at its world
     // lateral coordinate; the alert sign hugs the screen edge it pours from
-    const b=P.band;
     const warn=b.warnT>0,pl=0.5+0.5*Math.sin(G.time*(warn?6+10*(1-b.warnT/2.5):12));
     ctx.fillStyle='#ff5a3d';ctx.strokeStyle='#ff5a3d';ctx.lineWidth=1;
     if(b.dx){
@@ -7265,6 +7640,30 @@ function renderWavePattern(ctx,W2V,vw,vh){
     ctx.fillStyle=pl>0.5||!warn?'#ffe94a':'#ff5a3d';
     ctx.beginPath();ctx.moveTo(jx,jy-9);ctx.lineTo(jx+8,jy+6);ctx.lineTo(jx-8,jy+6);ctx.closePath();ctx.fill();
     ctx.fillStyle='#1a0f08';ctx.fillRect(Math.round(jx)-1,jy-5,2,6);ctx.fillRect(Math.round(jx)-1,jy+3,2,2);
+  }
+  // THE COLLAPSE: the void is the screen's own margin
+  if(P&&P.col&&P.col.inset>0){
+    const C=P.col,f=patField(),cq=W2V(f.x,f.y);
+    const hw=f.w*(0.5-C.inset),hh=f.h*(0.5-C.inset);
+    const x0=Math.round(cq[0]-hw),x1=Math.round(cq[0]+hw),y0=Math.round(cq[1]-hh),y1=Math.round(cq[1]+hh);
+    ctx.fillStyle='rgba(7,4,15,0.72)';
+    ctx.fillRect(0,0,vw,y0);ctx.fillRect(0,y1,vw,vh-y1);
+    ctx.fillRect(0,y0,x0,y1-y0);ctx.fillRect(x1,y0,vw-x1,y1-y0);
+    stripes(ctx,0,0,vw,y0,'rgba(138,92,255,0.18)',G.time);
+    stripes(ctx,0,y1,vw,vh-y1,'rgba(138,92,255,0.18)',G.time);
+    stripes(ctx,0,y0,x0,y1-y0,'rgba(138,92,255,0.18)',G.time);
+    stripes(ctx,x1,y0,vw-x1,y1-y0,'rgba(138,92,255,0.18)',G.time);
+    const pl=0.6+0.4*Math.sin(G.time*5);
+    ctx.strokeStyle='rgba(138,92,255,'+pl.toFixed(2)+')';ctx.lineWidth=2;
+    ctx.strokeRect(x0+1,y0+1,x1-x0-2,y1-y0-2);
+    // the next bite, dashed, so the shrink is read before it lands
+    if(C.bite<P.bites){
+      const k=1-Math.max(0,C.t)/5,ni=Math.min(C.max,C.inset+C.step);
+      const nhw=f.w*(0.5-ni),nhh=f.h*(0.5-ni);
+      ctx.globalAlpha=0.25+0.5*k;ctx.setLineDash([5,5]);ctx.lineWidth=1;
+      ctx.strokeRect(Math.round(cq[0]-nhw),Math.round(cq[1]-nhh),Math.round(nhw*2),Math.round(nhh*2));
+      ctx.setLineDash([]);ctx.globalAlpha=1;
+    }
   }
   // (the encircle draws nothing: the wall of bodies IS the circle)
   // jumper landing telegraphs
@@ -7772,6 +8171,18 @@ function update(dt){
         }
       }
     }
+    else if(e.type==='spitter'&&e.sniper){
+      // STONEFALL sniper: long range, needs line of sight. Behind a boulder
+      // it can't shoot and walks to find an angle — that is the cover play.
+      e.shootT-=dt;
+      if(dd<200)sp=-sp*0.6;
+      else if(e.sightOn&&dd<520)sp=0;
+      if(e.shootT<=0&&tgt&&e.sightOn&&dd<520&&!(e.stunT>0)){
+        e.shootT=1.7;
+        G.ebullets.push({x:e.x,y:e.y,vx:vx*230,vy:vy*230,r:3,dmg:e.dmg*2.2,life:2.6,col:'#ff6bd6'});
+        addParticles(e.x,e.y,'#ff6bd6',4,60);sfx('shoot');
+      }
+    }
     else if(e.type==='spitter'){
       if(dd<130)sp=-sp*0.6;
       else if(dd<160)sp=0;
@@ -8277,8 +8688,37 @@ function drawFx(f,W2V,g){
       g.strokeStyle=f.col;g.lineWidth=2;
       g.beginPath();g.arc(x,y,f.r,0,TAU);g.stroke();
       break;}
+    case 'ward':{ // THE WARDS: a coloured ring that flares into the pulse
+      const rgb=hexRgb(f.col),pu=f.pulse||0,fade=f.t<0.3?f.t/0.3:1;
+      g.fillStyle='rgba('+rgb+','+((0.10+0.22*pu)*fade).toFixed(3)+')';
+      g.beginPath();g.arc(x,y,f.r,0,TAU);g.fill();
+      g.strokeStyle='rgba('+rgb+','+(0.9*fade).toFixed(3)+')';g.lineWidth=pu>0.7?3:2;
+      g.beginPath();g.arc(x,y,f.r,0,TAU);g.stroke();
+      g.fillStyle=f.col;
+      for(let i=0;i<6;i++){
+        const a=-G.time*2+f.seed+i*TAU/6;
+        g.fillRect(Math.round(x+Math.cos(a)*f.r)-1,Math.round(y+Math.sin(a)*f.r)-1,2,2);
+      }
+      // every player's colour, drawn at their feet, so the match is readable
+      for(const p of G.players){
+        if(p.dead||!p.wardCol)continue;
+        const q=W2V(p.x,p.y+6);
+        g.strokeStyle=p.wardCol;g.lineWidth=1;
+        g.beginPath();g.ellipse(q[0],q[1],8,4,0,0,TAU);g.stroke();
+      }
+      break;}
     case 'rburn':{
       const rgb=hexRgb(f.col),fade=f.t<0.8?f.t/0.8:1;
+      // soft: INFERNAL EVOCATION lays ~25 of these per cast. At full weight
+      // (fill + rim + hazard stripes) the river was a solid red carpet that
+      // hid every boss telegraph under it — a faint glow is all it needs.
+      if(f.soft){
+        g.fillStyle='rgba('+rgb+','+(0.09*fade).toFixed(3)+')';
+        g.beginPath();g.arc(x,y,f.r,0,TAU);g.fill();
+        g.strokeStyle='rgba('+rgb+','+(0.30*fade).toFixed(3)+')';g.lineWidth=1;
+        g.beginPath();g.arc(x,y,f.r*0.8,0,TAU);g.stroke();
+        break;
+      }
       g.fillStyle='rgba('+rgb+','+(0.20*fade).toFixed(3)+')';
       g.beginPath();g.arc(x,y,f.r,0,TAU);g.fill();
       g.strokeStyle='rgba('+rgb+','+(0.75*fade).toFixed(3)+')';g.lineWidth=1;
@@ -8745,8 +9185,11 @@ function render(){
     ctx.globalAlpha=1;
     for(const q of a.pillars){const t=W2V(q.x,q.y);drawSpriteC(ctx,arenaTorchSprite,t[0],t[1]-16,1);}
   }
-  // ground telegraphs must be UNDER everything the player looks at
-  for(const f of G.fx)if(f.ground)drawFx(f,W2V,ctx);
+  // ground telegraphs must be UNDER everything the player looks at — and
+  // the player's own ground spells (lava rivers, rot, dream zones) go under
+  // the BOSS's, so a hazard warning is never buried beneath friendly fire
+  for(const f of G.fx)if(f.ground&&f.own)drawFx(f,W2V,ctx);
+  for(const f of G.fx)if(f.ground&&!f.own)drawFx(f,W2V,ctx);
 
   for(const g of G.gems){
     const q=W2V(g.x,g.y);

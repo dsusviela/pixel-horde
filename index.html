@@ -3240,6 +3240,8 @@ function buildOffers(p){
   while(offers.length<3)offers.push(gold[offers.length%3]);
   return offers;
 }
+// seconds a card row must be visible before a confirm press is accepted
+const DRAFT_ARM=0.45;
 function startLevelup(free){
   if(G.state!=='play')return;
   const living=G.players.filter(p=>!p.dead);
@@ -3251,7 +3253,7 @@ function startLevelup(free){
   const pickers=bossKill?G.players:living;
   G.state='levelup';
   G.levelupT=0;
-  G.levelupPicks=pickers.map(p=>({p,offers:buildOffers(p),sel:1,done:false}));
+  G.levelupPicks=pickers.map(p=>({p,offers:buildOffers(p),sel:1,done:false,openT:0}));
   sfx('levelup');
 }
 function applyOffer(p,o){
@@ -3298,6 +3300,7 @@ function takeOffer(pick,forced){
     const first=shuffle(SCHOOLS[pick.p.school].first.slice());
     pick.offers=first.slice(0,3).map(id=>({kind:'new',id}));
     pick.sel=1;
+    pick.openT=0; // new cards: re-arm the confirm grace
     if(forced){
       pick.done=true;
       applyOffer(pick.p,pick.offers[(Math.random()*pick.offers.length)|0]);
@@ -8956,6 +8959,7 @@ function update(dt){
     for(const pick of G.levelupPicks){
       const pad=pads.find(x=>x.index===pick.p.padIndex);
       if(pick.done)continue;
+      pick.openT+=dt;
       // a pad that vanished (dead battery) does not burn its pick — it auto-takes after a grace period
       if(!pad){
         if(G.levelupT>6)takeOffer(pick,true);
@@ -8963,7 +8967,12 @@ function update(dt){
       }
       const nx=navX(pad);
       if(nx){pick.sel=clamp(pick.sel+nx,0,2);sfx('select');}
-      if(confirmPressed(pad)){takeOffer(pick,false);sfx('pickup');}
+      // CLASSIC banks drafts and deals them back to back in the break; play
+      // never reads the face buttons (auto-fire), so a reflex press landed on
+      // the pre-highlighted card the frame it appeared — the pick was made for
+      // the player before they had seen it. A row must be on screen for
+      // DRAFT_ARM before a press counts (the edge test still applies too).
+      if(pick.openT>=DRAFT_ARM&&confirmPressed(pad)){takeOffer(pick,false);sfx('pickup');}
     }
     // nobody can hold the party hostage: after 12s the highlighted card is taken for them
     if(G.levelupT>12)for(const pick of G.levelupPicks)if(!pick.done)takeOffer(pick,true);

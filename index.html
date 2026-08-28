@@ -1484,7 +1484,7 @@ function makePlayer(idx,padIndex,x,y){
     weapons:{blaster:{lv:1,t:0.3,ang:Math.random()*TAU}},
     relics:{},
     school:null, pas:{}, crReady:0, leechWin:0, leechAcc:0,
-    kills:0, revives:0, flash:0,
+    kills:0, revives:0, flash:0, dpsLog:[], dpsAcc:0, dmgTotal:0, dps:0, dpsPeak:0,
     brandT:0, stillT:0, stillX:0, stillY:0, poolT:0, mark:null, arrow:null,
     prison:null, pole:0
   };
@@ -1536,7 +1536,7 @@ function startRun(mode){
   let pads=G.players.map(p=>p.padIndex).filter(i=>live.indexOf(i)>=0);
   if(!pads.length)pads=live.slice(0,4);
   G.players=[];G.enemies=[];G.bullets=[];G.ebullets=[];G.gems=[];G.pickups=[];
-  G.crates=[];G.particles=[];G.texts=[];G.fx=[];G.timers=[];
+  G.crates=[];G.particles=[];G.texts=[];G.fx=[];G.timers=[];G.hitRef=0;G.dpsT=0;
   G.xp=0;G.level=1;G.kills=0;G.time=0;G.shake=0;
   G.spawnT=1;G.surgeT=45;G.bossT=150;G.bossIdx=0;G.boss=null;G.bossTint='#e33';
   G.levelupPicks=null;G.levelupT=0;G.levelupFree=false;G.freeLevels=0;G.podDebt=0;G.podEvery=1;G.relics=[];
@@ -1829,7 +1829,23 @@ function nearestEnemy(x,y,maxR){
 }
 
 // ---------- combat ----------
-function addText(x,y,str,col){if(G.texts.length<160)G.texts.push({x,y,str,col,t:0.7,vy:-22});}
+function addText(x,y,str,col){if(G.texts.length<160)G.texts.push({x,y,str,col,t:0.7,dur:0.7,vy:-22,size:7});}
+// damage numbers are graded against the party's typical hit (a slow running
+// mean): routine chip is small and faint, a hit 3x the norm pops big, white,
+// outlined and hangs longer. Reading the board tells you what's carrying.
+function addDmgText(e,dmg){
+  G.hitRef=G.hitRef?G.hitRef+(dmg-G.hitRef)*0.02:dmg;
+  const r=dmg/Math.max(1,G.hitRef);
+  let size,col,dur,big=0,vy=-22;
+  if(r<0.5){if(G.texts.length>90||Math.random()<0.5)return;size=5;col='#a88a3a';dur=0.45;}
+  else if(r<1.6){size=7;col='#ffd23e';dur=0.7;}
+  else if(r<3){size=10;col='#ffb62e';dur=0.9;big=1;vy=-26;}
+  else if(r<6){size=13;col='#ff8b3d';dur=1.1;big=1;vy=-28;}
+  else{size=17;col='#ffffff';dur=1.4;big=2;vy=-30;}
+  if(G.texts.length<160)G.texts.push({x:e.x+(Math.random()-0.5)*6,y:e.y-e.r-3,str:fmtDmg(dmg),col,t:dur,dur,vy,size,big});
+}
+function fmtDmg(d){return d>=10000?(d/1000).toFixed(0)+'k':d>=1000?(d/1000).toFixed(1)+'k':String(Math.round(d));}
+function fmtDps(d){return d>=1000?(d/1000).toFixed(d>=10000?0:1)+'k':String(Math.round(d));}
 function addParticles(x,y,col,n,sp){
   if(G.particles.length>900)return;
   for(let i=0;i<n;i++){
@@ -1945,7 +1961,8 @@ function damageEnemy(e,dmg,owner){
   // measures the spawner's throughput, not the party's capability.
   if(!e.boss&&isCampaign()&&G.enemies.length>=8)G.mobDmgAcc+=Math.min(dmg,Math.max(0,e.hp));
   e.hp-=dmg;e.flash=0.08;
-  addText(e.x,e.y-e.r-3,Math.round(dmg),'#ffd23e');
+  addDmgText(e,dmg);
+  if(owner&&owner.dpsLog){owner.dpsAcc+=dmg;owner.dmgTotal+=dmg;}
   sfx('hit');
   // Leeched Gift: the caster and anyone standing close share a sip of the
   // damage — hard cap 8 hp/s so it rewards proximity, not immortality
@@ -8456,6 +8473,18 @@ function update(dt){
     if(pt.drag){const f=Math.max(0,1-pt.drag*dt);pt.vx*=f;pt.vy*=f;}
   }
   for(const t of G.texts){t.y+=t.vy*dt;t.t-=dt;}
+  G.dpsT=(G.dpsT||0)+dt;
+  if(G.dpsT>=0.25){
+    G.dpsT-=0.25;
+    for(const p of G.players){
+      if(!p.dpsLog)continue;
+      p.dpsLog.push(p.dpsAcc);p.dpsAcc=0;
+      if(p.dpsLog.length>12)p.dpsLog.shift();
+      const sum=p.dpsLog.reduce((a,b)=>a+b,0);
+      p.dps=sum/(p.dpsLog.length*0.25);
+      p.dpsPeak=Math.max(p.dpsPeak,p.dps);
+    }
+  }
   G.particles=G.particles.filter(p=>p.t>0);
   G.texts=G.texts.filter(t=>t.t>0);
   G.fx=G.fx.filter(f=>f.t>0);
@@ -9568,7 +9597,16 @@ function render(){
   for(const t of G.texts){
     const q=W2U(t.x,t.y);
     sctx.globalAlpha=Math.min(1,t.t*2);
-    text(sctx,t.str,q[0],q[1],7,t.col,'center');
+    let sz=t.size||7;
+    if(t.big){
+      // a punch-in on arrival, then settle
+      const age=t.dur-t.t;
+      if(age<0.12)sz*=1+0.6*(1-age/0.12);
+      sctx.font='bold '+sz+'px "Courier New",monospace';sctx.textAlign='center';sctx.textBaseline='top';
+      sctx.lineWidth=t.big>1?3:2;sctx.strokeStyle=t.big>1?'#7a1a08':'#2a1408';sctx.lineJoin='round';
+      sctx.strokeText(t.str,Math.round(q[0]),Math.round(q[1]));
+    }
+    text(sctx,t.str,q[0],q[1],sz,t.col,'center');
     sctx.globalAlpha=1;
   }
   renderHUD(w,h);
@@ -9664,7 +9702,7 @@ function renderHUD(vw,vh){
     const p=G.players[i];
     const x=5*k,y=(5+i*17)*k;
     ctx.fillStyle='rgba(26,15,8,0.55)';
-    ctx.fillRect(x-1,y-1,72*k,15*k);
+    ctx.fillRect(x-1,y-1,104*k,15*k);
     ctx.fillStyle=PCOLORS[p.col];
     ctx.fillRect(x,y,4*k,13*k);
     text(ctx,'P'+(p.idx+1),x+7*k,y+k,F(7),PCOLORS[p.col]);
@@ -9674,6 +9712,13 @@ function renderHUD(vw,vh){
       ctx.fillStyle='#ff4d6d';ctx.fillRect(x+24*k,y+2*k,Math.max(0,44*k*p.hp/p.maxhp),4*k);
     }
     text(ctx,p.kills+'k',x+24*k,y+7*k,F(6),'#b3a184');
+    // live DPS (3s window) — the bigger the share of the party's peak, the
+    // hotter the colour; peak underneath
+    {const pk=Math.max(1,p.dpsPeak),r=p.dps/pk;
+     const dc=r>0.8?'#ffffff':r>0.5?'#ffb62e':r>0.2?'#ffd23e':'#a88a3a';
+     text(ctx,fmtDps(p.dps),x+100*k,y+k,F(8),dc,'right');
+     text(ctx,'DPS',x+72*k,y+2*k,F(5),'#b3a184');
+     text(ctx,'PK '+fmtDps(p.dpsPeak),x+100*k,y+9*k,F(5),'#b3a184','right');}
     let wi=0;
     for(const id in p.weapons){
       ctx.fillStyle=WEAPONS[id].col;

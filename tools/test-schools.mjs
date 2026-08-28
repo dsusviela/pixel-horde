@@ -126,6 +126,32 @@ for(const school of ['destro','illusion','necro']){
     g.ev('damageEnemy')(e,100,me);
     say(me.hp>10&&me.hp<=18.01,'leech: healed 8% capped at 8/s (hp 10 -> '+me.hp.toFixed(1)+')');
   }
+  // Death Touch: a hit thrown from inside the necromancer's ring can end a
+  // non-boss outright; the kill (and CINDER RUSH) credits the hitter, the
+  // timer is the hitter's own, bosses are immune
+  {
+    g.ev('joinPlayer')(1,0);
+    const ally=G.players[1];
+    const VM=g.ev('Math'),rnd=VM.random;
+    const roll=(fn)=>{VM.random=()=>0;try{fn();}finally{VM.random=rnd;}};
+    me.pas.dtouch=3;ally.pas.cr=1;ally.crReady=0;ally.dtReady=0;ally.weapons.meteor={lv:1,t:1.8,ang:0};
+    ally.x=me.x+20;ally.y=me.y;
+    const e=mk(600,600);e.hp=1e6;e.maxhp=1e6;g.ev('rebuildGrid')();
+    roll(()=>g.ev('damageEnemy')(e,1,ally));
+    say(e.dead&&ally.kills===1&&ally.weapons.meteor.t===0,'death touch: ally in ring executed a foe; kill + cinder rush credited to the ally');
+    say(ally.dtReady>G.time&&me.dtReady===0,'death touch: the timer landed on the hitter, not the necromancer');
+    const e2=mk(700,700);e2.hp=1e6;g.ev('rebuildGrid')();
+    roll(()=>g.ev('damageEnemy')(e2,1,ally));
+    say(!e2.dead,'death touch: no second execute inside the per-player timer');
+    ally.dtReady=0;const b=mk(800,800);b.hp=1e6;b.boss=true;g.ev('rebuildGrid')();
+    roll(()=>g.ev('damageEnemy')(b,1,ally));
+    say(!b.dead,'death touch: bosses are immune');
+    b.boss=false;b.dead=true; // a chaser wearing a boss flag has no boss ai: retire it
+    ally.dtReady=0;ally.x=me.x+500;const e3=mk(900,900);e3.hp=1e6;g.ev('rebuildGrid')();
+    roll(()=>g.ev('damageEnemy')(e3,1,ally));
+    say(!e3.dead,'death touch: no reach outside the ring');
+    ally.x=me.x+40;delete ally.pas.cr;delete me.pas.dtouch;
+  }
   // Knowledge Aura: haste reaches an ally standing in the ring
   {
     g.ev('joinPlayer')(1,0);
@@ -165,7 +191,7 @@ for(const school of ['destro','illusion','necro']){
 // ---- every spell fires, ticks and draws (ultimates included) ----
 {
   const ALL=['blaster','lavaray','meteor','cflame','evocation','arcmissile','eblast',
-    'shocking','mirage','assassin','shadowb','decay','plague','inflict','diseases','souls'];
+    'shocking','mirage','assassin','shadowb','decay','plague','inflict','souls'];
   for(const id of ALL){
     const g=boot(5);
     g.addPad();g.G.state='title';g.ev('joinPlayer')(0,0);g.ev('startRun')('classic');

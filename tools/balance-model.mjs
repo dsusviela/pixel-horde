@@ -328,9 +328,9 @@ const PICK_ORDER={
   necro:['decay','decay','decay','leech','decay','leech','decay','decay','leech',
     'shadowb','shadowb','shadowb','shadowb','shadowb','shadowb','evo:decay',
     'souls','souls','souls','souls','plague','plague','plague','plague','plague',
-    'diseases','diseases','diseases','evo:shadowb','blaster','blaster'],
+    'inflict','inflict','inflict','dtouch','dtouch','dtouch','evo:shadowb','blaster','blaster'],
 };
-const PAS_RANKS={ba:3,hh:3,cr:3,mirror:4,ka:2,leech:3};
+const PAS_RANKS={ba:3,hh:3,cr:3,mirror:4,ka:2,leech:3,dtouch:3};
 const SPELL_MAX={evocation:4,assassin:4,souls:4};
 function kitFor(school,picks,ultOk){
   const w={blaster:1},pas={};

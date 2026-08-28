@@ -22,6 +22,26 @@ fired / cleared / rendered / floor cleaned), plus `test-modes`, `test-schools`,
 - [x] THE WARDS v2 (Prismwarden): THE SHEDDER — unkillable beast, sheds XP orbs per damage (flung 80-200px), slow-walks, leaps every 9s (7.5s at 3p+); rings relocate on take-off; landing = colour pulse (0.16 if not in your colour) + chaser burst; leaves at 85% of the timer
 - [x] Jumpers / Polarity / Encircle removed from the table (code kept)
 - [x] Encircle (benched) squeezes to contact and no longer self-dissolves, in case it returns
+- [x] THE SLAGMAW ARC (waves 1-5, 2026-08-28): Slagmaw is the Molten Core Ragnaros
+      ("out for the slam, in for the ring", Sons walking to the forge); the waves
+      before it now rehearse that in its colours (VOLC: orange slam, gold burst/ring,
+      red lava). Budget 1/2/4/3/5 levels, 30/60/60/60/120s.
+  - wave 1 untouched; its break is the DESCENT (input taken over, walk to the cave
+    mouth, fade, `G.biome='volcano'`); the Slagmaw kill mirrors it as the ASCENT
+  - wave 2 THE LAVA MIX: smasher (rush, plant, small slam w/ the boss telegraph),
+    burster (gold pop + shove on any death), fire slug (red pool trail) in the drip
+  - wave 3 THE SLUG FORGE: slug columns march at a forge; fed slugs heat it; it
+    wakes as the SLAG BEHEMOTH (walks, slams) that sheds 40% of the eaten xp in
+    orbs per hp chunk; sinks at 85% of the wave if ignored
+  - wave 4 VOLCANIC PRESSURE: invulnerable vents alternate the CINDER RING (born on
+    the safe disc's rim, 95px/s — inside is truly safe) and the inward ring; erratic
+    lava rivers with gaps (`G.lava`, damage-on-stand, no slow)
+  - Slagmaw: 3 phases (0.66/0.33). Slam shoves from P1; P2 adds smashers to the
+    offerings; P3 THE CAULDRON CRACKS: lava rivers in the arena, bursters + fire
+    slugs, and it positions so the slam throws you into a river
+  - Cinder Ring fixed for real: `cinderRingAt` + `ai.ringSafeT` suppresses the
+    boss's contact bite while the disc is up
+  - test: `node tools/test-slagmaw.mjs`; the fauna never enters a 6+ mix (guarded)
 
 ## Open
 - [ ] Polarity rework: fusion DETONATES (hurts players, destroys both marchers' XP) — then re-slot at wave 12
@@ -30,3 +50,6 @@ fired / cleared / rendered / floor cleaned), plus `test-modes`, `test-schools`,
 - [ ] Wards: 1 ring per colour — with 4 players there are 4 rings; check screen clutter
 - [ ] Collapse: consider a champion on the last bite so the 10s hold has a target
 - [ ] Decide fate of Jumpers (only worth rebuilding as few/huge leapers if a leap boss needs the tutorial)
+- [ ] Slagmaw arc playtest: descent timing (6.2s), 4p clutter (fire slug pools cap at 260 fx,
+      ≤2 smashers casting), river readability, whether P3's lava-lineup reads as intended
+- [ ] Slagmaw hpClassic re-price once the arc's arrival level settles (balance-model solve)

@@ -75,9 +75,18 @@ assembled out of the shared mechanic helpers in `index.html` (`pushSweep`,
 `pushLine`, `pushCone`, `pushWander`, `pushEdge`, `pushPole`, `prisonPlayer`,
 `shieldBoss`). All text is English/Spanish.
 
+CLASSIC's first five waves are the Slagmaw arc: the break after wave 1 walks
+the party down into the volcano (ground palette flips via `G.biome`), waves
+2-4 rehearse the boss's primitives with fauna that glows in its colours
+(`VOLC`: orange slam, gold burst/ring, red lava — smasher, burster, fire slug,
+the slug forge, the vents and lava rivers), Slagmaw runs three phases and
+cracks the arena with lava in the last, and the kill walks everyone back up.
+
 Tests: `node tools/test-protocol.mjs` (relay protocol), `node tools/test-net.mjs`
 (net.js serialization + end-to-end over the relay), `node tools/test-rush.mjs
-[seed]` (a full headless BOSS RUSH clear) and `node tools/test-modes.mjs`
-(CLASSIC/ENDLESS smoke + every screen in both languages). The game itself runs
+[seed]` (a full headless BOSS RUSH clear), `node tools/test-modes.mjs`
+(CLASSIC/ENDLESS smoke + every screen in both languages), `node
+tools/test-terrain.mjs` (every wave pattern, 1 and 3 players) and `node
+tools/test-slagmaw.mjs` (the whole Slagmaw arc, descent to ascent). The game itself runs
 headless via `tools/headless.mjs`, which boots `index.html` in a vm with stub
 canvas/audio and a seeded RNG.

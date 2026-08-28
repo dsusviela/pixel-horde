@@ -92,7 +92,7 @@ if(process.argv[2]==='kits'){
     'illusion  late':{school:'illusion',w:{blaster:3,eblast:6,shocking:6,arcmissile:5},pas:{mirror:4,ka:2}},
     'necro    early':{school:'necro',w:{blaster:3,decay:3},pas:{leech:2}},
     'necro      mid':{school:'necro',w:{blaster:3,decay:5,shadowb:4},pas:{leech:2}},
-    'necro     late':{school:'necro',w:{blaster:3,decay:6,plague:5,diseases:5},pas:{leech:3}},
+    'necro     late':{school:'necro',w:{blaster:3,decay:6,plague:5,inflict:5},pas:{leech:3,dtouch:3}},
   };
   console.log('kit             picks    swarm     lane   single');
   for(const [name,kit] of Object.entries(KITS))
@@ -104,7 +104,7 @@ if(process.argv[2]==='kits'){
     ['blaster',null],['spread',null],['orbit',null],['tesla',null],['flame',null],['rocket',null],
     ['lavaray','destro'],['meteor','destro'],['cflame','destro'],['evocation','destro'],
     ['arcmissile','illusion'],['eblast','illusion'],['shocking','illusion'],['mirage','illusion'],['assassin','illusion'],
-    ['shadowb','necro'],['decay','necro'],['plague','necro'],['inflict','necro'],['diseases','necro'],['souls','necro'],
+    ['shadowb','necro'],['decay','necro'],['plague','necro'],['inflict','necro'],['souls','necro'],
   ];
   console.log('card                    lv3 swarm  lv6 swarm   lv6 lane  lv6 single');
   for(const [id,sc] of rows){

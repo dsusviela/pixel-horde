@@ -7095,15 +7095,18 @@ function danceTick(P,dt){
   if(G.waveT>def.dur*0.88){P.dance=null;flash('THE FLOOR RESTS');return;}
   // second half: the dance turns around and quickens, like the boss's P2
   if(!D.p2&&G.waveT>def.dur*0.55){D.p2=1;D.dir*=-1;D.beat=2.1;flash('THE DANCE REVERSES!');sfx('crack');}
+  // the lanes are the SCREEN's lanes: they are re-pinned to the camera every
+  // frame (like the band), so they always run edge to edge of what you see
+  const f=patField(),lw=f.w/D.lanes;
+  D.lines=(D.lines||[]).filter(l=>l.t>0&&G.fx.includes(l));
+  for(const l of D.lines){l.x=f.x-f.w/2+lw*(l.lane+0.5);l.y=f.y-f.h/2;l.len=f.h;l.w=lw*0.92;}
   D.t-=dt;
   if(D.t>0)return;
   D.t=D.beat;
-  // the lanes are the SCREEN's lanes: they follow the camera like the band
-  // does, so stepping out of one is a screen move, not a world move
-  const f=patField(),lw=f.w/D.lanes;
   const lx=f.x-f.w/2+lw*(D.lane+0.5);
   pushLine(null,lx,f.y-f.h/2,Math.PI/2,{len:f.h,w:lw*0.92,pct:0.15,t:D.beat*0.55,dur:D.beat*0.55,
-    col:'#b6d94a',mobs:1});
+    col:'#b6d94a',mobs:1,lane:D.lane});
+  D.lines.push(G.fx[G.fx.length-1]);
   D.lane+=D.dir;
   if(D.lane>=D.lanes-1||D.lane<=0)D.dir*=-1;
   sfx('telegraph');

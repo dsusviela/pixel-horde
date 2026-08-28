@@ -688,7 +688,7 @@ const ES={
   'HUNTING THE LAST OF THEM':'CAZANDO A LOS ÚLTIMOS','THE WORLDEATER FALLS':'EL DEVORAMUNDOS CAE',
   'OBLIVION':'OLVIDO','UNMADE — 30 SECONDS':'DESHECHO — 30 SEGUNDOS',
   'IT REELS — POUR IT ON!':'¡SE TAMBALEA — DADLE CAÑA!','HATEFUL CHARGE!':'¡CARGA ODIOSA!',
-  'MAGMA TIDE!':'¡MAREA DE MAGMA!','THE FLOOR CLEARS — BURN IT DOWN':'EL SUELO SE LIMPIA — QUEMADLO',
+  'MAGMA TIDE!':'¡MAREA DE MAGMA!','THE DANCE TURNS!':'¡EL BAILE GIRA!','THE ROWS ERUPT — STEP ACROSS':'LAS FILAS ESTALLAN — CRUZA','THE FLOOR ERUPTS IN ORDER — WALK IT':'EL SUELO ESTALLA EN ORDEN — CAMÍNALO','THE FLOOR RESTS':'EL SUELO DESCANSA','THE FLOOR CLEARS — BURN IT DOWN':'EL SUELO SE LIMPIA — QUEMADLO',
   'SIPHON PYLONS RISE!':'¡SE ALZAN PILONES DE DRENAJE!','THE TWINS FEED!':'¡LOS GEMELOS SE ALIMENTAN!',
   'SLAG OFFERINGS CRAWL TO THE FORGE!':'¡LAS OFRENDAS DE ESCORIA REPTAN A LA FORJA!',
   'BRUTE KING':'REY BRUTO','WARLOCK':'BRUJO','THE WORLDEATER':'EL DEVORAMUNDOS',
@@ -3326,6 +3326,21 @@ function tickBossFx(dt,alive){
             an=Math.atan2(Math.sin(an),Math.cos(an));
             if(Math.abs(an)<f.half){bossHit(p,f.pct);addParticles(p.x,p.y,f.col,4,50);}
           }
+        }
+        break;
+      case 'strip':
+        f.t-=dt;
+        if(f.t<=0){
+          const v=f.axis==='v';
+          const inside=o=>Math.abs((v?o.x:o.y)-f.coord)<f.w*0.5;
+          for(const p of alive)if(inside(p))bossHit(p,f.pct);
+          if(f.mobs)for(const e of G.enemies)if(!e.dead&&!e.boss&&inside(e))damageEnemy(e,e.hp*2+50,null);
+          const c=G.cam,n=10;
+          for(let i=0;i<n;i++){
+            const u=(v?c.y-c.h/2:c.x-c.w/2)+(v?c.h:c.w)*i/n;
+            addParticles(v?f.coord:u,v?u:f.coord,f.col,5,70);
+          }
+          G.shake=Math.max(G.shake,5);sfx('slam');
         }
         break;
       case 'line':
@@ -7110,28 +7125,24 @@ function danceStart(P){
 function danceTick(P,dt){
   const D=P.dance,def=waveDef(G.wave);
   if(G.waveT>def.dur*0.88){P.dance=null;flash('THE FLOOR RESTS');return;}
-  // second half: Pyraxis's magma tide — a wall of igniting tiles sweeps the
-  // live screen edge to edge with a few safe rows. FIND THE GAP.
-  if(!D.p2&&G.waveT>def.dur*0.55){D.p2=1;D.tideT=1.5;flash('MAGMA TIDE!');subFlash('FIND THE GAP',3);sfx('crack');}
-  if(D.p2){danceTide(D,dt);return;}
-  // the lanes are the SCREEN's lanes: they are re-pinned to the camera every
-  // frame (like the band), so they always run edge to edge of what you see
-  const f=patField(),lw=f.w/D.lanes;
-  D.lines=(D.lines||[]).filter(l=>l.t>0&&G.fx.includes(l));
-  for(const l of D.lines){l.x=f.x-f.w/2+lw*(l.lane+0.5);l.y=f.y-f.h/2;l.len=f.h;l.w=lw*0.92;}
+  // second half: the same dance, but the lanes run across the screen —
+  // rows instead of columns, a little quicker
+  if(!D.p2&&G.waveT>def.dur*0.55){D.p2=1;D.axis='h';D.lane=0;D.dir=1;D.beat=2.1;D.t=1.5;flash('THE DANCE TURNS!');subFlash('THE ROWS ERUPT — STEP ACROSS',3);sfx('crack');return;}
   D.t-=dt;
   if(D.t>0)return;
   D.t=D.beat;
-  const lx=f.x-f.w/2+lw*(D.lane+0.5);
-  pushLine(null,lx,f.y-f.h/2,Math.PI/2,{len:f.h,w:lw*0.92,pct:0.15,t:D.beat*0.55,dur:D.beat*0.55,
-    col:'#b6d94a',mobs:1,lane:D.lane});
-  D.lines.push(G.fx[G.fx.length-1]);
+  // lanes are cut from the screen at the beat (a world coordinate, like the
+  // band's) and are INFINITE along their axis: no gap to slip through at the
+  // edge, the only way out is sideways
+  const f=patField(),vert=D.axis!=='h';
+  const span=vert?f.w:f.h,lw=span/D.lanes;
+  const coord=(vert?f.x-f.w/2:f.y-f.h/2)+lw*(D.lane+0.5);
+  G.fx.push({kind:'strip',ground:1,boss:null,axis:vert?'v':'h',coord,w:lw*0.92,pct:0.15,
+    t:D.beat*0.55,dur:D.beat*0.55,col:'#b6d94a',mobs:1});
   D.lane+=D.dir;
   if(D.lane>=D.lanes-1||D.lane<=0)D.dir*=-1;
   sfx('telegraph');
 }
-// 8) STONEFALL — boulders drop on meteor rings and stay as rock: cover.
-// Cover matters because a sniper on the edge needs line of sight.
 function stonefallDrop(P,alive,room){
   const f=patField();
   for(let i=0;i<P.rocks;i++){
@@ -7185,45 +7196,6 @@ function stonefallTick(P,dt,alive){
 // screen's wall), its height is the live screen's, but the gap rows are world
 // rows chosen from the screen at launch — so you find them by moving, not by
 // scrolling
-function danceTide(D,dt){
-  const f=patField(),alive=G.players.filter(p=>!p.dead);
-  const T=D.tide;
-  if(!T){
-    D.tideT-=dt;
-    if(D.tideT>0)return;
-    const dir=((D.tideN=(D.tideN||0)+1)%2===0)?1:-1;
-    const ty0=Math.floor((f.y-f.h/2)/TILE)+1,ty1=Math.floor((f.y+f.h/2)/TILE)-1;
-    const ng=alive.length>=3?3:2;
-    const gaps=[];
-    for(let tries=0;tries<40&&gaps.length<ng;tries++){
-      const gy=ty0+2+((Math.random()*(ty1-ty0-4))|0);
-      if(gaps.every(g=>Math.abs(g-gy)>4))gaps.push(gy);
-    }
-    D.tide={dir,u:0,stepT:0.9,gaps,n:0};
-    subFlash('FIND THE GAP',2.5);sfx('cinder');
-    return;
-  }
-  T.stepT-=dt;
-  if(T.stepT>0)return;
-  T.stepT=0.3;
-  T.u+=TILE*2/f.w;
-  if(T.u>1.04){D.tide=null;D.tideT=3.5;return;}
-  const x=T.dir>0?f.x-f.w/2+T.u*f.w:f.x+f.w/2-T.u*f.w;
-  const tx=Math.floor(x/TILE);
-  const ty0=Math.floor((f.y-f.h/2)/TILE),ty1=Math.floor((f.y+f.h/2)/TILE);
-  const inGap=ty=>T.gaps.some(gy=>Math.abs(ty-gy)<=1);
-  for(let ty=ty0;ty<=ty1;ty++){
-    if(inGap(ty))continue;
-    pushPool(null,tx*TILE+8,ty*TILE+8,9,0.65,0.05,'#ff7a1a','tile');
-    if(Math.random()<0.3)pushPool(null,(tx+T.dir)*TILE+8,ty*TILE+8,9,0.4,0.05,'#ff7a1a','tile');
-  }
-  // the wall cooks the horde too — only what files through a gap survives
-  for(const e of G.enemies){
-    if(e.dead||e.boss)continue;
-    if(Math.abs(e.x-(tx*TILE+8))<TILE&&!inGap(Math.floor(e.y/TILE)))damageEnemy(e,e.hp*2+50,null);
-  }
-  if((T.n=(T.n||0)+1)%4===0)sfx('cinder');
-}
 function collapseStart(P){
   P.col={inset:0,step:0.06,max:0.30,t:3.5,bite:0,holdT:0};
   flash(PATTERN_NAMES.collapse+'!');subFlash('THE SCREEN EATS ITSELF — STAY IN THE MIDDLE',3.2);
@@ -7674,22 +7646,27 @@ function slotPayout(tier,x,y){
 // world-space pattern visuals, drawn under the enemies
 function renderWavePattern(ctx,W2V,vw,vh){
   const P=G.wavePat;
-  if(P&&P.dance&&P.dance.tide){
-    // the safe rows glow gold across the whole view; the wall's front edge
-    // rides the screen so you always see where it is
-    const T=P.dance.tide,f=patField(),pl=0.5+0.5*Math.sin(G.time*8);
+  // dance strips: infinite along their axis, painted across the whole view;
+  // the count-in bar rides from one screen edge to the other and lands with
+  // the hit
+  for(const f of G.fx){
+    if(f.kind!=='strip')continue;
+    const rgb=hexRgb(f.col),k=Math.max(0,f.t/f.dur),lock=1-k;
     ctx.save();
-    for(const gy of T.gaps){
-      const yA=W2V(0,(gy-1)*TILE)[1],yB=W2V(0,(gy+2)*TILE)[1];
-      ctx.globalAlpha=0.10+0.08*pl;ctx.fillStyle='#ffd23e';ctx.fillRect(0,yA,vw,yB-yA);
-      ctx.globalAlpha=0.6+0.3*pl;ctx.strokeStyle='#ffd23e';ctx.lineWidth=1;ctx.setLineDash([6,6]);
-      ctx.strokeRect(0.5,yA+0.5,vw-1,yB-yA-1);
+    if(f.axis==='v'){
+      const xA=W2V(f.coord-f.w/2,0)[0],xB=W2V(f.coord+f.w/2,0)[0];
+      ctx.fillStyle='rgba('+rgb+','+(0.12+0.20*lock).toFixed(3)+')';ctx.fillRect(xA,0,xB-xA,vh);
+      ctx.strokeStyle='rgba('+rgb+',0.9)';ctx.lineWidth=1;ctx.strokeRect(xA+0.5,0.5,xB-xA-1,vh-1);
+      stripes(ctx,xA,0,xB-xA,vh,'rgba('+rgb+',0.35)',G.time);
+      ctx.fillStyle=k<0.2?'#ffffff':'rgba('+rgb+',1)';ctx.fillRect(xA,vh*lock-2,xB-xA,4);
+    }else{
+      const yA=W2V(0,f.coord-f.w/2)[1],yB=W2V(0,f.coord+f.w/2)[1];
+      ctx.fillStyle='rgba('+rgb+','+(0.12+0.20*lock).toFixed(3)+')';ctx.fillRect(0,yA,vw,yB-yA);
+      ctx.strokeStyle='rgba('+rgb+',0.9)';ctx.lineWidth=1;ctx.strokeRect(0.5,yA+0.5,vw-1,yB-yA-1);
+      stripes(ctx,0,yA,vw,yB-yA,'rgba('+rgb+',0.35)',G.time);
+      ctx.fillStyle=k<0.2?'#ffffff':'rgba('+rgb+',1)';ctx.fillRect(vw*lock-2,yA,4,yB-yA);
     }
-    const x=T.dir>0?f.x-f.w/2+T.u*f.w:f.x+f.w/2-T.u*f.w;
-    const vx=W2V(x,0)[0];
-    ctx.setLineDash([]);ctx.globalAlpha=0.5+0.4*pl;ctx.fillStyle='#ff7a1a';
-    ctx.fillRect(vx-1,0,3,vh);
-    ctx.restore();ctx.globalAlpha=1;
+    ctx.restore();
   }
   if(P&&P.bands)for(const b of P.bands){
     // the lane is infinite: paint it across the whole view at its world
@@ -8917,6 +8894,7 @@ function drawFx(f,W2V,g){
       g.fillRect(0,-1.5,f.len,3);
       g.restore();
       break;}
+    case 'strip':break; // painted view-wide by renderWavePattern
     case 'line':{
       const rgb=hexRgb(f.col),lock=1-k;
       g.save();g.translate(x,y);g.rotate(f.ang);

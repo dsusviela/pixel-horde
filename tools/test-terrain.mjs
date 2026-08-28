@@ -22,7 +22,7 @@ for(let wi=0;wi<WAVES.length;wi++){
   // jump to the wave before the pattern wave, then let the machine open it
   G.wave=wi;G.waveState='clear';G.waveT=2.4;G.level=Math.max(G.level,wi);
   G.waveDPS=90;
-  let fired=false,maxFx=0,creep=0,voidT=0,rocks=0,bands=0,cleared=false,laneOff=0,tides=0,tidePools=0;
+  let fired=false,maxFx=0,creep=0,voidT=0,rocks=0,bands=0,cleared=false,vStrips=0,hStrips=0;
   const dt=1/60;
   try{
     for(let i=0;i<60*140;i++){
@@ -44,11 +44,7 @@ for(let wi=0;wi<WAVES.length;wi++){
       if(G.wavePat&&G.wavePat.col)voidT=Math.max(voidT,G.wavePat.col.inset);
       if(G.wavePat&&G.wavePat.bands)bands=Math.max(bands,G.wavePat.bands.length);
       rocks=Math.max(rocks,G.tileOverride.size);
-      // dance lanes must hug the LIVE camera window every frame
-      if(pat==='dance'&&G.wavePat&&G.wavePat.dance&&G.wavePat.dance.tide){tides=Math.max(tides,G.wavePat.dance.tideN||0);
-        tidePools=Math.max(tidePools,G.fx.filter(x=>x.kind==='pool'&&!x.boss).length);}
-      if(pat==='dance'){const f=g.ev('patField')();
-        for(const l of G.fx)if(l.kind==='line'&&l.mobs)laneOff=Math.max(laneOff,Math.abs(l.y-(f.y-f.h/2)),Math.abs(l.len-f.h));}
+      if(pat==='dance')for(const x of G.fx)if(x.kind==='strip'){if(x.axis==='v')vStrips++;else hStrips++;}
       if(i%11===0)g.render();
       if(G.wave===wi+1&&G.waveState==='clear'){cleared=true;}
       if(G.wave>wi+1)break;
@@ -62,8 +58,7 @@ for(let wi=0;wi<WAVES.length;wi++){
   if(pat==='collapse')say(voidT>=0.29,'collapse: screen shrank to the max');
   if(pat==='band')say(bands===NP,'band: one lane per player ('+bands+')');
   if(pat==='stonefall')say(rocks>0,'stonefall: boulders landed');
-  if(pat==='dance')say(tides>=1&&tidePools>10,'dance: magma tide swept the screen ('+tides+' tides, '+tidePools+' tiles peak)');
-  if(pat==='dance')say(laneOff<1,'dance: lanes pinned to the live screen (max drift '+laneOff.toFixed(1)+'px)');
+  if(pat==='dance')say(vStrips>0&&hStrips>0,'dance: vertical then horizontal strips fired ('+vStrips+'/'+hStrips+' strip-frames)');
   // terrain must not leak into the next wave
   say(!G.creep&&!G.voidTiles,pat+': floor cleaned after the wave');
 }}

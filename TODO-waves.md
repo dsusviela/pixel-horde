@@ -16,7 +16,7 @@ fired / cleared / rendered / floor cleaned), plus `test-modes`, `test-schools`,
 - [x] THE BAND kept as is (feel-powerful) — now one lane per player, staggered alarms
 - [x] THE SWARM kept — burst and trickle scale harder with party size
 - [x] THE CREEP (Pyraxis): spores seed creep, kill = purge patch; denser (cap 320+90n, 2+2n spores)
-- [x] THE DANCE (Rotgrub + Pyraxis): 4 lanes pinned to the LIVE screen erupt in order; at 55% it becomes MAGMA TIDE — a wall sweeps the screen edge to edge with 2-3 gap rows (FIND THE GAP); both kill mobs
+- [x] THE DANCE (Rotgrub): 4 infinite columns cut from the screen erupt in order (count-in bar sweeps top to bottom); at 55% it turns: infinite rows, bar sweeps side to side; both kill mobs
 - [x] STONEFALL (Stonefather/LoS): boulders become rock cover; snipers need line of sight; scales with players
 - [x] THE COLLAPSE (Worldeater/arena destruction): the SCREEN's margin becomes void and shrinks to a 40% island; bite + shove; bursts per bite
 - [x] THE WARDS (Prismwarden): stand in your colour when the pulse lands; wards relocate, horde follows

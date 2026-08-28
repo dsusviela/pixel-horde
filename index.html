@@ -688,7 +688,7 @@ const ES={
   'HUNTING THE LAST OF THEM':'CAZANDO A LOS ÚLTIMOS','THE WORLDEATER FALLS':'EL DEVORAMUNDOS CAE',
   'OBLIVION':'OLVIDO','UNMADE — 30 SECONDS':'DESHECHO — 30 SEGUNDOS',
   'IT REELS — POUR IT ON!':'¡SE TAMBALEA — DADLE CAÑA!','HATEFUL CHARGE!':'¡CARGA ODIOSA!',
-  'MAGMA TIDE!':'¡MAREA DE MAGMA!','THE DANCE TURNS!':'¡EL BAILE GIRA!','THE ROWS ERUPT — STEP ACROSS':'LAS FILAS ESTALLAN — CRUZA','THE FLOOR ERUPTS IN ORDER — WALK IT':'EL SUELO ESTALLA EN ORDEN — CAMÍNALO','THE FLOOR RESTS':'EL SUELO DESCANSA','THE FLOOR CLEARS — BURN IT DOWN':'EL SUELO SE LIMPIA — QUEMADLO',
+  'MAGMA TIDE!':'¡MAREA DE MAGMA!','THE SHEDDER!':'¡EL MUDADOR!','HIT IT — IT SHEDS XP. YOUR COLOUR WHEN IT LANDS':'GOLPÉALO — SUELTA XP. TU COLOR CUANDO ATERRICE','IT LEAPS — FIND YOUR COLOUR':'SALTA — BUSCA TU COLOR','IT BURROWS AWAY':'SE ENTIERRA','THE DANCE TURNS!':'¡EL BAILE GIRA!','THE ROWS ERUPT — STEP ACROSS':'LAS FILAS ESTALLAN — CRUZA','THE FLOOR ERUPTS IN ORDER — WALK IT':'EL SUELO ESTALLA EN ORDEN — CAMÍNALO','THE FLOOR RESTS':'EL SUELO DESCANSA','THE FLOOR CLEARS — BURN IT DOWN':'EL SUELO SE LIMPIA — QUEMADLO',
   'SIPHON PYLONS RISE!':'¡SE ALZAN PILONES DE DRENAJE!','THE TWINS FEED!':'¡LOS GEMELOS SE ALIMENTAN!',
   'SLAG OFFERINGS CRAWL TO THE FORGE!':'¡LAS OFRENDAS DE ESCORIA REPTAN A LA FORJA!',
   'BRUTE KING':'REY BRUTO','WARLOCK':'BRUJO','THE WORLDEATER':'EL DEVORAMUNDOS',
@@ -1959,8 +1959,9 @@ function damageEnemy(e,dmg,owner){
   // mob-clearing output, per wave (same philosophy as boss floor-pricing).
   // Saturated frames only (≥8 targets up): with 3 mobs on screen the read
   // measures the spawner's throughput, not the party's capability.
-  if(!e.boss&&isCampaign()&&G.enemies.length>=8)G.mobDmgAcc+=Math.min(dmg,Math.max(0,e.hp));
+  if(!e.boss&&!e.shed&&isCampaign()&&G.enemies.length>=8)G.mobDmgAcc+=Math.min(dmg,Math.max(0,e.hp));
   e.hp-=dmg;e.flash=0.08;
+  if(e.shed){e.hp=e.maxhp;shedOnDamage(e,dmg);}
   addDmgText(e,dmg);
   if(owner&&owner.dpsLog){owner.dpsAcc+=dmg;owner.dmgTotal+=dmg;}
   sfx('hit');
@@ -6986,10 +6987,14 @@ function initWavePattern(id,def){
     P.xpPool=base+bonus;
   }else if(id==='wards'){
     // Prismwarden rehearsal: stand in your colour when the pulse lands
-    P.events=[0.12*d];P.capBonus=Math.round(60*Math.min(F,4));
-    P.pulses=Math.max(3,Math.floor(d*0.7/6));
-    P.burst=Math.round((4+2*n)*Math.min(F,4));
-    P.planned=P.pulses*P.burst;
+    // v2: an unkillable beast sheds XP when hit and leaps; its landing is
+    // the pulse. Your colour ring is the only refuge.
+    P.events=[0.10*d];P.capBonus=Math.round(60*Math.min(F,4));
+    P.burst=Math.round((2+n)*Math.min(F,4));
+    P.bursts=Math.max(1,Math.floor(d*0.8/9))*P.burst;
+    // the pool is split over the chasers AND the ~2 orbs/s a party at the
+    // measured DPS sheds off the beast — so orbs stay gem-sized
+    P.planned=P.bursts+Math.round(d*0.8*2);
     P.xpPool=base+bonus;
   }
   return P;
@@ -7242,16 +7247,40 @@ function collapseTick(P,dt,alive,room){
 // coloured wards stand in the field; when the pulse lands, anyone outside
 // their own colour is hit. Then the wards move and the horde follows them.
 const WARD_COLS=['#ff4d6d','#57e86b','#39d5ff','#ffd23e'];
+const shedderSprite=makeSprite([
+'....PPPPP....','..PPCCCCCPP..','.PCCWCCCWCCP.','PCCCCCCCCCCCP','PCCKCCCCCKCCP',
+'PCCCCCCCCCCCP','.PCCCCCCCCCP.','.PCCCDDDCCCP.','..PCCCCCCCP..','..SS.SSS.SS..','.SS..S.S..SS.'],
+{P:'#c9a4ff',C:'#6a3fb0',W:'#ffffff',K:'#1a0a2a',D:'#ff4d6d',S:'#2a1040'});
 function wardsStart(P,alive){
-  const f=patField();
-  P.wards={f,n:0,t:1.0,warn:0,rings:[]};
+  P.wards={n:0,t:0,warn:0,rings:[],landings:0,shed:0,bursts:0};
   G.players.forEach((p,i)=>{p.wardCol=WARD_COLS[i%WARD_COLS.length];});
+  const pt=spawnPoint()||{x:G.cam.x+200,y:G.cam.y};
+  const e=spawnEnemy('tank',pt.x,pt.y);
+  e.spr=shedderSprite;e.scale=3;e.r=18;e.sp=20;
+  e.hp=e.maxhp=1e9;e.xp=0;e.noTouch=1;e.dmg=0;
+  // shed price: a party doing the measured wave DPS sheds ~2 orbs a second
+  e.shed={acc:0,per:Math.max(6,Math.round((G.waveDPS||60)*0.45)),st:'walk',t:5,jumpT:G.players.length>=3?7.5:9,P};
+  P.wards.beast=e;
   wardsPlace(P,alive);
-  flash(PATTERN_NAMES.wards+'!');subFlash('STAND IN YOUR COLOUR WHEN THE PULSE LANDS',3.4);
+  flash('THE SHEDDER!');subFlash('HIT IT — IT SHEDS XP. YOUR COLOUR WHEN IT LANDS',3.6);
   sfx('spreadcall');
 }
+// an orb pops off for every `per` damage, flung 80-200px outward: the loot
+// lands around the beast, so the farm is a skirt around the thing that leaps
+function shedOnDamage(e,dmg){
+  const S=e.shed;S.acc+=dmg;
+  let n=0;
+  while(S.acc>=S.per&&n<6){
+    S.acc-=S.per;n++;
+    const an=Math.random()*TAU,spd=160+Math.random()*240;
+    if(G.gems.length>350){G.gems[(Math.random()*G.gems.length)|0].v+=patXp(S.P);continue;}
+    G.gems.push({x:e.x+Math.cos(an)*e.r,y:e.y+Math.sin(an)*e.r,v:patXp(S.P),t:0,vx:Math.cos(an)*spd,vy:Math.sin(an)*spd});
+    if(S.P.wards)S.P.wards.shed++;
+  }
+  if(n){addParticles(e.x,e.y-e.r,'#c9a4ff',3*n,80);e.flash=0.12;}
+}
 function wardsPlace(P,alive){
-  const W=P.wards,f=W.f;
+  const W=P.wards,f=patField(),B=W.beast;
   for(const r of W.rings)r.t=Math.min(r.t,0.3);
   W.rings=[];
   const cols=[];
@@ -7260,7 +7289,11 @@ function wardsPlace(P,alive){
   cols.forEach((col,i)=>{
     let x,y,ok=false;
     for(let t=0;t<16&&!ok;t++){
-      x=f.x+(Math.random()-0.5)*f.w*0.7;y=f.y+(Math.random()-0.5)*f.h*0.7;
+      // rings sit 120-260px from the beast and on the live screen: the refuge
+      // is near the orb skirt, not across the map
+      if(B&&!B.dead){const an=Math.random()*TAU,d=120+Math.random()*140;x=B.x+Math.cos(an)*d;y=B.y+Math.sin(an)*d;}
+      else{x=f.x+(Math.random()-0.5)*f.w*0.7;y=f.y+(Math.random()-0.5)*f.h*0.7;}
+      x=clamp(x,f.x-f.w/2+R+10,f.x+f.w/2-R-10);y=clamp(y,f.y-f.h/2+R+10,f.y+f.h/2-R-10);
       ok=!solidAt(x,y);
       for(const q of W.rings)if(dist2(x,y,q.x,q.y)<(R*2+40)*(R*2+40))ok=false;
     }
@@ -7268,18 +7301,11 @@ function wardsPlace(P,alive){
     const ring={kind:'ward',ground:1,boss:null,x,y,r:R,col,t:99,dur:99,seed:Math.random()*TAU};
     G.fx.push(ring);W.rings.push(ring);
   });
-  W.t=6;W.warn=0;
+  W.warn=0;
 }
-function wardsTick(P,dt,alive,room){
+// the landing IS the pulse: safe only inside a ring of your own colour
+function wardsResolve(P,alive,x,y){
   const W=P.wards;
-  if(W.n>=P.pulses){for(const r of W.rings)r.t=Math.min(r.t,0.3);P.wards=null;flash('THE COLOURS FADE');return;}
-  W.t-=dt;
-  // the count-in: 1.5s of quickening beeps, like the boss's cast bar
-  if(W.t<1.5&&W.t>0){W.warn-=dt;if(W.warn<=0){W.warn=0.1+0.3*W.t;sfx('telegraph');}}
-  for(const r of W.rings)r.pulse=W.t<1.5?1-W.t/1.5:0;
-  if(W.t>0)return;
-  W.n++;
-  // the pulse
   let hit=0;
   for(const p of alive){
     let safe=false;
@@ -7287,17 +7313,28 @@ function wardsTick(P,dt,alive,room){
     if(!safe){bossHit(p,0.16);hit++;addParticles(p.x,p.y,'#ffffff',10,90);}
     else{addSparkles(p.x,p.y,p.wardCol,8,60);}
   }
-  G.fx.push({kind:'boom',col:'#ffffff',x:W.f.x,y:W.f.y,r:Math.max(W.f.w,W.f.h)*0.6,t:0.35,dur:0.35});
-  G.shake=Math.max(G.shake,6);sfx(hit?'slam':'douse');
+  const f=patField();
+  G.fx.push({kind:'boom',col:'#ffffff',x,y,r:Math.max(f.w,f.h)*0.6,t:0.35,dur:0.35});
+  pushRing(null,x,y,{rmax:Math.max(f.w,f.h)*0.7,spd:520,dir:1,gaps:0,pct:0,w:10,dur:1.2,t:1.2,col:'#c9a4ff'});
+  G.shake=Math.max(G.shake,8);sfx(hit?'slam':'douse');
   flash(hit?'WRONG COLOUR!':'IN COLOUR!');
-  // the horde comes to the new wards: the colour brings company
-  wardsPlace(P,alive);
-  for(let i=0;i<P.burst;i++){
-    if(!room())break;
-    const pt=spawnPoint();if(!pt)continue;
-    const e=spawnEnemy('chaser',pt.x,pt.y);
-    e.hp*=1.3;e.maxhp=e.hp;e.xp=patXp(P);
+  W.landings++;
+}
+function wardsTick(P,dt,alive,room){
+  const W=P.wards,B=W.beast;
+  // the beast leaves once the wave's trash is spent: it is not a kill
+  const others=G.enemies.some(e=>e!==B&&!e.dead),def=waveDef(G.wave);
+  const spent=G.waveSpawned>=G.waveQuota&&W.bursts>=P.bursts;
+  if(!B||B.dead||(B.shed.st==='walk'&&((spent&&!others&&G.waveT>def.dur*0.6)||G.waveT>def.dur*0.85))){
+    if(B&&!B.dead){B.dead=true;addParticles(B.x,B.y,'#c9a4ff',30,120);}
+    for(const r of W.rings)r.t=Math.min(r.t,0.3);
+    P.wards=null;flash('IT BURROWS AWAY');sfx('douse');return;
   }
+  // count-in beeps while it is in the air / about to land
+  const S=B.shed;
+  if(S.st==='tele'){W.warn-=dt;if(W.warn<=0){W.warn=0.1+0.3*Math.max(0,S.t);sfx('telegraph');}
+    for(const r of W.rings)r.pulse=1-S.t/2.5;}
+  else for(const r of W.rings)r.pulse=S.st==='air'?1:0;
 }
 // 1) THE BAND — an alarm on one screen edge, then a torrent of swarmers
 // floods a lane straight across. A hazard if you stand in it, a farm if you
@@ -7770,7 +7807,7 @@ function nextWave(){
 function enrageStragglers(){
   let n=0;
   for(const e of G.enemies){
-    if(e.boss)continue;
+    if(e.boss||e.shed)continue;
     if(e.circ)continue; // a ring in formation is choreography, not a straggler
     e.huntLv=(e.huntLv||0)+1;e.hunted=true;e.slow=1;
     if(e.huntLv===1)e.sp*=1.7;
@@ -8199,6 +8236,43 @@ function update(dt){
       if(ai.sumT<=0){ai.sumT=10;spawnEnemy('spitter',e.x-20,e.y);spawnEnemy('spitter',e.x+20,e.y);}
       if(dd<90)sp=0;
     }
+    else if(e.shed){
+      // THE SHEDDER: slow walk → 2.5s telegraph (rings relocate) → 1s in the
+      // air (immune, untargetable) → landing = the colour pulse + a burst
+      const S=e.shed,P=S.P,W=P.wards;
+      if(S.st==='walk'){
+        S.t-=dt;
+        if(S.t<=0&&tgt&&W){
+          S.st='tele';S.t=2.5;
+          S.lx=tgt.x+(Math.random()*60-30);S.ly=tgt.y+(Math.random()*60-30);
+          pushTel(null,S.lx,S.ly,60,2.5,0,'#c9a4ff',slamWarnSprite,null);
+          wardsPlace(P,alive);
+          subFlash('IT LEAPS — FIND YOUR COLOUR',2.4);sfx('telegraph');
+        }
+      }else if(S.st==='tele'){
+        sp=0;S.t-=dt;
+        if(S.t<=0){S.st='air';S.t=1.0;S.jx=e.x;S.jy=e.y;e.vulnMul=0;e.air=1;}
+      }else{
+        sp=0;S.t-=dt;
+        const pr=clamp(1-S.t/1.0,0,1);
+        e.x=S.jx+(S.lx-S.jx)*pr;e.y=S.jy+(S.ly-S.jy)*pr;
+        e.hopY=90*Math.sin(Math.PI*pr);
+        if(S.t<=0){
+          e.hopY=0;e.air=0;e.vulnMul=1;
+          S.st='walk';S.t=S.jumpT;
+          if(W){
+            wardsResolve(P,alive,e.x,e.y);
+            for(let i=0;i<P.burst&&W.bursts<P.bursts;i++){
+              W.bursts++;
+              if(G.enemies.length>=140)break;
+              const pt=spawnPoint();if(!pt)continue;
+              const c=spawnEnemy('chaser',pt.x,pt.y);
+              c.hp*=1.3;c.maxhp=c.hp;c.xp=patXp(P);
+            }
+          }
+        }
+      }
+    }
     else if(e.jump){
       // hop cycle: walk → telegraphed landing ring → airborne (untargetable,
       // no touch) → small blast on landing. The forgiving cousin of a boss slam.
@@ -8380,6 +8454,7 @@ function update(dt){
   // ---- gems / pickups ----
   for(const g of G.gems){
     g.t+=dt;
+    if(g.vx){g.x+=g.vx*dt;g.y+=g.vy*dt;g.vx*=0.9;g.vy*=0.9;if(Math.abs(g.vx)+Math.abs(g.vy)<4)g.vx=g.vy=0;}
     if(Math.random()<dt*0.5)addSparkles(g.x,g.y-2,g.v>=4?'#ffd23e':'#8ef0ff',1,14);
     let best=null,bd2=1e9;
     for(const p of G.players){

@@ -19,7 +19,7 @@ fired / cleared / rendered / floor cleaned), plus `test-modes`, `test-schools`,
 - [x] THE DANCE (Rotgrub): 4 infinite columns cut from the screen erupt in order (count-in bar sweeps top to bottom); at 55% it turns: infinite rows, bar sweeps side to side; both kill mobs
 - [x] STONEFALL (Stonefather/LoS): boulders become rock cover; snipers need line of sight; scales with players
 - [x] THE COLLAPSE (Worldeater/arena destruction): the SCREEN's margin becomes void and shrinks to a 40% island; bite + shove; bursts per bite
-- [x] THE WARDS (Prismwarden): stand in your colour when the pulse lands; wards relocate, horde follows
+- [x] THE WARDS v2 (Prismwarden): THE SHEDDER — unkillable beast, sheds XP orbs per damage (flung 80-200px), slow-walks, leaps every 9s (7.5s at 3p+); rings relocate on take-off; landing = colour pulse (0.16 if not in your colour) + chaser burst; leaves at 85% of the timer
 - [x] Jumpers / Polarity / Encircle removed from the table (code kept)
 - [x] Encircle (benched) squeezes to contact and no longer self-dissolves, in case it returns
 

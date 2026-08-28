@@ -22,7 +22,7 @@ for(let wi=0;wi<WAVES.length;wi++){
   // jump to the wave before the pattern wave, then let the machine open it
   G.wave=wi;G.waveState='clear';G.waveT=2.4;G.level=Math.max(G.level,wi);
   G.waveDPS=90;
-  let fired=false,maxFx=0,creep=0,voidT=0,rocks=0,bands=0,cleared=false,vStrips=0,hStrips=0;
+  let fired=false,maxFx=0,creep=0,voidT=0,rocks=0,bands=0,cleared=false,vStrips=0,hStrips=0,beast=null,beastDied=false,landings=0,shed=0,placed=0,beastGone=false;
   const dt=1/60;
   try{
     for(let i=0;i<60*140;i++){
@@ -33,7 +33,7 @@ for(let wi=0;wi<WAVES.length;wi++){
       for(const p of G.players){p.hp=p.maxhp;p.invuln=1;}
       const me=G.players[0];
       let tgt=null,bd=1e9;
-      for(const e of G.enemies){if(e.dead)continue;const d=(e.x-me.x)**2+(e.y-me.y)**2;if(d<bd){bd=d;tgt=e;}}
+      for(const e of G.enemies){if(e.dead||e.shed)continue;const d=(e.x-me.x)**2+(e.y-me.y)**2;if(d<bd){bd=d;tgt=e;}}
       if(tgt){const l=Math.hypot(tgt.x-me.x,tgt.y-me.y)||1;
         if(l>22){g.pads[0].axes[0]=(tgt.x-me.x)/l;g.pads[0].axes[1]=(tgt.y-me.y)/l;}
         else{g.pads[0].axes[0]=0;g.pads[0].axes[1]=0;}}
@@ -44,6 +44,10 @@ for(let wi=0;wi<WAVES.length;wi++){
       if(G.wavePat&&G.wavePat.col)voidT=Math.max(voidT,G.wavePat.col.inset);
       if(G.wavePat&&G.wavePat.bands)bands=Math.max(bands,G.wavePat.bands.length);
       rocks=Math.max(rocks,G.tileOverride.size);
+      if(pat==='wards'&&G.wavePat&&G.wavePat.wards){const W=G.wavePat.wards;
+        if(W.beast){beast=W.beast;if(beast.dead&&W.beast===beast&&G.wavePat.wards)beastDied=true;}
+        landings=Math.max(landings,W.landings);shed=Math.max(shed,W.shed);}
+      if(pat==='wards'&&beast&&!G.enemies.includes(beast))beastGone=true;
       if(pat==='dance')for(const x of G.fx)if(x.kind==='strip'){if(x.axis==='v')vStrips++;else hStrips++;}
       if(i%11===0)g.render();
       if(G.wave===wi+1&&G.waveState==='clear'){cleared=true;}
@@ -58,6 +62,9 @@ for(let wi=0;wi<WAVES.length;wi++){
   if(pat==='collapse')say(voidT>=0.29,'collapse: screen shrank to the max');
   if(pat==='band')say(bands===NP,'band: one lane per player ('+bands+')');
   if(pat==='stonefall')say(rocks>0,'stonefall: boulders landed');
+  if(pat==='wards'){say(!!beast,'wards: the shedder spawned');say(!beastDied,'wards: it never died to damage');
+    say(landings>=1,'wards: it leaped and landed ('+landings+')');say(shed>0,'wards: it shed XP orbs ('+shed+')');
+    say(beastGone,'wards: it left after the wave');say(G.players[0].dmgTotal>0,'wards: P1 dealt damage ('+G.players[0].dmgTotal.toFixed(0)+')');}
   if(pat==='dance')say(vStrips>0&&hStrips>0,'dance: vertical then horizontal strips fired ('+vStrips+'/'+hStrips+' strip-frames)');
   // terrain must not leak into the next wave
   say(!G.creep&&!G.voidTiles,pat+': floor cleaned after the wave');

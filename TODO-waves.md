@@ -19,7 +19,21 @@
 - [x] dpsFactor authored zone extended to waves 1-10; prices: hulk hpClassic 4500,
       slagmaw 20000 (probe-checked), CLASSIC_TTK [70,120,135,150].
 
+- [x] Anti-AFK retune (2026-08-31, playtest: "after the first few waves you can stand
+      still"): wave counts were sized against probe-bot throughput, 3-10x under real
+      kits (bench-schools kits: early ≈ 176-544 swarm dps vs 22-129 hp/s demand).
+      Waves 2-9 re-sized to ~half the expected kit's bench, every wave from 3 carries
+      spitters/bombers (waves 6-8 had ZERO ranged mobs — everything was deletable by
+      dps before it threatened a stander), and `G.dripKeep` marks surplus spawns as
+      xp-less chaff so denser waves don't re-inflate the level cadence (elites always
+      pay). Straggler hunt only announces packs of 6+.
+
 ## Open (v3)
+- [ ] Anti-AFK verification is ARITHMETIC (demand vs kit bench) + stander probes; a
+      real playtest must confirm a stander now gets buried mid-arc while an active
+      newbie still clears — probe bots cannot emulate human throughput
+- [ ] `tools/calc-pressure` idea: the demand-vs-bench table lives in a scratchpad
+      script; promote it if this tuning loop recurs
 - [ ] Playtest: does the trash→elite→mini-boss→boss rhythm read; is the 6-9
       "slightly behind" pressure right (fights end at ~80-90% of timer by design);
       does the augur survive long enough vs 4p focus (AUGUR_HP 900)

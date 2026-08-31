@@ -1886,15 +1886,22 @@ const CLASSIC_WAVES=[
 // ASCENT. Counts in 1-10 are authored (dpsFactor is 1 there), sized so a
 // decent party clears late in the timer — slightly behind is the feel.
 // `obj:[text,col]` = the standing HUD objective for pattern-less lessons.
+// Counts are sized against MEASURED kit output (tools/bench-schools.mjs
+// kits: early ≈ 176-544 swarm dps), not against probe bots: the wave's
+// hp-throughput demand sits at roughly half the expected kit's bench, so
+// the stream leaks on a stander and melts for a mover. v3.0 shipped
+// 3-10x under that and a player could literally stand still (playtest,
+// 2026-08-31). Every wave from 3 on also carries a RANGED answer
+// (spitters/bombers) that dps alone cannot pre-empt.
 {n:14,dur:30,mix:{chaser:1},elite:0,lv:{b:0,x:0}},
-{n:30,dur:45,mix:{chaser:1,swarm:0.5},elite:0,lv:{b:1,x:0}},
-{n:36,dur:50,mix:{chaser:0.9,swarm:0.8,spitter:0.2},elite:0.07,lv:{b:0,x:0}},
-{n:40,dur:55,mix:{chaser:0.8,swarm:1.1,spitter:0.4,bomber:0.2},elite:0.05,lv:{b:1,x:0}},
+{n:48,dur:45,mix:{chaser:1,swarm:0.5},elite:0,lv:{b:1,x:0}},
+{n:64,dur:50,mix:{chaser:0.9,swarm:0.8,spitter:0.25},elite:0.07,lv:{b:0,x:0}},
+{n:76,dur:55,mix:{chaser:0.8,swarm:1.1,spitter:0.45,bomber:0.25},elite:0.05,lv:{b:1,x:0}},
 {boss:0,dur:75},
-{n:38,dur:50,mix:{chaser:1,swarm:0.8,fireslug:0.5},elite:0,lv:{b:1,x:0},obj:['DON\'T STAND IN THE RED TRAILS','#ff3c3c']},
-{n:42,dur:55,mix:{chaser:0.9,swarm:0.7,fireslug:0.5,burster:0.7},elite:0,lv:{b:1,x:0},obj:['GOLD SWELLS THROW YOU — MIND THE RED FLOOR','#ffd23e']},
-{n:24,dur:60,mix:{chaser:0.6,smasher:1},elite:0,pattern:'slugforge',lv:{b:1,x:1}},
-{n:30,dur:60,mix:{chaser:0.8,swarm:0.7,smasher:0.5,spitter:0.3},elite:0,pattern:'augur',lv:{b:2,x:1}},
+{n:64,dur:50,mix:{chaser:1,swarm:0.9,fireslug:0.5,spitter:0.3},elite:0,lv:{b:1,x:0},obj:['DON\'T STAND IN THE RED TRAILS','#ff3c3c']},
+{n:72,dur:55,mix:{chaser:0.9,swarm:0.8,fireslug:0.5,burster:0.7,spitter:0.3},elite:0,lv:{b:1,x:0},obj:['GOLD SWELLS THROW YOU — MIND THE RED FLOOR','#ffd23e']},
+{n:36,dur:60,mix:{chaser:0.6,smasher:1,spitter:0.3},elite:0,pattern:'slugforge',lv:{b:1,x:1}},
+{n:52,dur:60,mix:{chaser:0.8,swarm:0.7,smasher:0.5,spitter:0.4,bomber:0.2},elite:0,pattern:'augur',lv:{b:2,x:1}},
 {boss:1,dur:120},
 {n:54,dur:52,mix:{chaser:0.7,swarm:1.0,spitter:1.0,tank:0.4,bomber:0.5},elite:0.05,pattern:'stonefall',lv:{b:2,x:1}},
 {n:58,dur:55,mix:{chaser:0.7,swarm:1.1,spitter:1.0,tank:0.45,bomber:0.6},elite:0.06,pattern:'wards',lv:{b:3,x:1}},
@@ -8351,7 +8358,7 @@ function augurStart(P,alive){
   // steeper party scale than the forge's (0.7+0.3n): a mini-boss must
   // survive its rites against combined focus fire — at the shallow scale a
   // 3p party broke it after ONE cast and the rehearsal never happened
-  e.hp=e.maxhp=Math.round(AUGUR_HP*hpScale()*(0.3+0.7*n));
+  e.hp=e.maxhp=Math.round(AUGUR_HP*hpScale()*(0.2+0.8*n));
   e.vulnMul=1;e.noTouch=1;e.xp=0;e.dmg=0;e.life=-1;
   e.augurTarget=1;e.aug=P.aug;
   e.name='THE SLAG AUGUR';
@@ -8375,7 +8382,7 @@ function augurTick(P,dt,alive){
   if(!alive.length)return;
   A.t-=dt;
   if(A.t>0)return;
-  A.t=4.5; // Slagmaw P2's own step cadence is ~3.7s; the rehearsal keeps close to it
+  A.t=4.0; // Slagmaw P2's own step cadence is ~3.7s; the rehearsal keeps close to it
   const s=A.k++%3;
   if(s===0){
     // the CINDER RING, exactly as the boss casts it: white disc = safe, ring born on its rim
@@ -8914,13 +8921,17 @@ function nextWave(){
     G.waveSpawnGap=(def.dur*0.72)/G.waveQuota;
     G.waveSpawnT=0;
     G.wavePulses=G.wavePat?[]:[0.35,0.70];
-    // pattern-less waves still pay their authored level budget (lv.b): the
-    // surplus over the mix's natural xp rides the drip, gem by gem — the
-    // same construction the patterns use through xpPool
-    G.dripBonus=0;G.dripAcc=0;
+    // pattern-less waves pay exactly their authored level budget (lv.b):
+    // when the mix's natural xp falls short, the surplus rides the drip
+    // (dripBonus, gem by gem, the xpPool construction); when the quota is
+    // big enough to overshoot it, a share of spawns is xp-less chaff
+    // (dripKeep) — bigger, denser waves must not re-inflate the cadence
+    G.dripBonus=0;G.dripAcc=0;G.dripKeep=1;
     if(G.mode==='classic'&&!def.pattern&&def.lv&&def.lv.b>0){
       const L0=G.level+bankedLevels().banked;
-      G.dripBonus=Math.max(0,lvGems(def.lv.b,L0)-G.waveQuota*mixAvgXp(def))/Math.max(1,G.waveQuota);
+      const natural=G.waveQuota*mixAvgXp(def),budget=lvGems(def.lv.b,L0);
+      if(budget>natural)G.dripBonus=(budget-natural)/Math.max(1,G.waveQuota);
+      else G.dripKeep=Math.max(0.25,budget/Math.max(1,natural));
     }
   }
   sfx(def.boss!==undefined?'boss':'wavestart');
@@ -8949,7 +8960,10 @@ function enrageStragglers(){
     addParticles(e.x,e.y,'#ff3c3c',8,60);
     n++;
   }
-  if(n){flash('HUNTING THE LAST OF THEM');sfx('zap');}
+  // only announce a real pack: with denser authored waves a couple of
+  // stragglers per wave is normal, and the banner read as failure spam
+  if(n>5){flash('HUNTING THE LAST OF THEM');sfx('zap');}
+  else if(n)sfx('zap');
 }
 // ---- the cave cutscene: down into the volcano after wave 1, back out after
 // Slagmaw. Runs inside the intermission window: the stick is taken over,
@@ -9045,6 +9059,7 @@ function updateClassicWaves(dt){
             // drip-carried patterns (lava mix, pressure) ride their budget on the drip
             if(G.wavePat&&G.wavePat.dripXp)e.xp+=patXp(G.wavePat);
             else if(G.dripBonus){G.dripAcc+=G.dripBonus;const bx=Math.floor(G.dripAcc);if(bx>0){e.xp+=bx;G.dripAcc-=bx;}}
+            else if(G.dripKeep<1&&!e.elite&&Math.random()>G.dripKeep)e.xp=0; // xp-less chaff keeps the budget honest (elites always pay)
           }
         }
       }

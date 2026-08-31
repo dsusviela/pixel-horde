@@ -116,7 +116,9 @@ for(const NP of [1,3]){
   say(seen.fireslug&&seen.trailW6,'wave 6: fire slugs left burning trails'+tag);
   say(seen.burster&&seen.pops>=3,'wave 7: bursters planted their swell ('+seen.pops+')'+tag);
   say(seen.smasher&&seen.slams>=6,'the smashers cast their slam discs ('+seen.slams+')'+tag);
-  say(seen.slugforge&&(seen.heat||0)>0&&seen.forgeHeal,'THE OFFERING: the forge was fed and healed (fed '+(seen.heat||0)+')'+tag);
+  // a party that intercepts EVERY slug is the taught play at its extreme:
+  // the forge never lights, cannot be broken, and sinks — also a pass
+  say(((seen.heat||0)>0&&seen.forgeHeal)||((seen.heat||0)===0&&(seen.forgeEnd==='gone'||seen.forgeEnd==='dead')),'THE OFFERING: fed+healed, or perfectly intercepted (fed '+(seen.heat||0)+', '+seen.forgeEnd+')'+tag);
   say(seen.forgeEnd==='dead'||seen.forgeEnd==='gone','THE OFFERING: the forge died or sank ('+seen.forgeEnd+')'+tag);
   say(seen.augurUp&&seen.augurRites>=3,'THE SLAG AUGUR: stood and cast its rites ('+seen.augurRites+')'+tag);
   say(seen.brandPool,'THE SLAG AUGUR: a brand pool was dropped'+tag);

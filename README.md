@@ -75,12 +75,26 @@ assembled out of the shared mechanic helpers in `index.html` (`pushSweep`,
 `pushLine`, `pushCone`, `pushWander`, `pushEdge`, `pushPole`, `prisonPlayer`,
 `shieldBoss`). All text is English/Spanish.
 
-CLASSIC's first five waves are the Slagmaw arc: the break after wave 1 walks
-the party down into the volcano (ground palette flips via `G.biome`), waves
-2-4 rehearse the boss's primitives with fauna that glows in its colours
-(`VOLC`: orange slam, gold burst/ring, red lava — smasher, burster, fire slug,
-the slug forge, the vents and lava rivers), Slagmaw runs three phases and
-cracks the arena with lava in the last, and the kill walks everyone back up.
+CLASSIC's first ten waves are THE RAID — a WoW dungeon's grammar over the
+survivor loop. WAVE 1 CLEAR is the PATH pick (the one permanent choice of
+the run: destruction / illusion / necromancy, a free draft for every party
+size). Waves 2-4 are the surface block: pure mowing plus marked stat elites,
+no curriculum. Wave 5 is the mini-boss check SLAUGHTERHULK (beam-pinned
+Hateful Strike, the cleaver line, a soft enrage), and the break after it
+walks the party down into the volcano (`G.biome` flips). Waves 6-9 rehearse
+Slagmaw one primitive at a time, in its colours (`VOLC`), taught by
+repetition and a standing objective line in the HUD rather than mid-fight
+text: red fire-slug trails, bursters whose gold swell THROWS you (their
+knockback is an attack with a wind-up, not a death rattle), THE OFFERING
+(slugs crawl to a killable forge and HEAL it — intercept, then break it,
+while smashers plant their orange slam discs), and THE SLAG AUGUR — a caster
+mini-boss running the boss's own P2 rites (cinder ring / ember brand /
+inward ring). Counts in waves 1-10 are authored, not dps-scaled, and sized
+so a decent party clears late in the timer. Wave 10 is SLAGMAW: three
+phases, the cracked cauldron, and the kill walks everyone back up. Waves
+11-19 keep the full terrain-wave roster (band, stonefall, wards, dance,
+swarm, creep, collapse) ahead of PYRAXIS at 15 and the WORLDEATER at 20;
+GEMINOX now lives only in BOSS RUSH.
 
 Tests: `node tools/test-protocol.mjs` (relay protocol), `node tools/test-net.mjs`
 (net.js serialization + end-to-end over the relay), `node tools/test-rush.mjs

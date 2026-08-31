@@ -17,7 +17,7 @@
 // TARGETS — the only judgment numbers in the model. Argue with these, not
 // with the derived constants.
 export const TARGETS={
-  classicTTK:[120,130,140,150],       // boss fight seconds, Slagmaw..Worldeater
+  classicTTK:[70,120,135,150],        // boss fight seconds (v3): Slaughterhulk check, Slagmaw..Worldeater
   ttkBand:0.20,                       // report acceptance: ±20%
   // mob pressure P = incoming mob dmg per minute / party total max hp
   // ("party health bars per minute if nobody healed") — diagnostic only:

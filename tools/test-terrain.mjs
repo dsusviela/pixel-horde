@@ -30,7 +30,10 @@ for(let wi=0;wi<WAVES.length;wi++){
         for(const pk of G.levelupPicks)if(!pk.done)g.ev('takeOffer')(pk,true);
         g.ev('finishLevelup')();continue;
       }
-      for(const p of G.players){p.hp=p.maxhp;p.invuln=1;}
+      // kit strength tracks the slot: v3 moved several patterns' first table
+      // occurrence deep into the run (swarm w16, creep w17, collapse w19)
+      // where a fresh-drafted bot cannot match the wave's hp scale
+      for(const p of G.players){p.hp=p.maxhp;p.invuln=1;p.dmgMul=Math.max(1,wi*0.35);}
       const me=G.players[0];
       let tgt=null,bd=1e9;
       for(const e of G.enemies){if(e.dead||e.shed)continue;const d=(e.x-me.x)**2+(e.y-me.y)**2;if(d<bd){bd=d;tgt=e;}}

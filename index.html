@@ -775,6 +775,18 @@ const ES={
   'SOUND IS OFF — CLICK THE PAGE OR TAP ANY KEY ONCE':'SIN SONIDO — HAZ CLIC EN LA PÁGINA O PULSA UNA TECLA',
   // mode select
   'CHOOSE YOUR QUEST':'ELIGE TU GESTA',
+  // the PATH (school) screen
+  'CHOOSE YOUR PATH':'ELIGE TU SENDA','PICK YOUR FIRST SPELL':'ELIGE TU PRIMER HECHIZO',
+  'PERMANENT FOR THIS RUN — EVERY SPELL YOU FIND COMES FROM YOUR PATH':'PERMANENTE EN ESTA PARTIDA — TODOS LOS HECHIZOS QUE ENCUENTRES SERÁN DE TU SENDA',
+  'YOU WILL FIND THE OTHER TWO LATER':'LOS OTROS DOS LOS ENCONTRARÁS MÁS ADELANTE',
+  'PATH OF DESTRUCTION':'SENDA DE LA DESTRUCCIÓN','PATH OF ILLUSION':'SENDA DE LA ILUSIÓN','PATH OF NECROMANCY':'SENDA DE LA NIGROMANCIA',
+  'heavy fire — easy to start, hard to stop':'fuego pesado — fácil de empezar, difícil de parar',
+  'starlight, mirrors and stolen time':'luz de estrellas, espejos y tiempo robado',
+  'rot and souls — damage that sustains':'podredumbre y almas — daño que sostiene',
+  'BIG AREA FIRE. STAND YOUR GROUND AND BURN CROWDS.':'FUEGO DE ÁREA GRANDE. PLÁNTATE Y QUEMA MULTITUDES.',
+  'HOMING BOLTS AND MIRROR CLONES. KEEP MOVING, THEY HUNT.':'PROYECTILES GUIADOS Y CLONES ESPEJO. SIGUE MOVIÉNDOTE, ELLOS CAZAN.',
+  'POISON AND SOUL DRAIN. SLOW DAMAGE THAT HEALS YOU.':'VENENO Y DRENAJE DE ALMAS. DAÑO LENTO QUE TE CURA.',
+  'GOOD FIRST PICK':'BUENA PRIMERA ELECCIÓN','STARTS WITH':'EMPIEZA CON',
   'CLASSIC':'CLÁSICO','ENDLESS':'SIN FIN','BOSS RUSH':'ASALTO DE JEFES',
   'NOTHING BUT BOSSES':'SOLO JEFES',
   '- every raid boss, back to back':'- todos los jefes, uno tras otro',
@@ -826,16 +838,19 @@ const ES={
   'OBLIVION':'OLVIDO','UNMADE — 30 SECONDS':'DESHECHO — 30 SEGUNDOS',
   'IT REELS — POUR IT ON!':'¡SE TAMBALEA — DADLE CAÑA!','HATEFUL CHARGE!':'¡CARGA ODIOSA!',
   // the Slagmaw arc (waves 1-5)
-  'THE LAVA MIX':'LA MEZCLA DE LAVA','THE SLUG FORGE':'LA FORJA DE BABOSAS','VOLCANIC PRESSURE':'PRESIÓN VOLCÁNICA',
-  'THE LAVA MIX!':'¡LA MEZCLA DE LAVA!','THE SLUG FORGE!':'¡LA FORJA DE BABOSAS!','VOLCANIC PRESSURE!':'¡PRESIÓN VOLCÁNICA!',
-  'ORANGE SLAMS. GOLD BURSTS. RED BURNS':'NARANJA GOLPEA. DORADO ESTALLA. ROJO QUEMA',
-  'SMASHER — STEP OUT OF THE ORANGE':'APLASTADOR — SAL DEL NARANJA',
-  'BURSTER — IT POPS WHEN IT DIES':'REVENTÓN — ESTALLA AL MORIR',
-  'FIRE SLUG — DON\'T STAND IN ITS TRAIL':'BABOSA DE FUEGO — NO PISES SU RASTRO',
-  'FEED THE FORGE OR KILL THE SLUGS — YOUR CALL':'ALIMENTA LA FORJA O MATA LAS BABOSAS — TÚ DECIDES',
+  'THE SMASHERS':'LOS APLASTADORES','THE OFFERING':'LA OFRENDA','THE CINDER VENTS':'LOS RESPIRADEROS DE CENIZA',
+  'THE SMASHERS!':'¡LOS APLASTADORES!','THE OFFERING!':'¡LA OFRENDA!','THE CINDER VENTS!':'¡LOS RESPIRADEROS DE CENIZA!',
+  'STEP OUT OF THE ORANGE DISC — IT THROWS YOU':'SAL DEL DISCO NARANJA — TE LANZA',
+  'KILL THE SLUGS BEFORE THEY REACH THE FORGE — THEY HEAL IT':'MATA LAS BABOSAS ANTES DE QUE LLEGUEN A LA FORJA — LA CURAN',
+  'RUN TO THE GLOWING VENT — THE WHITE DISC IS SAFE':'CORRE AL RESPIRADERO QUE BRILLA — EL DISCO BLANCO ES SEGURO',
+  'THE SLAG FORGE':'LA FORJA DE ESCORIA','THE FORGE BREAKS':'LA FORJA SE ROMPE',
+  'THE SLAG AUGUR':'EL AUGUR DE ESCORIA','THE SLAG AUGUR!':'¡EL AUGUR DE ESCORIA!','THE AUGUR BREAKS':'EL AUGUR SE ROMPE',
+  'BREAK THE SLAG AUGUR — SURVIVE ITS RITES':'ROMPE EL AUGUR DE ESCORIA — SOBREVIVE A SUS RITOS',
+  'DON\'T STAND IN THE RED TRAILS':'NO PISES LOS RASTROS ROJOS',
+  'GOLD SWELLS THROW YOU — MIND THE RED FLOOR':'LO DORADO QUE SE HINCHA TE LANZA — OJO AL SUELO ROJO',
+  // benched arc v1 strings kept for the benched code paths
   'THE FORGE WAKES!':'¡LA FORJA DESPIERTA!','THE BEHEMOTH BREAKS':'EL BEHEMOT SE ROMPE','BREAK IT — IT BLEEDS THE XP IT ATE':'RÓMPELA — SANGRA LA XP QUE COMIÓ',
   'IT SINKS INTO THE SLAG':'SE HUNDE EN LA ESCORIA','SLAG BEHEMOTH':'BEHEMOT DE ESCORIA',
-  'HUG THE VENTS — THE RING IS BORN OUTSIDE':'PÉGATE A LOS RESPIRADEROS — EL ANILLO NACE FUERA',
   'THE FLOOR CRACKS — LAVA RIVERS':'EL SUELO SE AGRIETA — RÍOS DE LAVA',
   'THE GROUND SHAKES':'EL SUELO TIEMBLA','SOMETHING IS RISING':'ALGO ESTÁ EMERGIENDO','THE VENTS COOL':'LOS RESPIRADEROS SE ENFRÍAN',
   'INTO THE MOUNTAIN':'HACIA LA MONTAÑA','BACK TO THE SURFACE':'DE VUELTA A LA SUPERFICIE',
@@ -1015,6 +1030,7 @@ const ES={
   '24 BOSSES, BACK TO BACK':'24 JEFES, UNO TRAS OTRO'
 };
 const ES_RX=[
+  [/^P(\d) WALKS THE PATH OF (\w+)$/,m=>'P'+m[1]+' SIGUE LA '+tr('PATH OF '+m[2])],
   [/^FUSED! \+(\d+)% DMG$/,m=>'¡FUSIONADO! +'+m[1]+'% DAÑO'],
   [/^INTERCEPT THEM — EACH ONE FUSED IS \+(\d+)% DAMAGE$/,m=>'INTERCEPTADLAS — CADA UNA FUSIONADA ES +'+m[1]+'% DE DAÑO'],
   [/^P(\d) JOINED!$/,m=>'¡P'+m[1]+' SE UNE!'],
@@ -1483,17 +1499,22 @@ const SCHOOL_SPELLS={
     sp:{a:46,b:13,c:8.5,r:0.93,h:12,hp:0,fx:'soulvoid'}}
 };
 Object.assign(WEAPONS,SCHOOL_SPELLS); // draft cards, HUD dots and run records reuse the weapon plumbing
+// `how` is what the player will actually DO — the card copy new players
+// read (desc is the flavour line). `tag` marks the safe first pick.
 const SCHOOLS={
   destro:{name:'PATH OF DESTRUCTION',col:'#ff5a3d',
     desc:'heavy fire — easy to start, hard to stop',
+    how:'BIG AREA FIRE. STAND YOUR GROUND AND BURN CROWDS.',tag:'GOOD FIRST PICK',
     actives:['lavaray','meteor','cflame'],first:['lavaray','meteor','cflame'],
     passives:['ba','hh','cr'],ult:'evocation'},
   illusion:{name:'PATH OF ILLUSION',col:'#c9a4ff',
     desc:'starlight, mirrors and stolen time',
+    how:'HOMING BOLTS AND MIRROR CLONES. KEEP MOVING, THEY HUNT.',
     actives:['arcmissile','eblast','shocking','mirage'],first:['arcmissile','eblast','shocking'],
     passives:['mirror','ka'],ult:'assassin'},
   necro:{name:'PATH OF NECROMANCY',col:'#9fe84a',
     desc:'rot and souls — damage that sustains',
+    how:'POISON AND SOUL DRAIN. SLOW DAMAGE THAT HEALS YOU.',
     actives:['shadowb','decay','plague','inflict'],first:['shadowb','decay','plague'],
     passives:['leech','dtouch'],ult:'souls'}
 };
@@ -1629,7 +1650,7 @@ const G={
   spawnT:1, surgeT:45, bossT:150, bossIdx:0, boss:null, bossTint:'#e33',
   // the Slagmaw arc: ground palette, lava river tiles, the cave cutscene
   biome:'surface', lava:null, descent:null, fade:0, smCasting:0, camLock:null, preVolc:null, rumbleT:0, terrain:null, ventChunks:null,
-  levelupPicks:null, levelupT:0, levelupFree:false, freeLevels:0, podDebt:0, podEvery:1, relics:[],
+  levelupPicks:null, levelupT:0, levelupFree:false, freeLevels:0, breakDrafts:0, podDebt:0, podEvery:1, relics:[],
   spawnedChunks:new Set(),
   overSince:0, flashMsg:null, flashT:0, subFlash:null, subFlashT:0,
   wave:0, startWave:1, waveState:'fight', waveT:0, interLen:8,
@@ -1661,6 +1682,8 @@ function xpNeed(L){
 // CLASSIC banks its level-ups: xp keeps pooling during the fight and the
 // drafts fire back-to-back in the wave break. This reports how many drafts
 // the pool already affords, and progress toward one more.
+// drafts CLASSIC deals in one wave break; the surplus stays banked
+function breakDraftCap(){return isBossWave(G.wave)?3:2;}
 function bankedLevels(){
   let lv=G.level,xp=G.xp,k=0,nd=xpNeed(lv);
   while(xp>=nd&&k<30){xp-=nd;k++;lv++;nd=xpNeed(lv);}
@@ -1681,7 +1704,19 @@ function dmgScale(){
   return 1+G.time*0.005;
 }
 function flash(msg){G.flashMsg=msg;G.flashT=2.2;}
-function subFlash(msg,t){G.subFlash=msg;G.subFlashT=t||2.2;}
+// a sub-line still on screen is never overwritten: the newcomer waits its
+// turn (queue of 2, oldest dropped). Wave 2 v1 fired four lessons in 2.7s
+// into this one slot and every one cancelled the last.
+function subFlash(msg,t){
+  t=t||2.2;
+  if(G.subFlash&&G.subFlashT>1.0&&G.subFlash!==msg){
+    G.subQueue=(G.subQueue||[]).slice(-1);G.subQueue.push({msg,t});return;
+  }
+  G.subFlash=msg;G.subFlashT=t;
+}
+// the standing objective under the wave header: one line, the wave's colour,
+// up for the whole fight — the lesson a player can look up between hits
+function setObjective(msg,col){G.objective=msg||null;G.objectiveCol=col||'#57e86b';}
 function after(sec,fn){G.timers.push({t:sec,fn});}
 
 // each controller remembers its colour between sessions; duplicates resolve
@@ -1772,7 +1807,7 @@ function startRun(mode){
   G.bankSeen=0;G.bankFlash=0;
   G.mobDmgAcc=0;G.fightT=0;G.waveDPS=0;G.killsWave=0;
   G.slotChest=null;G.reel=null;G.lastJack=false;G.vacuumT=0;
-  G.flashMsg=null;G.flashT=0;G.subFlash=null;G.subFlashT=0;
+  G.flashMsg=null;G.flashT=0;G.subFlash=null;G.subFlashT=0;G.subQueue=[];G.objective=null;
   G.tileOverride.clear();chunkCanvases.clear();
   pads.forEach((pi,i)=>{G.players.push(makePlayer(i,pi,(i%2)*30-15,Math.floor(i/2)*30-15));});
   G.startWave=mode==='rush'?clamp(G.rushStart||1,1,RUSH_WAVES.length):1;
@@ -1815,7 +1850,7 @@ function startRun(mode){
       // The next boss prices off what the party actually did here, as usual.
       G.lastBossDPS=rushSkipDPS(S)*Math.max(1,G.players.length)*0.6;
       G.texts.length=0; // applyBuff pings — dozens of them stacked on spawn
-      G.flashMsg=null;G.flashT=0;G.subFlash=null;G.subFlashT=0; // relic banners
+      G.flashMsg=null;G.flashT=0;G.subFlash=null;G.subFlashT=0;G.subQueue=[];G.objective=null; // relic banners
     }
     // the levels a real run would have banked on the way here, paid as picks:
     // the party drafts them before the boss walks in
@@ -1837,19 +1872,30 @@ function resetRun(){startRun(G.mode);}
 // champion). Gems are priced at runtime via xpNeed(current level), so the
 // budget scales with party size and self-corrects a behind-schedule party.
 const CLASSIC_WAVES=[
-// Waves 1-5 are the Slagmaw arc: the break after wave 1 descends into the
-// volcano, and every wave until the boss rehearses one of its primitives
-// with fauna that glows in the boss's colours (see VOLC).
-{n:14,dur:30,mix:{chaser:1},elite:0,lv:{b:1,x:0}},
-{n:64,dur:60,mix:{chaser:0.7,swarm:0.5,smasher:0.8,burster:0.7,fireslug:0.6},elite:0,pattern:'lavamix',lv:{b:2,x:0}},
-{n:26,dur:60,mix:{chaser:1,swarm:0.8,spitter:0.4},elite:0,pattern:'slugforge',lv:{b:4,x:0}},
-{n:76,dur:60,mix:{chaser:1,swarm:1.6,spitter:0.5,tank:0.12},elite:0,pattern:'pressure',lv:{b:3,x:0}},
-{boss:0,dur:120},
-{n:34,dur:45,mix:{chaser:1,swarm:0.9,spitter:0.7,tank:0.2,bomber:0.3},elite:0,pattern:'creep',lv:{b:2,x:1}},
-{n:40,dur:48,mix:{chaser:0.9,swarm:1.1,spitter:0.7,tank:0.2,bomber:0.4},elite:0.02,pattern:'band',lv:{b:2,x:3}},
-{n:46,dur:50,mix:{chaser:0.8,swarm:0.9,spitter:0.9,tank:0.35,bomber:0.4},elite:0.03,pattern:'collapse',lv:{b:1,x:3}},
-{n:52,dur:52,mix:{chaser:0.8,swarm:1.0,spitter:0.9,tank:0.35,bomber:0.5},elite:0.06,pattern:'swarm',lv:{b:3,x:1}},
-{boss:1,dur:100},
+// Waves 1-10 are THE RAID (v3, 2026-08-31): a WoW dungeon's grammar over
+// the survivor loop. SURFACE BLOCK 1-4 is pure mowing plus marked stat
+// elites (no curriculum — the power fantasy first), wave 5 is the
+// mini-boss check SLAUGHTERHULK (its own kit self-telegraphs: the beam
+// pin and the red cleaver line), and the break after it is the DESCENT.
+// VOLCANO BLOCK 6-9 rehearses Slagmaw one primitive at a time, in its
+// colours (VOLC): red trails (fire slugs), the gold swell that THROWS you
+// (bursters, remade as an attack), the forge pull with smashers (orange
+// disc + offerings heal), and THE SLAG AUGUR — a caster mini-boss that
+// runs the boss's own P2 rites (cinder ring / brand / inward ring).
+// Wave 10 is SLAGMAW, met at ~L9-10 with passives online; the kill is the
+// ASCENT. Counts in 1-10 are authored (dpsFactor is 1 there), sized so a
+// decent party clears late in the timer — slightly behind is the feel.
+// `obj:[text,col]` = the standing HUD objective for pattern-less lessons.
+{n:14,dur:30,mix:{chaser:1},elite:0,lv:{b:0,x:0}},
+{n:30,dur:45,mix:{chaser:1,swarm:0.5},elite:0,lv:{b:1,x:0}},
+{n:36,dur:50,mix:{chaser:0.9,swarm:0.8,spitter:0.2},elite:0.07,lv:{b:0,x:0}},
+{n:40,dur:55,mix:{chaser:0.8,swarm:1.1,spitter:0.4,bomber:0.2},elite:0.05,lv:{b:1,x:0}},
+{boss:0,dur:75},
+{n:38,dur:50,mix:{chaser:1,swarm:0.8,fireslug:0.5},elite:0,lv:{b:1,x:0},obj:['DON\'T STAND IN THE RED TRAILS','#ff3c3c']},
+{n:42,dur:55,mix:{chaser:0.9,swarm:0.7,fireslug:0.5,burster:0.7},elite:0,lv:{b:1,x:0},obj:['GOLD SWELLS THROW YOU — MIND THE RED FLOOR','#ffd23e']},
+{n:24,dur:60,mix:{chaser:0.6,smasher:1},elite:0,pattern:'slugforge',lv:{b:1,x:1}},
+{n:30,dur:60,mix:{chaser:0.8,swarm:0.7,smasher:0.5,spitter:0.3},elite:0,pattern:'augur',lv:{b:2,x:1}},
+{boss:1,dur:120},
 {n:54,dur:52,mix:{chaser:0.7,swarm:1.0,spitter:1.0,tank:0.4,bomber:0.5},elite:0.05,pattern:'stonefall',lv:{b:2,x:1}},
 {n:58,dur:55,mix:{chaser:0.7,swarm:1.1,spitter:1.0,tank:0.45,bomber:0.6},elite:0.06,pattern:'wards',lv:{b:3,x:1}},
 {n:62,dur:55,mix:{chaser:0.6,swarm:1.0,spitter:1.1,tank:0.5,bomber:0.6},elite:0.08,pattern:'band',lv:{b:3,x:4}},
@@ -1914,7 +1960,7 @@ const rushGrowth=w=>((w-1)%6===0&&w>1)?1.28:1.12;
 // bosses 2-4 additionally floor their hp on the party's measured output on
 // the previous kill — same mechanism as rush — so an over-drafted party
 // can't melt the back half of the campaign.
-const CLASSIC_TTK=[120,130,140,150];
+const CLASSIC_TTK=[70,120,135,150]; // v3: mini-boss check, then the three raid fights
 // measured dps growth between consecutive classic bosses (five farm waves,
 // the boss-kill level burst, and — after boss 1 — the ultimate unlock).
 // Geomean of tools/balance-model.mjs runs; g1→2 is deliberately far under
@@ -1933,7 +1979,7 @@ const CLASSIC_GROWTH=[2.6,2.6,1.8];
 // Recalibrated 2026-08-26 after tiered mobs (husks/barges): tanky minorities
 // absorb AoE with little overkill, so the saturated waveDPS read jumped ~2×
 // closer to true throughput and every ρ had to come down with it.
-const CLASSIC_RHO=[0.75,0.45,1.2,1.85];
+const CLASSIC_RHO=[0.75,0.75,1.2,1.85]; // v3 slots: hulk (unmeasured, borrows slagmaw's), slagmaw, pyraxis, worldeater
 // classic and rush share the wave machine, the arena and the boss roster
 const isCampaign=()=>G.mode!=='endless';
 const waveTable=()=>G.mode==='rush'?RUSH_WAVES:CLASSIC_WAVES;
@@ -1987,6 +2033,12 @@ function spawnEnemy(type,x,y,eliteMul){
     huntLv:0, hunted:false, life:-1
   };
   if(type==='smasher')e.sm={st:'hunt',cd:1+Math.random()*1.5,t:0,tel:null};
+  // a rehearsal mob's job is to ARRIVE and cast: against a party's combined
+  // auto-fire a base smasher died on the approach (2p probes: 0-4 slams a
+  // wave by seed), so smashers and bursters grow with the roster like the quota does
+  if((type==='smasher'||type==='burster')&&isCampaign()){
+    const n=Math.max(1,G.players.length);e.hp=e.maxhp=e.hp*(0.75+0.25*n);
+  }
   else if(type==='fireslug')e.fs={dripT:0.3};
   G.enemies.push(e);
   if(eliteMul&&eliteMul>1){
@@ -2309,8 +2361,10 @@ function damageEnemy(e,dmg,owner){
     // volcano fauna: a smasher dies mid-cast → its telegraph fizzles; a
     // burster dies ANY way → it pops
     if(e.sm){if(e.sm.tel){e.sm.tel.t=0;e.sm.tel=null;}if(e.sm.st==='cast')G.smCasting=Math.max(0,G.smCasting-1);}
-    if(e.type==='burster')bursterPop(e);
+    // (burster v2: killed before its swell finishes it just dies — no pop)
     if(e.behemoth){e.behemoth.st='dead';behemothDie(e);}
+    if(e.forgeTarget)forgeBreak(e);
+    if(e.augurTarget)augurBreak(e);
     dropLoot(e);
     if(e.boss){
       if(G.boss===e)G.boss=null;
@@ -3299,8 +3353,9 @@ function takeOffer(pick,forced){
   if(res==='chain'){
     const first=shuffle(SCHOOLS[pick.p.school].first.slice());
     pick.offers=first.slice(0,3).map(id=>({kind:'new',id}));
-    pick.sel=1;
+    pick.sel=1;pick.chain=1; // the render titles this row "PICK YOUR FIRST SPELL"
     pick.openT=0; // new cards: re-arm the confirm grace
+    G.levelupT=0; // ...and the hostage clock: the chained row is a NEW choice
     if(forced){
       pick.done=true;
       applyOffer(pick.p,pick.offers[(Math.random()*pick.offers.length)|0]);
@@ -4168,7 +4223,17 @@ const SLAGMAW={
  // hpClassic solved 2026-08-28 (balance-model solve, post-arc runs): the party
  // now arrives L7-10 with the rehearsal kit and 9500 died in 40-90s
  // bumped 17000 → 22000 (owner, 2026-08-28: it was still under the 120s target)
- id:'slagmaw',name:'SLAGMAW',hp:9500,hpClassic:25000,dur:120,r:20,sp:40,dmg:16,xp:120,
+ // 2026-08-31 (arc v2, authored density + lean budgets): the party now arrives
+ // L5-7 and the 25000 floor made the fight unkillable solo (600s+ in the
+ // probe). The FIGHT is unchanged; only the price: the flat floor drops so
+ // the DPS-priced term (CLASSIC_RHO × waveDPS × CLASSIC_TTK, spawnClassicBoss)
+ // does the pricing, and the flat number is the sandbag floor under it.
+ // v3 (boss moved to wave 10): the party now arrives ~L9-10 with passives
+ // online, so the floor climbs back toward the pre-arc solve (was 9500 for
+ // the L5 arrival; 25000 was the L7-10 v1 price). Probe-checked.
+ // (20000 sat on the wrong side of the P2 heal cliff for a weak solo — the
+ // fight stalled once un-intercepted offerings out-healed the party's dps)
+ id:'slagmaw',name:'SLAGMAW',hp:9500,hpClassic:17000,dur:120,r:20,sp:40,dmg:16,xp:120,
  spr:slagmawSprite,scale:2,barCol:VOLC.slam,phaseCount:3,gates:[0.66,0.33],minCasts:4,
  transName:e=>e.phase>=3?'THE CAULDRON CRACKS':'THE FORGE OPENS',
  aiInit:()=>({mode:'intro',t:2.5,cast:null,castT:0,castLen:0,walk:2.2,next:'slam',cyc:0,pupT:12,step:0,
@@ -5516,7 +5581,9 @@ const hulkRageSprite=makeSprite([
 const SLAUGHTERHULK={
  // seed hp for the whole adaptive chain: the draft party deals ~60 dps, so
  // this is what a ~2 minute opening fight costs
- id:'hulk',mus:'slagmaw',name:'SLAUGHTERHULK',hp:7400,r:18,sp:30,dmg:18,xp:90,dur:75,
+ // hpClassic (v3): the wave-5 mini-boss check, ~70s for an L4 party with
+ // starter kits; the DPS-priced floor (CLASSIC_RHO/TTK) does the adapting
+ id:'hulk',mus:'slagmaw',name:'SLAUGHTERHULK',hp:7400,hpClassic:4500,r:18,sp:30,dmg:18,xp:90,dur:75,
  spr:hulkSprite,scale:2,barCol:'#c9a48b',phaseCount:2,gates:[0.50],minCasts:2,
  transName:'IT STOPS FEELING PAIN',
  // the soft enrage rides the fight-length target, not a fixed 80s
@@ -7366,7 +7433,10 @@ const BLADEDANCER={
    }
  }};
 
-const CLASSIC_BOSSES=[SLAGMAW,GEMINOX,PYRAXIS,WORLDEATER];
+// v3: SLAUGHTERHULK opens as the wave-5 mini-boss check and SLAGMAW is the
+// wave-10 raid encounter. GEMINOX leaves CLASSIC (still the tier-2 capstone
+// in BOSS RUSH — code and roster untouched, kept handy).
+const CLASSIC_BOSSES=[SLAUGHTERHULK,SLAGMAW,PYRAXIS,WORLDEATER];
 // BOSS RUSH order: the roster climbs from single-mechanic checks to the full
 // raid encounters, with the original four as the tier capstones.
 const RUSH_ROSTER=[
@@ -7458,23 +7528,30 @@ const jumperSprite=makeSprite([
 ],{C:'#4ac8d8',W:'#10202a'});
 const PATTERN_NAMES={band:'THE BAND',polarity:'POLARITY',swarm:'THE SWARM',jumpers:'JUMPERS',encircle:'THE ENCIRCLE',
   creep:'THE CREEP',dance:'THE DANCE',stonefall:'STONEFALL',collapse:'THE COLLAPSE',wards:'THE WARDS',
-  lavamix:'THE LAVA MIX',slugforge:'THE SLUG FORGE',pressure:'VOLCANIC PRESSURE'};
+  lavamix:'THE SMASHERS',slugforge:'THE OFFERING',pressure:'THE CINDER VENTS',augur:'THE SLAG AUGUR'}; // arc names; ids kept (lavamix and pressure are benched from the v3 table, handy)
 // share of the normal spawn drip a pattern wave keeps — the pattern brings the rest
 // terrain waves (v2): the floor is the choreography and the drip is the
 // harvest, so they keep most of it — except the creep, whose spores ARE the wave
 const PATTERN_QUOTA={band:0.75,polarity:0.65,swarm:0.6,jumpers:0.75,encircle:0.45,
   creep:0.5,dance:0.7,stonefall:0.6,collapse:0.8,wards:0.6,
-  lavamix:1.0,slugforge:0.45,pressure:0.8};
+  lavamix:1.0,slugforge:0.6,pressure:0.8,augur:0.7};
 // ---- the number spine ----
 // Density: counts scale with the party's MEASURED clearing output (G.waveDPS)
 // against the output the base counts were tuned at, so every pattern keeps
 // its engagement time while the body count climbs — struggling to kill 20 at
 // wave 2 and mowing 200 at wave 16 is the progression fantasy, by design.
 const REF_DPS=55; // solo wave-2 clearing output baseline (calibrated by sim)
+// Owner call 2026-08-31: the Slagmaw arc (waves 1-5) is AUTHORED — fixed
+// counts, so a strong party earns a breather instead of a thicker screen —
+// and past it the factor is capped low. The old 14x ceiling turned every
+// point of dps into more bodies, particles and gems: the game could never
+// let the party feel underpowered, and the boss telegraphs drowned in 4p.
+const DPS_FACTOR_CAP=1.5;
 function dpsFactor(){
+  if(isCampaign()&&G.wave<=10)return 1; // the whole raid arc is authored
   const n=Math.max(1,G.players.length);
   const ref=REF_DPS*(0.55+0.45*n);
-  return G.waveDPS>0?clamp(G.waveDPS/ref,1,14):1;
+  return G.waveDPS>0?clamp(G.waveDPS/ref,1,DPS_FACTOR_CAP):1;
 }
 // XP: budgets are authored in LEVELS (lv:{b,x} on the wave table) and priced
 // here at the party's current position, so party size and schedule deficits
@@ -7570,26 +7647,33 @@ function initWavePattern(id,def){
     P.planned=P.bursts+Math.round(d*0.8*2);
     P.xpPool=base+bonus;
   }else if(id==='lavamix'){
-    // Slagmaw rehearsal 1: the drip itself carries the three volcano mobs;
+    // Slagmaw rehearsal 1 (THE SMASHERS): the drip carries the smashers;
     // any budget the thinned natural xp doesn't cover rides on the drip
-    P.events=[0.08*d];P.capBonus=Math.round(50*Math.min(F,4)); // the mix needs bodies on screen to be read
-    P.planned=G.waveQuota;P.xpPool=base;P.dripXp=1;P.seen={};
+    P.events=[0.05*d];P.capBonus=Math.round(50*Math.min(F,4));
+    P.planned=G.waveQuota;P.xpPool=base;P.dripXp=1;
   }else if(id==='slugforge'){
-    // Slagmaw rehearsal 2 (the offerings): slug columns march to a forge;
-    // every one that arrives is xp the party only gets 40% of back
-    // columns end by ~63% so the behemoth gets a real window before it sinks
-    // swarm-paced (think wave 15's carpet): a fast, soft flood from every edge
+    // Slagmaw rehearsal 2 (THE OFFERING): slug columns march to the forge
+    // and heal it; the slugs carry the base budget, the forge kill pays the
+    // execution bonus. swarm-paced: a fast, soft flood from every edge
     P.events=[0.05*d,0.08*d,0.22*d,0.36*d];P.capBonus=Math.round(170*Math.min(F,6));
-    P.window=d*0.42; // columns done by ~50%: the behemoth gets the back half
-    P.rate0=Math.min(1.8*F,640/P.window);
+    P.window=d*0.42; // columns done by ~50%: the back half is for finishing the forge
+    P.rate0=Math.min(1.2*F,640/P.window); // v1 was 1.8: a thinner column, so each intercept matters
     P.planned=Math.round(P.rate0*(G.cam.h/90)*P.window*1.2);
-    P.xpPool=base+bonus;
-    P.forge={e:null,heat:0,fedXp:0,st:'idle',heatMax:Math.max(6,Math.round(P.planned*0.45)),orbs:0};
+    P.xpPool=base;
+    P.forge={e:null,heat:0,fedXp:0,st:'idle',heatMax:Math.max(6,Math.round(P.planned*0.45)),orbs:0,bonusXp:bonus};
   }else if(id==='pressure'){
-    // Slagmaw rehearsal 3 (the rings and the cracked floor): vents fire the
-    // honest cinder ring and the inward ring; lava rivers cut the screen
+    // Slagmaw rehearsal 3 (THE CINDER VENTS): the vents fire the honest
+    // cinder ring — run to the source; lava rivers cut the screen (red)
     P.events=[0.06*d];P.capBonus=Math.round(110*Math.min(F,4));
     P.planned=G.waveQuota;P.xpPool=base+bonus;P.dripXp=1; // a thick drip, each body worth little
+  }else if(id==='augur'){
+    // THE SLAG AUGUR (wave 9 mini-boss): a rooted caster that runs Slagmaw's
+    // P2 rites — cinder ring, ember brand, inward ring — as the dress
+    // rehearsal for the two mechanics nothing else teaches. Kill pays the
+    // execution bonus; at 85% of the wave it sinks with it.
+    P.events=[0.06*d];P.capBonus=Math.round(60*Math.min(F,4));
+    P.planned=G.waveQuota;P.xpPool=base;P.dripXp=1;
+    P.aug={e:null,st:'idle',t:2.5,k:0,bonusXp:bonus}; // first rite fast, so even a focused kill shows ≥3
   }
   return P;
 }
@@ -7625,6 +7709,7 @@ function tickWavePattern(dt,maxAlive){
     else if(P.id==='wards')wardsStart(P,alive);
     else if(P.id==='lavamix')lavamixStart(P);
     else if(P.id==='slugforge')slugforgeEvent(P,alive);
+    else if(P.id==='augur')augurStart(P,alive);
     else if(P.id==='pressure')pressureStart(P,alive);
   }
   // the VS carpet: swarm waves also trickle continuously between bursts
@@ -7642,6 +7727,7 @@ function tickWavePattern(dt,maxAlive){
   if(P.wards)wardsTick(P,dt,alive,room);
   if(P.forge)slugforgeTick(P,dt,alive);
   if(P.pr)pressureTick(P,dt,alive);
+  if(P.aug&&P.aug.e)augurTick(P,dt,alive);
   // the floor bites without a boss to bite for it: creep and void DoT live in
   // Pyraxis/Worldeater AI, so a terrain wave ticks its own
   if(!G.boss&&(G.creep||G.voidTiles)){
@@ -7938,34 +8024,68 @@ function wardsTick(P,dt,alive,room){
 }
 // ================= THE SLAGMAW ARC (waves 2-4) =================
 // Three rehearsals of the wave-5 boss with its own primitives and colours:
-// orange = the slam, gold = the burst/ring, red = lava. See TODO-waves.md.
-// 6) THE LAVA MIX — the drip is seasoned with smashers, bursters and fire
-// slugs; nothing to do but learn what each colour means
-const LAVAMIX_CALL={smasher:'SMASHER — STEP OUT OF THE ORANGE',burster:'BURSTER — IT POPS WHEN IT DIES',fireslug:'FIRE SLUG — DON\'T STAND IN ITS TRAIL'};
+// orange = the slam, gold = offerings/ring, red = lava. See TODO-waves.md.
+// v2 (2026-08-31): ONE mechanic per wave, taught by repetition and a
+// standing HUD objective line, never by mid-fight text. The bursters and
+// fire slugs are benched (code kept, like Jumpers/Polarity) — the burster
+// popped wherever an auto-targeted spell happened to kill it, which tested
+// nothing the player controls.
+// 6) THE SMASHERS (pattern id 'lavamix') — the drip is smashers: rush,
+// plant, orange disc, slam that shoves. The boss's slam, twenty times.
 function lavamixStart(P){
   flash(PATTERN_NAMES.lavamix+'!');
-  subFlash('ORANGE SLAMS. GOLD BURSTS. RED BURNS',3.2);
+  setObjective('STEP OUT OF THE ORANGE DISC — IT THROWS YOU',VOLC.slam);
   sfx('spreadcall');
 }
-// 7) THE SLUG FORGE — slug columns march at a cold forge in the middle of
-// the screen (the Slagmaw offering walk). Every slug that arrives heats the
-// forge; when the columns stop, the forge wakes as a SLAG BEHEMOTH that
-// bleeds back 40% of the xp it ate, in orbs, as its health bar is broken.
-// The fastest xp is killing slugs on the march — feeding is the tax.
+// 7) THE OFFERING (pattern id 'slugforge') — slug columns march at THE SLAG
+// FORGE in the middle of the screen, exactly Slagmaw P2's offering walk:
+// every slug that arrives HEALS the forge (the boss's FED!), so an
+// un-intercepted forge cannot be killed. Killing it pays the wave's
+// execution bonus; the slugs themselves stay the fastest xp.
+// sized so an un-intercepted column (~5 slugs/s) out-heals a wave-3 party's
+// whole output, and intercepting most of it leaves a ~30s kill
+const FORGE_HEAL=0.006;  // of max hp per fed slug
+const FORGE_HP=320;      // × hpScale × party factor, see forgeSpawn
 function slugforgeEvent(P,alive){
   if(P.ei===1){forgeSpawn(P);return;}
   const S=P.sf=P.sf||{t:0,acc:0};
   S.t=P.window/3;S.acc=2+alive.length;
-  if(P.ei===2){flash(PATTERN_NAMES.slugforge+'!');subFlash('FEED THE FORGE OR KILL THE SLUGS — YOUR CALL',3.4);}
+  if(P.ei===2){flash(PATTERN_NAMES.slugforge+'!');setObjective('KILL THE SLUGS BEFORE THEY REACH THE FORGE — THEY HEAL IT',VOLC.burst);}
   sfx('spreadcall');
 }
 function forgeSpawn(P){
-  const f=patField();
+  const f=patField(),n=Math.max(1,G.players.length);
   const e=spawnEnemy('tank',f.x,f.y);
-  e.spr=forgeSprites[0];e.scale=3;e.r=16;e.sp=0;e.hp=e.maxhp=1e9;
-  e.vulnMul=0;e.noTouch=1;e.xp=0;e.dmg=0;e.forge=P.forge;e.life=-1;
+  e.spr=forgeSprites[0];e.scale=3;e.r=16;e.sp=0;
+  e.hp=e.maxhp=Math.round(FORGE_HP*hpScale()*(0.7+0.3*n));
+  // COLD until the columns have been marching ~5s (about when the first
+  // slugs arrive): a cold forge cannot be hurt and auto-fire ignores it, so
+  // a party standing on it cannot break it before the offering has even
+  // started — the heal has to be SEEN before the forge can be fought
+  e.vulnMul=0;e.noTouch=1;e.xp=0;e.dmg=0;e.forge=P.forge;e.forgeTarget=1;e.life=-1;
+  e.name='THE SLAG FORGE';
   P.forge.e=e;
   addParticles(e.x,e.y,'#8a8a96',20,120);sfx('crack');G.shake=Math.max(G.shake,3);
+}
+// the forge dies: slag bursts, and the wave's execution bonus fountains out
+// of it as orbs (the same flight the behemoth's chunks used)
+function forgeBreak(e){
+  const Fg=e.forge;if(!Fg||Fg.st==='dead')return;
+  Fg.st='dead';
+  const x=e.x,y=e.y;
+  G.fx.push({kind:'boom',x,y,r:80,t:0.4,dur:0.4});
+  pushRing(null,x,y,{rmax:150,spd:320,dir:1,gaps:0,gapW:0,pct:0,w:12,dur:0.47,t:0.47,col:VOLC.burst});
+  after(0.15,()=>{G.fx.push({kind:'boom',x,y,r:110,t:0.4,dur:0.4});});
+  addParticles(x,y,VOLC.burst,60,200);addParticles(x,y,'#3a3238',30,140);addSparkles(x,y-10,VOLC.burst,20,120);
+  const pool=Math.max(0,Math.round(Fg.bonusXp||0)),orbs=pool>0?Math.min(16,pool):0;
+  for(let i=0;i<orbs;i++){
+    const v=Math.round(pool/orbs*(i+1))-Math.round(pool/orbs*i);
+    if(v<=0)continue;
+    const an=Math.random()*TAU,spd=160+Math.random()*240;
+    if(G.gems.length>350){G.gems[(Math.random()*G.gems.length)|0].v+=v;continue;}
+    G.gems.push({x:x+Math.cos(an)*e.r,y:y+Math.sin(an)*e.r,v,t:0,vx:Math.cos(an)*spd,vy:Math.sin(an)*spd});
+  }
+  flash('THE FORGE BREAKS');sfx('boom');G.shake=Math.max(G.shake,12);
 }
 function slugSpawn(P,side){
   const c=G.cam;
@@ -7993,10 +8113,19 @@ function slugforgeTick(P,dt,alive){
     S.t-=dt;S.acc+=dt*P.rate0*(G.cam.h/90);
     while(S.acc>=1&&G.enemies.length<520){S.acc--;slugSpawn(P,(Math.random()*4)|0);}
   }
-  if(!fe||fe.dead)return;
-  // slugs that reach the forge touch it and vanish, in every state: they
-  // feed the cold forge, and the standing behemoth swallows them on contact
-  // (so the columns never shove it around)
+  if(!fe||fe.dead||Fg.st!=='idle')return;
+  // the forge LIGHTS ~5s into the march and only then can be broken
+  if(!Fg.lit&&S){
+    Fg.litT=(Fg.litT||0)+dt;
+    if(Fg.litT>5){
+      Fg.lit=true;fe.vulnMul=1;fe.flash=0.2;
+      addText(fe.x,fe.y-fe.r-14,'IT LIGHTS',VOLC.burst);
+      addSparkles(fe.x,fe.y-12,VOLC.burst,14,80);addParticles(fe.x,fe.y,VOLC.slam,12,90);
+      sfx('crack');G.shake=Math.max(G.shake,3);
+    }
+  }
+  // slugs that reach the forge touch it and vanish: each one HEALS it (the
+  // boss's FED!), with the same gold pop and the same word
   let live=0;
   for(const e of G.enemies){
     if(e.dead||!e.slug)continue;
@@ -8005,42 +8134,26 @@ function slugforgeTick(P,dt,alive){
     // mouth reaches a little further than the sprite
     if(dist2(e.x,e.y,fe.x,fe.y)<(fe.r+14)*(fe.r+14)){
       e.dead=true;Fg.heat++;Fg.fedXp+=e.xp;
+      fe.hp=Math.min(fe.maxhp,fe.hp+FORGE_HEAL*fe.maxhp);
       addParticles(e.x,e.y,VOLC.burst,8,80);
-      if(Fg.st==='idle'){
-        if(Fg.heat%5===1)addText(fe.x,fe.y-fe.r-14,'FED',VOLC.burst);
-        fe.spr=forgeSprites[Fg.heat>=Fg.heatMax*0.45?2:(Fg.heat>=Fg.heatMax*0.15?1:0)];
-      }else if(e.shedChunk===undefined&&fe.shedChunk){
-        // late arrivals still count: 40% of them goes into the shed pool
-        fe.shedChunk.pool+=Math.round(e.xp*0.4);
-      }
+      if(Fg.heat%3===1)addText(fe.x,fe.y-fe.r-14,'FED!',VOLC.burst);
+      fe.spr=forgeSprites[Fg.heat>=Fg.heatMax*0.45?2:(Fg.heat>=Fg.heatMax*0.15?1:0)];
       fe.flash=0.08;
       if(Math.random()<0.3)sfx('vent');
     }
   }
-  if(Fg.st==='idle'){
-    // a hot forge glows and throws embers, so the heat reads without the bar
-    const hk=clamp(Fg.heat/Fg.heatMax,0,1);
-    if(hk>0.05&&Math.random()<dt*(2+16*hk))addSparkles(fe.x+(Math.random()-0.5)*24,fe.y-12,hk>0.5?VOLC.lava:VOLC.slam,1,50);
-    const spent=P.ei>=P.events.length&&(!S||S.t<=0);
-    if((spent&&live===0)||G.waveT>def.dur*0.5)forgeAwaken(P);
-  }else if(Fg.st==='waking'){
-    // 1.6s of shaking and cracking before it stands up
-    Fg.wakeT-=dt;
-    const k=clamp(1-Fg.wakeT/1.6,0,1);
-    fe.hopY=(2+6*k)*Math.sin(G.time*(30+40*k));
-    fe.flash=0.06;
-    if(Math.random()<dt*(6+30*k))addParticles(fe.x+(Math.random()-0.5)*30,fe.y+(Math.random()-0.5)*20,k<0.5?'#8a8a96':VOLC.lava,2,80);
-    if(Math.random()<dt*10)addSparkles(fe.x,fe.y-16,VOLC.burst,2,60);
-    G.shake=Math.max(G.shake,1+3*k);
-    if(Fg.wakeT<=0)forgeStand(P);
-  }else if(Fg.st==='live'){
-    Fg.liveT=(Fg.liveT||0)+dt;
-    // it stays at least 30s once awake, whatever the clock says
-    if(Fg.liveT>30){
-      fe.dead=true;Fg.st='gone';
-      flash('IT SINKS INTO THE SLAG');sfx('douse');
-      addParticles(fe.x,fe.y,VOLC.lava,30,140);
-    }
+  // a fed forge glows and throws embers
+  const hk=clamp(Fg.heat/Fg.heatMax,0,1);
+  if(hk>0.05&&Math.random()<dt*(2+16*hk))addSparkles(fe.x+(Math.random()-0.5)*24,fe.y-12,hk>0.5?VOLC.lava:VOLC.slam,1,50);
+  // still standing once the columns are spent and the last slug is in (plus
+  // a few seconds' grace to finish it), or at 85% of the wave: it sinks,
+  // and the bonus sinks with it
+  const spent=P.ei>=P.events.length&&(!S||S.t<=0);
+  if(spent&&live===0)Fg.graceT=(Fg.graceT||0)+dt;
+  if((spent&&live===0&&Fg.graceT>10)||G.waveT>def.dur*0.85){
+    fe.dead=true;Fg.st='gone';
+    flash('IT SINKS INTO THE SLAG');sfx('douse');
+    addParticles(fe.x,fe.y,VOLC.lava,30,140);
   }
 }
 function forgeAwaken(P){
@@ -8127,7 +8240,7 @@ function volcanoesRise(){
   // the whole map turns: lava rivers everywhere (tileType), and a first ring
   // of vents rising around the party; every chunk beyond grows its own
   setTerrain('pressure');G.ventChunks=new Set();
-  const nv=n>=3?9:7;
+  const nv=n>=3?7:5; // fewer vents than v1 (7/9): one fires at a time, so the field only needs to keep one near
   G.preVolc=[];
   const a0=Math.random()*TAU;
   for(let i=0;i<nv;i++){
@@ -8156,7 +8269,7 @@ function pressureStart(P,alive){
   }
   G.preVolc=null;
   for(const v of vols){v.rise=1;v.scale=2.5;P.pr.vols.push(v);}
-  flash(PATTERN_NAMES.pressure+'!');subFlash('HUG THE VENTS — THE RING IS BORN OUTSIDE',3.4);
+  flash(PATTERN_NAMES.pressure+'!');setObjective('RUN TO THE GLOWING VENT — THE WHITE DISC IS SAFE',VOLC.burst);
   sfx('crack');G.shake=Math.max(G.shake,8);
 }
 const pressureDmg=()=>10*dmgScale();
@@ -8185,26 +8298,23 @@ function pressureTick(P,dt,alive){
   if(!R.vols.length){P.pr=null;return;}
   R.t-=dt;
   if(R.t<=0&&G.waveT<def.dur*0.9){
-    R.t=4.0;
-    // only vents the party can see fire — rings off-screen teach nothing;
-    // with several in view, two go off together (one of each kind)
+    R.t=4.0; // disc 1.2s + ring flight ~2.4s: back to back, one source at a time
+    // ONE vent at a time, and always the one nearest the party: the answer
+    // to the gold ring is "run to the source", so the source must be the
+    // vent you would run to. Rings off-screen teach nothing. (v1 alternated
+    // the inward ring here and fired two vents at once — two opposite rules
+    // from the same object; the inward ring is left to the boss.)
     const c=G.cam,on=R.vols.filter(v=>Math.abs(v.x-c.x)<c.w*0.55&&Math.abs(v.y-c.y)<c.h*0.55);
-    if(!on.length)return;
-    if(on.length>=3){
-      const u=on[(R.k+1)%on.length];
-      inwardRingAt(u.x,u.y);
-    }
-    const v=on[R.k%on.length];R.k++;
-    if(R.k%2){
-      pushSafe(null,v.x,v.y,72,2.3,'#eaffff',0);sfx('telegraph');
-      after(1.2,()=>{
-        if(v.dead)return;
-        cinderRingAt(v,72,95,24,VOLC.burst,0,pressureDmg());sfx('cinder');
-        after(0.4,()=>{if(!v.dead)cinderRingAt(v,72,95,24,VOLC.burst,Math.PI/24,pressureDmg());});
-      });
-    }else{
-      inwardRingAt(v.x,v.y);
-    }
+    if(!on.length||!alive.length)return;
+    let cx=0,cy=0;for(const p of alive){cx+=p.x;cy+=p.y;}cx/=alive.length;cy/=alive.length;
+    let v=on[0],bd=1e18;for(const u of on){const d=dist2(u.x,u.y,cx,cy);if(d<bd){bd=d;v=u;}}
+    R.k++;
+    pushSafe(null,v.x,v.y,72,2.3,'#eaffff',0);sfx('telegraph');
+    after(1.2,()=>{
+      if(v.dead)return;
+      cinderRingAt(v,72,95,24,VOLC.burst,0,pressureDmg());sfx('cinder');
+      after(0.4,()=>{if(!v.dead)cinderRingAt(v,72,95,24,VOLC.burst,Math.PI/24,pressureDmg());});
+    });
   }
   // the vents stand down once the harvest is gone, so the wave can clear
   if(G.waveSpawned>=G.waveQuota&&G.enemies.every(e=>e.dead||e.volcano)){
@@ -8213,6 +8323,104 @@ function pressureTick(P,dt,alive){
     setTerrain(null);G.ventChunks=null;
     flash('THE VENTS COOL');
   }
+}
+// 9) THE SLAG AUGUR — the wave-9 mini-boss: a rooted caster in Slagmaw's
+// colours running the boss's own P2 rotation (cinder ring / ember brand /
+// inward ring), so both otherwise-untaught mechanics get their rehearsal
+// from one named teacher. It cannot be shoved (rooted prop) and its hp is
+// sized to survive ~4-5 rites under focus fire.
+const augurSprite=makeSprite([
+'...KRRRK...',
+'..KRWWWRK..',
+'..KRWMWRK..',
+'...KRRRK...',
+'..DKDDDKD..',
+'.DKRDDDRKD.',
+'.DKDDDDDKD.',
+'.DKDDDDDKD.',
+'..KDDDDDK..',
+'..KK...KK..'
+],{K:'#1c1010',R:'#ff3c3c',W:'#ffd23e',M:'#fff8e0',D:'#453a52'});
+// sized to survive ~4-5 rites under focus fire (it died in 7.6s at 340 —
+// before its first cast — in the wave-9 probe)
+const AUGUR_HP=900;
+function augurStart(P,alive){
+  const f=patField(),n=Math.max(1,G.players.length);
+  const e=spawnEnemy('tank',f.x,f.y);
+  e.spr=augurSprite;e.scale=2.2;e.r=12;e.sp=0;
+  // steeper party scale than the forge's (0.7+0.3n): a mini-boss must
+  // survive its rites against combined focus fire — at the shallow scale a
+  // 3p party broke it after ONE cast and the rehearsal never happened
+  e.hp=e.maxhp=Math.round(AUGUR_HP*hpScale()*(0.3+0.7*n));
+  e.vulnMul=1;e.noTouch=1;e.xp=0;e.dmg=0;e.life=-1;
+  e.augurTarget=1;e.aug=P.aug;
+  e.name='THE SLAG AUGUR';
+  P.aug.e=e;P.aug.st='live';
+  flash(PATTERN_NAMES.augur+'!');
+  setObjective('BREAK THE SLAG AUGUR — SURVIVE ITS RITES',VOLC.lava);
+  addParticles(e.x,e.y,VOLC.lava,24,130);sfx('crack');G.shake=Math.max(G.shake,5);
+}
+function augurTick(P,dt,alive){
+  const A=P.aug,e=A.e,def=waveDef(G.wave);
+  if(!e||e.dead){P.aug=null;return;}
+  // unbroken at 85% of the wave: it sinks, and the bonus sinks with it
+  if(G.waveT>def.dur*0.85){
+    e.dead=true;A.st='gone';
+    flash('IT SINKS INTO THE SLAG');sfx('douse');
+    addParticles(e.x,e.y,VOLC.lava,30,140);
+    return;
+  }
+  // idle menace: a slow red pulse and drifting embers
+  if(Math.random()<dt*6)addSparkles(e.x+(Math.random()-0.5)*18,e.y-14,Math.random()<0.5?VOLC.lava:VOLC.burst,1,40);
+  if(!alive.length)return;
+  A.t-=dt;
+  if(A.t>0)return;
+  A.t=4.5; // Slagmaw P2's own step cadence is ~3.7s; the rehearsal keeps close to it
+  const s=A.k++%3;
+  if(s===0){
+    // the CINDER RING, exactly as the boss casts it: white disc = safe, ring born on its rim
+    pushSafe(null,e.x,e.y,72,2.3,'#eaffff',0);sfx('telegraph');
+    after(1.2,()=>{
+      if(e.dead)return;
+      cinderRingAt(e,72,95,24,VOLC.burst,0,pressureDmg());sfx('cinder');
+      after(0.4,()=>{if(!e.dead)cinderRingAt(e,72,95,24,VOLC.burst,Math.PI/24,pressureDmg());});
+    });
+  }else if(s===1){
+    // EMBER BRAND: marked players drop lava where they stand when it expires
+    const marked=shuffle(alive.slice()).slice(0,Math.min(2,alive.length));
+    for(const p of marked)pushMark(null,p,{mode:'brand',r:42,t:2.6,dur:2.6,col:VOLC.lava,pct:0});
+    subFlash('SPREAD OUT — DROP IT AWAY',2.6);sfx('brand');
+    after(2.6,()=>{
+      if(e.dead)return;
+      const pts=marked.filter(p=>!p.dead).map(p=>({x:p.x,y:p.y}));
+      for(const q of pts)addParticles(q.x,q.y,VOLC.lava,14,90);
+      if(pts.length===2&&dist2(pts[0].x,pts[0].y,pts[1].x,pts[1].y)<90*90)
+        pushPool(null,(pts[0].x+pts[1].x)/2,(pts[0].y+pts[1].y)/2,64,30,0.05,VOLC.lava,'circle');
+      else for(const q of pts)pushPool(null,q.x,q.y,42,16,0.05,VOLC.lava,'circle');
+      sfx('brand');
+    });
+  }else{
+    // the INWARD RING: the harmless tell races out, the wall collapses in
+    inwardRingAt(e.x,e.y);
+  }
+}
+function augurBreak(e){
+  const A=e.aug;if(!A||A.st==='dead')return;
+  A.st='dead';
+  const x=e.x,y=e.y;
+  G.fx.push({kind:'boom',x,y,r:80,t:0.4,dur:0.4});
+  pushRing(null,x,y,{rmax:150,spd:320,dir:1,gaps:0,gapW:0,pct:0,w:12,dur:0.47,t:0.47,col:VOLC.lava});
+  after(0.15,()=>{G.fx.push({kind:'boom',x,y,r:110,t:0.4,dur:0.4});});
+  addParticles(x,y,VOLC.lava,60,200);addParticles(x,y,'#3a3238',30,140);addSparkles(x,y-10,VOLC.burst,20,120);
+  const pool=Math.max(0,Math.round(A.bonusXp||0)),orbs=pool>0?Math.min(16,pool):0;
+  for(let i=0;i<orbs;i++){
+    const v=Math.round(pool/orbs*(i+1))-Math.round(pool/orbs*i);
+    if(v<=0)continue;
+    const an=Math.random()*TAU,spd=160+Math.random()*240;
+    if(G.gems.length>350){G.gems[(Math.random()*G.gems.length)|0].v+=v;continue;}
+    G.gems.push({x:x+Math.cos(an)*e.r,y:y+Math.sin(an)*e.r,v,t:0,vx:Math.cos(an)*spd,vy:Math.sin(an)*spd});
+  }
+  flash('THE AUGUR BREAKS');sfx('boom');G.shake=Math.max(G.shake,12);
 }
 // 1) THE BAND — an alarm on one screen edge, then a torrent of swarmers
 // floods a lane straight across. A hazard if you stand in it, a farm if you
@@ -8566,18 +8774,26 @@ function renderWavePattern(ctx,W2V,vw,vh){
     const q=W2V(G.descent.mouth.x,G.descent.mouth.y);
     drawSpriteC(ctx,caveMouthSprite,q[0],q[1],2);
   }
-  // the forge's heat bar: steel going red as the slugs feed it
-  if(P&&P.forge&&P.forge.e&&!P.forge.e.dead&&(P.forge.st==='idle'||P.forge.st==='waking')){
-    const Fg=P.forge,q=W2V(Fg.e.x,Fg.e.y),w=56,h=5,k=clamp(Fg.heat/Fg.heatMax,0,1);
-    // the glow under it is the heat: grey steel → red-hot
-    if(k>0.02){
+  // the augur's health bar: same shape as the forge's, in its lava red
+  if(P&&P.aug&&P.aug.e&&!P.aug.e.dead){
+    const q=W2V(P.aug.e.x,P.aug.e.y),w=56,h=5,k=clamp(P.aug.e.hp/P.aug.e.maxhp,0,1);
+    ctx.fillStyle='#000';ctx.fillRect(q[0]-w/2-1,q[1]+23,w+2,h+2);
+    ctx.fillStyle='#3a3a44';ctx.fillRect(q[0]-w/2,q[1]+24,w,h);
+    ctx.fillStyle=P.aug.e.flash>0?'#fff8d0':VOLC.lava;ctx.fillRect(q[0]-w/2,q[1]+24,Math.round(w*k),h);
+  }
+  // the forge's HEALTH bar (gold, the offering colour): it drains under fire
+  // and visibly refills as slugs feed it — that refill IS the lesson. The
+  // glow under it is the heat: how much it has been fed.
+  if(P&&P.forge&&P.forge.e&&!P.forge.e.dead&&P.forge.st==='idle'){
+    const Fg=P.forge,q=W2V(Fg.e.x,Fg.e.y),w=56,h=5,k=clamp(Fg.e.hp/Fg.e.maxhp,0,1),hk=clamp(Fg.heat/Fg.heatMax,0,1);
+    if(hk>0.02){
       const pl=0.8+0.2*Math.sin(G.time*6);
-      ctx.fillStyle='rgba(255,'+Math.round(120-90*k)+',40,'+(0.10+0.35*k*pl).toFixed(3)+')';
-      ctx.beginPath();ctx.arc(q[0],q[1]+2,18+26*k,0,TAU);ctx.fill();
+      ctx.fillStyle='rgba(255,'+Math.round(120-90*hk)+',40,'+(0.10+0.35*hk*pl).toFixed(3)+')';
+      ctx.beginPath();ctx.arc(q[0],q[1]+2,18+26*hk,0,TAU);ctx.fill();
     }
     ctx.fillStyle='#000';ctx.fillRect(q[0]-w/2-1,q[1]+23,w+2,h+2);
     ctx.fillStyle='#3a3a44';ctx.fillRect(q[0]-w/2,q[1]+24,w,h);
-    ctx.fillStyle=k<0.33?'#ff7a1f':(k<0.66?'#ff5a2a':VOLC.lava);ctx.fillRect(q[0]-w/2,q[1]+24,Math.round(w*k),h);
+    ctx.fillStyle=Fg.e.flash>0?'#fff8d0':VOLC.burst;ctx.fillRect(q[0]-w/2,q[1]+24,Math.round(w*k),h);
     // tick marks so a quarter-full bar reads as progress, not noise
     ctx.fillStyle='rgba(0,0,0,0.5)';for(let i=1;i<4;i++)ctx.fillRect(q[0]-w/2+Math.round(w*i/4),q[1]+24,1,h);
   }
@@ -8679,6 +8895,8 @@ function renderWavePattern(ctx,W2V,vw,vh){
 // ---------- wave machine ----------
 function nextWave(){
   G.wave++;
+  G.breakDrafts=0; // per-break draft cap, see the xp gate in update()
+  G.objective=null;
   const def=waveDef(G.wave);
   G.waveState='pre';G.waveT=0;G.cleanT=0;G.waveSpawned=0;G.wavePulses=[];
   G.wavePat=null;
@@ -8696,6 +8914,14 @@ function nextWave(){
     G.waveSpawnGap=(def.dur*0.72)/G.waveQuota;
     G.waveSpawnT=0;
     G.wavePulses=G.wavePat?[]:[0.35,0.70];
+    // pattern-less waves still pay their authored level budget (lv.b): the
+    // surplus over the mix's natural xp rides the drip, gem by gem — the
+    // same construction the patterns use through xpPool
+    G.dripBonus=0;G.dripAcc=0;
+    if(G.mode==='classic'&&!def.pattern&&def.lv&&def.lv.b>0){
+      const L0=G.level+bankedLevels().banked;
+      G.dripBonus=Math.max(0,lvGems(def.lv.b,L0)-G.waveQuota*mixAvgXp(def))/Math.max(1,G.waveQuota);
+    }
   }
   sfx(def.boss!==undefined?'boss':'wavestart');
   G.shake=def.boss!==undefined?6:2;
@@ -8707,7 +8933,7 @@ function enrageStragglers(){
   for(const e of G.enemies){
     if(e.boss||e.shed)continue;
     if(e.circ)continue; // a ring in formation is choreography, not a straggler
-    if(e.forge||e.behemoth||e.slug||e.volcano)continue; // the Slagmaw arc's props and marchers
+    if(e.forge||e.behemoth||e.slug||e.volcano||e.augurTarget)continue; // the Slagmaw arc's props and marchers
     e.huntLv=(e.huntLv||0)+1;e.hunted=true;e.slow=1;
     if(e.huntLv===1)e.sp*=1.7;
     else if(e.huntLv===2)e.sp*=1.25;
@@ -8757,8 +8983,9 @@ function startIntermission(){
   const boss=isBossWave(G.wave);
   G.waveState='inter';G.waveT=0;G.interLen=G.mode==='rush'?9:(boss?12:8);
   G.wavePat=null;
-  const cave=G.mode==='classic'&&(G.wave===1||G.wave===5);
-  if(cave)startCaveWalk(G.wave===1?'down':'up');
+  // v3: the DESCENT follows the wave-5 mini-boss; the ASCENT follows Slagmaw
+  const cave=G.mode==='classic'&&(G.wave===5||G.wave===10);
+  if(cave)startCaveWalk(G.wave===5?'down':'up');
   closeArena();
   G.crates=G.crates.filter(c=>dist2(c.x,c.y,G.cam.x,G.cam.y)<900*900);
   // hearts, a crate and (every 3rd wave / boss / rush) party-wide charms —
@@ -8796,7 +9023,12 @@ function updateClassicWaves(dt){
       if(G.waveT>=2.0){
         G.waveT=0;
         if(def.boss!==undefined){openArena();spawnClassicBoss(def.boss);G.waveState='boss';}
-        else G.waveState='fight';
+        else{
+          G.waveState='fight';
+          // pattern-less lesson waves carry their standing objective on the
+          // wave def itself; pattern waves set theirs in their start event
+          if(def.obj)setObjective(def.obj[0],def.obj[1]);
+        }
       }
       break;
     case 'fight':{
@@ -8812,10 +9044,7 @@ function updateClassicWaves(dt){
             const e=spawnEnemy(pickEnemyType(),pt.x,pt.y,Math.random()<def.elite?2.6:1);G.waveSpawned++;
             // drip-carried patterns (lava mix, pressure) ride their budget on the drip
             if(G.wavePat&&G.wavePat.dripXp)e.xp+=patXp(G.wavePat);
-            // the lava mix names each new mob the first time it shows
-            if(G.wavePat&&G.wavePat.seen&&LAVAMIX_CALL[e.type]&&!G.wavePat.seen[e.type]){
-              G.wavePat.seen[e.type]=1;subFlash(LAVAMIX_CALL[e.type],3.0);
-            }
+            else if(G.dripBonus){G.dripAcc+=G.dripBonus;const bx=Math.floor(G.dripAcc);if(bx>0){e.xp+=bx;G.dripAcc-=bx;}}
           }
         }
       }
@@ -8834,6 +9063,13 @@ function updateClassicWaves(dt){
           const d=G.mobDmgAcc/Math.max(4,G.fightT);
           if(d>0)G.waveDPS=G.waveDPS?G.waveDPS*0.5+d*0.5:d;
           G.waveState='clear';G.waveT=0;G.cleanT=0;G.wavePat=null;sfx('wavecomplete');
+          // the PATH pick is a free draft at WAVE 1 CLEAR, for every party
+          // size: wave 1's gems never covered xpNeed(1) past solo (19/24/29
+          // vs 24/31/38), so co-op parties fought the first volcano wave
+          // with a lv1 Missile and met the choice after it. The free level
+          // fires next frame (update's freeLevels branch), pauses the sim
+          // inside this 2.5s window, and the descent follows the pick.
+          if(G.mode==='classic'&&G.wave===1&&schoolsOn()&&G.players.some(p=>!p.school))grantLevels(1);
         }
         else{G.cleanT+=dt;if(G.cleanT>8){G.cleanT=0;enrageStragglers();}}
       }
@@ -8974,8 +9210,16 @@ function update(dt){
       // DRAFT_ARM before a press counts (the edge test still applies too).
       if(pick.openT>=DRAFT_ARM&&confirmPressed(pad)){takeOffer(pick,false);sfx('pickup');}
     }
-    // nobody can hold the party hostage: after 12s the highlighted card is taken for them
-    if(G.levelupT>12)for(const pick of G.levelupPicks)if(!pick.done)takeOffer(pick,true);
+    // nobody can hold the PARTY hostage: once someone has picked, the rest
+    // get 12s (20 on the PATH screen) before the highlighted card is taken
+    // for them. With nobody waiting — solo, or everyone still reading — the
+    // clock never forces: a paused draft holds nothing hostage, and a forced
+    // pick on the PATH screen randomed away the one permanent choice of the
+    // run (playtest, 2026-08-31: the school chain fired right past the
+    // 20s line and swallowed the first-spell screen)
+    const schoolScreen=G.levelupPicks.some(pk=>!pk.done&&pk.offers[0]&&pk.offers[0].kind==='school');
+    const anyDone=G.levelupPicks.some(pk=>pk.done);
+    if(anyDone&&G.levelupT>(schoolScreen?20:12))for(const pick of G.levelupPicks)if(!pick.done)takeOffer(pick,true);
     storePadStates(pads);
     if(G.levelupPicks.every(x=>x.done))finishLevelup();
     return;
@@ -9003,7 +9247,10 @@ function update(dt){
 
   G.time+=dt;
   if(G.flashT>0)G.flashT-=dt;
-  if(G.subFlashT>0)G.subFlashT-=dt;
+  if(G.subFlashT>0){
+    G.subFlashT-=dt;
+    if(G.subFlashT<=0&&G.subQueue&&G.subQueue.length){const q=G.subQueue.shift();G.subFlash=q.msg;G.subFlashT=q.t;}
+  }
   if(G.shake>0)G.shake=Math.max(0,G.shake-dt*14);
   if(G.pflash>0)G.pflash=Math.max(0,G.pflash-dt*2.6);
   if(G.vacuumT>0)G.vacuumT-=dt;
@@ -9046,8 +9293,13 @@ function update(dt){
       p.acidT+=dt;
       if(p.acidT>0.25){p.acidT=0;p.hp-=3;p.flash=0.1;sfx('hit');addParticles(p.x,p.y,'#8a5cff',3,40);if(p.hp<=0)killPlayer(p);}
     }else p.acidT=0;
-    // lava terrain (wave 4): the same 5%-per-0.35s bite as the overlay rivers
-    if(hz==='lava'){
+    // lava terrain (wave 4): the same 5%-per-0.35s bite as the overlay rivers.
+    // It only bites while a wave is LIVE: the rivers rise under the standing
+    // party in the break before the wave (volcanoesRise), and a player who
+    // stood still through that 8s break lost ~140 hp to "nothing" (probe,
+    // 2026-08-31) — the break is for breathing, not for reading the floor
+    const lavaLive=!isCampaign()||G.waveState==='fight'||G.waveState==='boss';
+    if(hz==='lava'&&lavaLive){
       p.lavaT=(p.lavaT||0)+dt;
       if(p.lavaT>0.35){p.lavaT=0;bossHit(p,0.05);addParticles(p.x,p.y,VOLC.lava,2,30);}
     }else p.lavaT=0;
@@ -9077,7 +9329,7 @@ function update(dt){
       const rr=e.r+p.r;
       if(!e.air&&dist2(p.x,p.y,e.x,e.y)<rr*rr){
         if(e.type==='bomber'){if(e.fuse<0)e.fuse=0.6;}
-        else if(e.type==='burster'){if(e.fuse<0)e.fuse=0.45;} // swell, then pop (see the enemy loop)
+        // (burster v2: being shot no longer lights the fuse — the pop is an attack it chooses)
         // hugging a boss floors at 12% maxhp per tick for the same reason as
         // the bullet floor: flat touch dmg can't keep up with charm-fed hp.
         // Exception: while a CINDER RING's safe disc is live the boss IS the
@@ -9329,26 +9581,51 @@ function update(dt){
           const R=S.r;
           G.fx.push({kind:'boom',x:e.x,y:e.y,r:R,t:0.3,dur:0.3});
           G.shake=Math.max(G.shake,big?5:3);sfx('slam');
-          // the rehearsal hits, it does not throw — only Slagmaw's slam shoves
-          for(const p of alive)if(dist2(p.x,p.y,e.x,e.y)<R*R)hurtPlayer(p,e.dmg*1.6);
+          // the rehearsal hits AND throws, like the boss's slam (at half the
+          // reach): "the orange disc moves you" has to be felt twenty times
+          // in wave 2 before P3 uses the shove to put you in the lava
+          for(const p of alive){
+            const d=Math.hypot(p.x-e.x,p.y-e.y);
+            if(d<R)hurtPlayer(p,e.dmg*1.6);
+            if(d<R+20&&!p.dead&&!(p.shoveT>0))shovePlayer(p,Math.atan2(p.y-e.y,p.x-e.x),d<R?40:24);
+          }
           pushPool(null,e.x,e.y,R*0.5,4,0.04,VOLC.slam,'circle');
         }
-      }else if(tgt&&dd<(big?60:40)&&S.cd<=0&&!(e.stunT>0)&&G.smCasting<3){
-        S.st='cast';S.t=1.2;S.r=big?70:50;G.smCasting++;
+      }else if(tgt&&(dd<(big?60:70)||(!big&&S.near>1.5&&dd<120))&&S.cd<=0&&!(e.stunT>0)&&G.smCasting<3){
+        // in reach, or it has been on your heels for 1.5s without getting
+        // there (a party that never stops): it commits anyway — the disc
+        // lands beside you, which is the read, even when the hit misses
+        S.st='cast';S.t=1.2;S.r=big?70:50;S.near=0;G.smCasting++;
         pushTel(null,e.x,e.y,S.r,1.2,0,VOLC.slam,slamWarnSprite,null);
         S.tel=G.fx[G.fx.length-1];
         sfx('telegraph');
-      }else if(!big&&dd>110)sp*=1.4; // the rush: it closes fast, then plants
+      }else if(!big){
+        // "on your heels" accumulates inside 160px and DECAYS outside it
+        // (a hard reset at the boundary made a kiter hovering at the edge
+        // never trip it: 2p probes swung between 0 and 47 slams by seed)
+        S.near=dd<160?(S.near||0)+dt:Math.max(0,(S.near||0)-dt*2);
+        if(dd>80)sp*=1.7;
+      } // the rush: a player walks 85px/s, a smasher 50. At 1.4x (v1) it never caught a kiting party (0 slams in 2p) and taught nothing; at 1.9x it out-ran the player and killed by touch. 1.7x ≈ player speed: it reaches you when you stop, then plants at 70px — like the boss, the disc lands NEXT to a moving player and ON a standing one
     }
-    // BURSTER: contact lights a short fuse — it swells, then pops (a kill
-    // pops it at once, see damageEnemy's kill block)
+    // BURSTER v2 (owner design, 2026-08-31): the knockback is its ATTACK,
+    // not its death rattle. It rushes, PLANTS in reach, swells for 0.9s
+    // (the tell — the same gold swell the boss's slam wears), then pops:
+    // gold ring + shove, and it dies in its own pop. Killed early it just
+    // dies — v1 popped on death, which punished the auto-fire for killing
+    // it at a moment the player never chose.
     else if(e.type==='burster'){
       if(e.fuse>=0){
         sp=0;e.fuse-=dt;
-        const k=clamp(1-e.fuse/0.45,0,1);
-        e.spr=bursterSwellSprite;e.scale=1+0.5*k;e.hopY=3*Math.sin(G.time*40);
-        if(e.fuse<=0){e.dead=true;bursterPop(e);}
-      }else if(dd<30)e.fuse=0.45;
+        const k=clamp(1-e.fuse/0.9,0,1);
+        e.spr=bursterSwellSprite;e.scale=1+0.7*k;e.hopY=(1+2*k)*Math.sin(G.time*(24+24*k));
+        if(Math.random()<dt*(3+14*k))addSparkles(e.x+(Math.random()-0.5)*14,e.y-6,VOLC.burst,1,40);
+        if(e.fuse<=0){e.dead=true;bursterPop(e);} // no loot on a self-pop: killing it EARLY is what pays
+      }else if(dd<55&&tgt)e.fuse=0.9;
+      // its touch is harmless (dmg 0), so unlike the smasher it may simply
+      // out-run the party the whole way in — at 1.5-1.6x it either stalled
+      // at the kiting radius or died to focus on the approach (0 pops in
+      // the 2p probes); 1.9x crosses the screen before the auto-fire wins
+      else if(dd>55)sp*=1.9;
     }
     // SLUG (THE SLUG FORGE): marches at the forge, ignoring the party
     else if(e.slug){
@@ -9358,7 +9635,7 @@ function update(dt){
     }
     // props: the cold forge and the volcanoes never move; a rising vent
     // grows out of the ground over ~2.5s, shedding rock
-    else if(e.forge||e.volcano){
+    else if(e.forge||e.volcano||e.augurTarget){
       sp=0;
       if(e.rise!=null&&e.rise<1){
         e.rise+=dt/2.5;e.scale=0.3+2.2*Math.min(1,e.rise);
@@ -9629,7 +9906,13 @@ function update(dt){
     for(const p of G.players)applyBuff(p,'pod');
   }
   else if(canLevel&&G.freeLevels>0){G.freeLevels--;startLevelup(true);}
-  else if(canLevel&&xpGate&&G.xp>=xpNeed())startLevelup();
+  // CLASSIC deals at most a few drafts per break (3 after a boss); the rest
+  // of the pool stays banked — fewer, bigger picks, and with the quadratic
+  // xpNeed the carried xp buys fewer levels later, so it is a real sink
+  else if(canLevel&&xpGate&&G.xp>=xpNeed()&&(G.mode!=='classic'||(G.breakDrafts||0)<breakDraftCap())){
+    if(G.mode==='classic')G.breakDrafts=(G.breakDrafts||0)+1;
+    startLevelup();
+  }
 
   // banked-draft fanfare: when another level banks mid-wave, the HUD counter
   // pops (G.bankFlash drives the badge scale/burst in the render pass)
@@ -10877,7 +11160,14 @@ function renderHUD(vw,vh){
     const label=G.mode==='rush'?'BOSS '+G.wave+'/'+waveCount():'WAVE '+G.wave+'/'+waveCount();
     text(ctx,label,vw/2-48*k,5*k,F(9),isBossWave(G.wave)?'#e33':'#ffe94a');
     text(ctx,fmtTime(G.time),vw/2+48*k,5*k,F(9),'#fff','right');
-    if(G.waveState==='fight')text(ctx,((G.waveQuota-G.waveSpawned)+G.enemies.length)+' LEFT',vw/2,17*k,F(6),'#b3a184','center');
+    if(G.waveState==='fight'){
+      const left=((G.waveQuota-G.waveSpawned)+G.enemies.length)+' LEFT';
+      if(G.objective){
+        // the wave's standing lesson, in its colour, for the whole fight
+        text(ctx,G.objective,vw/2,17*k,F(7),G.objectiveCol||'#57e86b','center');
+        text(ctx,left,vw/2+48*k,17*k,F(6),'#b3a184','right');
+      }else text(ctx,left,vw/2,17*k,F(6),'#b3a184','center');
+    }
     else if(G.waveState==='descent')text(ctx,G.descent&&G.descent.dir==='up'?'ASCENDING...':'DESCENDING...',vw/2,17*k,F(7),'#ff7a1f','center');
     else if(G.waveState==='inter'){
       // announce the coming wave's pattern: the break is the anticipation beat
@@ -10907,6 +11197,10 @@ function renderHUD(vw,vh){
     ctx.globalAlpha=fl>0?1:0.7+0.3*pl;
     text(ctx,'+'+bk.banked,bx,byy,F(fs),fl>0.35?'#ffffff':'#ffd23e','right');
     ctx.globalAlpha=1;
+    // the break dealt its share and there is still xp banked: say so, or the
+    // badge reads as a draft the game forgot to give
+    if(G.mode==='classic'&&(G.waveState==='inter'||G.waveState==='descent')&&(G.breakDrafts||0)>=breakDraftCap())
+      text(ctx,'MORE NEXT BREAK',bx,byy+F(fs)+k,F(5),'#b3a184','right');
     if(fl>0){ // sparkle burst radiating from the badge
       const r=(0.8-fl)*22*k+4;
       ctx.fillStyle=fl>0.35?'#ffffff':'#ffd23e';
@@ -11048,13 +11342,23 @@ function renderLevelup(vw,vh){
   const ctx=sctx; // UI draws on the native-res screen canvas (see uiBegin)
   const k=vw/680,F=s=>Math.max(5,Math.round(s*k));
   ctx.fillStyle='rgba(12,7,18,0.80)';ctx.fillRect(0,0,vw,vh);
+  // the PATH screen is its own moment: the one permanent choice of the run,
+  // titled as such, with taller cards that say what you will DO and which
+  // spells you start with. The chained "first spell" row is titled too, so
+  // a new player never sees six unexplained cards in a row.
   const schoolPick=G.levelupPicks.some(pk=>!pk.done&&pk.offers[0]&&pk.offers[0].kind==='school');
-  text(ctx,schoolPick?'CHOOSE YOUR SCHOOL OF MAGIC':'LEVEL UP!  CHOOSE A BOON',vw/2,10*k,F(13),schoolPick?'#c9a4ff':'#ffe94a','center');
+  const firstSpell=!schoolPick&&G.levelupPicks.some(pk=>!pk.done&&pk.chain);
+  let title='LEVEL UP!  CHOOSE A BOON',tcol='#ffe94a',sub=null;
+  if(schoolPick){title='CHOOSE YOUR PATH';tcol='#c9a4ff';sub='PERMANENT FOR THIS RUN — EVERY SPELL YOU FIND COMES FROM YOUR PATH';}
+  else if(firstSpell){title='PICK YOUR FIRST SPELL';tcol='#c9a4ff';sub='YOU WILL FIND THE OTHER TWO LATER';}
+  text(ctx,title,vw/2,10*k,F(13),tcol,'center');
+  if(sub)text(ctx,sub,vw/2,26*k,F(6),'#b3a184','center');
   const rows=G.levelupPicks.length;
-  const rowH=Math.min(58*k,(vh-50*k)/rows);
+  const top=sub?38*k:34*k;
+  const rowH=Math.min((schoolPick?100:58)*k,(vh-top-16*k)/rows);
   const cardW=Math.min(150*k,(vw-90*k)/3);
   G.levelupPicks.forEach((pick,ri)=>{
-    const y=34*k+ri*rowH;
+    const y=top+ri*rowH;
     const p=pick.p;
     text(ctx,'P'+(p.idx+1),12*k,y+rowH/2-8*k,F(10),PCOLORS[p.col]);
     if(p.dead)text(ctx,'DOWN',12*k,y+rowH/2+4*k,F(6),'#ff4d6d');
@@ -11093,8 +11397,24 @@ function renderLevelup(vw,vh){
       text(ctx,name,tx,y+5*k,ns,col);
       const lineH=Math.max(6,F(6)+1);
       const maxLines=Math.max(1,Math.floor((rowH-8*k-15*k)/lineH));
-      const fit=fitText(tr(desc),availW,F(6),maxLines,5);
-      fit.lines.forEach((ln,li)=>text(ctx,ln,tx,y+15*k+li*lineH,fit.size,'#b3a184'));
+      if(o.kind==='school'&&maxLines>=5){
+        // the path card: what you do (2 lines), then the three starter spells
+        const sd=SCHOOLS[o.id];
+        if(sd.tag)text(ctx,sd.tag,x+cardW-5*k,y+5*k,F(5),'#ffd23e','right');
+        const fit=fitText(tr(sd.how),availW,F(6),2,5);
+        fit.lines.forEach((ln,li)=>text(ctx,ln,tx,y+15*k+li*lineH,fit.size,'#e8e0d0'));
+        let yy=y+15*k+2*lineH+3*k;
+        text(ctx,'STARTS WITH',tx,yy,F(5),'#7a7060');yy+=lineH;
+        for(const sid of sd.first){
+          const wd=WEAPONS[sid];
+          ctx.fillStyle=wd.col;ctx.fillRect(Math.round(tx),Math.round(yy+1*k),3*k,3*k);
+          text(ctx,wd.name,tx+6*k,yy,F(5),'#b3a184');yy+=lineH;
+          if(yy>y+rowH-8*k-lineH)break;
+        }
+      }else{
+        const fit=fitText(tr(desc),availW,F(6),maxLines,5);
+        fit.lines.forEach((ln,li)=>text(ctx,ln,tx,y+15*k+li*lineH,fit.size,'#b3a184'));
+      }
       if(pick.done&&selected)text(ctx,'OK!',x+cardW-22*k,y+5*k,F(7),'#57e86b');
     });
   });

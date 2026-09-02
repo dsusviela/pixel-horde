@@ -4,5 +4,10 @@
   "type": "module",
   "dependencies": {
     "ws": "^8.18.0"
+  },
+  "scripts": {
+    "test": "node gates.mjs test",
+    "perf": "node gates.mjs perf",
+    "gates": "node gates.mjs"
   }
 }

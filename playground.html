@@ -64,6 +64,40 @@ function resize(){
 addEventListener('resize',resize); resize();
 
 // ---------- sprites ----------
+// Material palettes shared by every den-2 art family. Fixed letter meanings:
+// K outline/darkest, D dark, M mid, L light, H highlight; accents O ember,
+// Y gold, R red, G rot green, V violet, C cyan, W white/face/hot core;
+// '.' transparent. pal(...objs) merges left->right.
+// Per-family checklist (also the sheet.mjs header):
+//  1. footprint from r/scale written in the const comment (mobs: bottom row at
+//     y+r, width 2r-2.4r units; hero 12x12 units drawn at y-2; tiles 16 units)
+//  2. den 2, even dims, equal row lengths, only palette letters
+//  3. one-texel K outline, ramp from MAT, one saturated accent per type
+//  4. reads at 1x on the sheet thumbnail on BOTH grounds and in the crowd panel
+//  5. no gameplay colours on non-gameplay parts (orange/red floor = damage,
+//     white = safe, gem cyan/green, heart pink, missile yellow)
+//  6. frame sets share dims + palette and swap together
+//  7. glow emitter decided (none, or r/col/a)
+//  8. node tools/sheet.mjs sprites --family X reviewed against the concept sheet
+//  9. NP=1 node tools/test-playground.mjs passes after paste
+// 10. enemies: one tools/frame.mjs --wave N with the type in the mix; feet,
+//     hop shadow, flash rect and marks checked
+const MAT={
+  basalt:{K:'#15100f',D:'#221a1b',M:'#2c2325',L:'#3d3033',H:'#4a3c40'},
+  grass: {K:'#1c2618',D:'#233a1e',M:'#27401f',L:'#3a5628',H:'#4a6a34'},
+  bone:  {K:'#3a3028',D:'#8a7a66',M:'#c9b99a',L:'#e8dcc0',H:'#fff2c8'},
+  ember: {K:'#3a0a04',D:'#7a1a0a',M:'#ff5a3d',L:'#ff9040',H:'#ffd23e',W:'#fff2c0'},
+  rot:   {K:'#1c2618',D:'#3a5a2a',M:'#5a7a3a',L:'#9fe84a',H:'#c8ffd2'},
+  grave: {K:'#1a0a2a',D:'#4a2a7a',M:'#8a5cff',L:'#c04aff',H:'#e8d5ff'},
+  // horde ramps: today's body hue stays the crowd read
+  chaser:{K:'#1a2410',D:'#3a7828',M:'#5cae3e',L:'#7ccf58',H:'#c0f0a0',R:'#e33c3c',W:'#ffffff'},
+  swarm: {K:'#2a1440',D:'#6b3aa8',M:'#9a5cd8',L:'#b98af0',H:'#e8d5ff',Y:'#ffd23e'},
+  spit:  {K:'#241f18',D:'#a89c84',M:'#e8e0cc',L:'#f5efe0',H:'#ffffff',G:'#6fe84a'},
+  tank:  {K:'#14161c',D:'#5c6470',M:'#8a92a0',L:'#aab2c0',H:'#d8dee8',Y:'#ffd23e',R:'#d8452e'},
+  bomber:{K:'#3c3630',D:'#6a4522',M:'#96703c',L:'#b08a50',H:'#d4b078',O:'#ffb62e',S:'#4a443c'},
+  hero:  {W:'#f2dfc0',K:'#101018',G:'#ffd23e',O:'#0e0a12',H:'#ffffff'} // P/S per PCOLORS/PSHADES
+};
+const pal=(...o)=>Object.assign({},...o);
 function makeSprite(rows,pal,den){
   const w=rows[0].length,h=rows.length;
   const c=document.createElement('canvas');c.width=w;c.height=h;

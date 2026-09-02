@@ -27,6 +27,30 @@ supported.
 - `server/` — Cloudflare Worker relay for online multiplayer.
 - `tools/` — local dev relay + headless protocol/net/game tests.
 
+## Playground rendering (visual revamp)
+
+`playground.html` renders at density 2 (two buffer pixels per world unit) with a
+light layer composited once per frame. Nothing gameplay-facing changed: a world
+unit is what a buffer pixel used to be, sprites carry a `den` tag, and
+`makeSprite(rows,pal,2)` art fills the same world box its 1x predecessor did.
+
+URL flags: `?density=1` (old raster, new art), `?light=0` (no light layer),
+`?lite` (light off, half-res light canvas, no sub-unit motion), `?crisp`
+(nearest blit even when downsampling), `?auto=0` (disable the safety valve),
+`?perf` (HUD with Canvas2D call counters, light stamps and the current density).
+Safety valve: when the draw-time EMA sits above 14 ms for 3 s the density drops to
+1 for the rest of the session (the HUD shows `den 1 auto`).
+
+Budget on a modest laptop (Intel UHD-class, 1080p): draw <= 8 ms median /
+12 ms p90, zero > 20 ms frames over 5 s at waves 8-10 with 4 full kits.
+Headless gates (`cd tools && npm run gates`): `test-playground.mjs` reaches
+victory at 1/2/4 players; `perf-stress.mjs` p95 <= 15,000 Canvas2D calls per
+frame (300 enemies, lava river, 4 kits); `perf-calls.mjs` p95 <= 4,000.
+Art tooling: `tools/sheet.mjs` (sprite sheets, chunk bakes, light canvas),
+`tools/frame.mjs` (a live frame through the real `render()`),
+`tools/fillrate.html` (in-browser blit/composite cost). The per-family art
+checklist is the comment block above `MAT` in `playground.html`.
+
 ## Online multiplayer
 
 Host-authoritative over WebSockets: the host browser runs the simulation,

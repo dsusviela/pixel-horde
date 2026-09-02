@@ -1,5 +1,32 @@
 # Wave variety — requirements & status
 
+## Done (v6 — playground visual revamp, 2026-09-02)
+
+- Density 2 buffer with one `ctx.setTransform(DEN)` per frame; `den` tags on
+  sprites; bilinear blit when the screen downsamples the 2x buffer.
+- Canvas2D call cuts before density: baked lava-stripe overlay frames, wake
+  batching. perf-stress p95 29.1k -> ~10.2k calls/frame (gate 15k).
+- Light layer: `glow/glowLine/glowSprite`, `FX_GLOW` per-fx emitters, 'screen'
+  composite, <= 600 stamps, alpha cap 0.45, gameplay rings <= 0.10.
+- Ground v2: 2x chunk bake from `TILES` tables (meadow variants, tufts, pips,
+  decor; basalt plates, 16-piece seam bitmask, lava bodies + crust), glow chunks
+  for seams/lava, <= 2 props per chunk (`PROPS`), never in the arena or the
+  origin clearing.
+- Art families at den 2: hero 24x24 with walk frame, corpse, per-school accents;
+  surface horde; volcano fauna + pups (Slagmaw colour contract kept); pickups,
+  crate, torch, vent, cave mouth; authored creep/void/lava overlay frames.
+- Per-school VFX polish (destro crust edges + cooling pips, illusion needle stars
+  + hairline rims + glowLine zap, necro dithered rot + white-core nerve +
+  breathing soulvoid + decay-ring rim glow).
+- Sub-unit motion (`SUBPX`), auto density drop, `?density/?light/?lite/?crisp/?auto`.
+- Gates: `cd tools && npm run gates`. Math.random line count pinned at 363
+  (renderer edits must not add/remove draws; the harness renders every 10th frame).
+- [ ] Owner: run `tools/fillrate.html` and `?perf` at waves 8-10 with 4 pads on
+  the target laptop; log draw ms here. A/B `?density=1`, `?lite`, `?light=0`.
+- [ ] Tonality pass (step 13, not in the v6 plan): ambient darkness layer cut by
+  the emitters, near-black desaturated ground, muted horde with glowing eyes,
+  loot as glowing motes, vignette + ash. Reference sheets: necro / world / Slagmaw.
+
 ## Done (v5 — one Slagmaw raid, 2026-08-31)
 - [x] Removed SLAUGHTERHULK from CLASSIC wave 5 and kept the encounter intact in
       BOSS RUSH. CLASSIC now has three bosses at waves 10/15/20.

@@ -118,68 +118,34 @@ function makeSprite(rows,pal,den){
 const PCOLORS=['#4cc2ff','#ff9040','#57e86b','#ff6bd6','#ff4d4d','#f5e34a','#b48bff','#e8ecf2'];
 const PSHADES=['#2a7fb5','#b55e1f','#2f9c44','#b53f96','#b32a2a','#ab9c26','#7a55b5','#9aa2ad'];
 
-const PLAYER_ROWS=[
-'....PPPP....',
-'...PPPPPP...',
-'..PPWWWWPP..',
-'..PSWKWKSP..',
-'..PSWWWWSP..',
-'...PPPPPP...',
-'..PPPPPPPP..',
-'.PPPGGGGPPP.',
-'.PS.PPPP.SP.',
-'..PPPPPPPP..',
-'..SS....SS..',
-'.SS......SS.'];
-const playerSprites=PCOLORS.map((_,i)=>makeSprite(PLAYER_ROWS,{P:PCOLORS[i],S:PSHADES[i],W:'#f2dfc0',K:'#101018',G:'#ffd23e'}));
-const corpseSprite=makeSprite(PLAYER_ROWS,{P:'#6a7078',S:'#484d54',W:'#b8bec6',K:'#20242a',G:'#8a8046'});
+const PLAYER_ROWS=["...........KK...........","..........KPPK..........",".........KPPPSK.........","........KPPPPSSK........",".......KPPPPPPSSK.......","......KPPPOOOOPSSK......",".....KPPPOOOOOOPSSK.....","....KPPPOOOOOOOOPSSK....","....KPPOOWWWWWWOOSSK....","....KPPOOHKWHKWOOSSK....","....KPPOOWKWWKWOOSSK....","....KPPOOWWWWWWOOSSK....","....KPPPOOWWWWOOSSSK....",".....KPPPOOOOOOSSSK.....","....KPPPPPPPPPPPSSSK....","...KPPPPPPPPPPPPSSSSK...","..KPPPPPPPPPPPPPSSSSSK..","..KPSKPPPGGGGGGPPSKSSK..","..KSSKPPPGGGGGGPPSKSSK..","...KKKPPPPPPPPPPSSKKK...",".....KPPPPPPPPPPPSSK....","....KPPPPPPPPPPPPSSSK...","....KKKKKKKKKKKKKKKKK...",".....KSSK.......KSSK...."];
+const PLAYER_ROWS_B=["...........KK...........","..........KPPK..........",".........KPPPSK.........","........KPPPPSSK........",".......KPPPPPPSSK.......","......KPPPOOOOPSSK......",".....KPPPOOOOOOPSSK.....","....KPPPOOOOOOOOPSSK....","....KPPOOWWWWWWOOSSK....","....KPPOOHKWHKWOOSSK....","....KPPOOWKWWKWOOSSK....","....KPPOOWWWWWWOOSSK....","....KPPPOOWWWWOOSSSK....",".....KPPPOOOOOOSSSK.....","....KPPPPPPPPPPPSSSK....","...KPPPPPPPPPPPPSSSSK...","..KPPPPPPPPPPPPPSSSSSK..","..KPSKPPPGGGGGGPPSKSSK..","..KSSKPPPGGGGGGPPSKSSK..","...KKKPPPPPPPPPPSSKKK...",".....KPPPPPPPPPPPSSK....","....KPPPPPPPPPPPPSSSK...","....KKKKKKKKKKKKKKKKK...","...KSSK...........KSSK.."]; // walk frame: feet only differ
+const playerSprites=PCOLORS.map((_,i)=>makeSprite(PLAYER_ROWS,pal(MAT.hero,{P:PCOLORS[i],S:PSHADES[i]}),2));
+const playerSpritesB=PCOLORS.map((_,i)=>makeSprite(PLAYER_ROWS_B,pal(MAT.hero,{P:PCOLORS[i],S:PSHADES[i]}),2));
+const corpseSprite=makeSprite(["........................","........................","........................","........................","........................","........................",".....KKKKK..............","...KKPPPPPKK............","..KPPPPPPPPPKKKKKKKKK...",".KPPPOOOOOOPPPPPPPPPPPK.",".KPPOOWWWWWOOPPPGGPPPSSK",".KPPOOWKKWKKWOPPGGPPPSSK",".KPPOOWWWWWWWOPPPPPSSSSK",".KPPPOOOOOOOOPPPSPPSKSSK","..KPPPPPPPPPPSSSSSSSKKKK","...KKKKKKKKKKKKKKKKKK...","........................","........................","........................","........................","........................","........................","........................","........................"],{"P":"#6a7078","S":"#484d54","W":"#b8bec6","K":"#20242a","G":"#8a8046","O":"#15171c","H":"#d8dee8"},2); // 24x24 den 2, fallen on its side, centred at (x,y)
+const ACCENT_DESTRO=makeSprite(["........................","........................","........................","...........H............","..........MLML..........",".........M....L.........","........M......L........",".......M........L.......","......M.................","......L.................","......M.................","......L.................",".......L................","........D...............",".........DDDDDD.........","........................","........................","........................","...HM..............MH...","...MD..............DM...","...D................D...","......D...D...D...D.....","....DKDDKDDDKDDKDDKDD...","......KK.........KK....."],MAT.ember,2); // overlay at (x,y-2+bobY): ember hood rim, scorched hem, coal hands
+const ACCENT_ILLUSION=[makeSprite(["........................","...........45...........","..........3..0..........",".........0....6.........","........2......0........",".......0........7.......","......7..........0......",".....0............2.....",".....6............0.....",".....0............3.....",".....5............0.....",".....0............4.....",".....4............0.....","......0..........5......",".....3............0.....","....0..............6....","...0................0...","........................","........................","........................","........................","........................","....40506070203040506...","........................"],{"0":"#ffffff","2":"#ff9fe8","3":"#c9a4ff","4":"#7fd8ff","5":"#8ef0d0","6":"#ffef9f","7":"#ffb98c"},2),makeSprite(["........................","...........56...........","..........4..0..........",".........0....7.........","........3......0........",".......0........2.......","......2..........0......",".....0............3.....",".....7............0.....",".....0............4.....",".....6............0.....",".....0............5.....",".....5............0.....","......0..........6......",".....4............0.....","....0..............7....","...3................0...","....................0...","........................","........................","........................","........................","....70203040506070203...","........................"],{"0":"#ffffff","2":"#ff9fe8","3":"#c9a4ff","4":"#7fd8ff","5":"#8ef0d0","6":"#ffef9f","7":"#ffb98c"},2),makeSprite(["........................","...........67...........","..........5..0..........",".........0....2.........","........4......0........",".......0........3.......","......3..........0......",".....0............4.....",".....2............0.....",".....0............5.....",".....7............0.....",".....0............6.....",".....6............0.....","......0..........7......",".....5............0.....","....0..............2....","...4................0...","........................","........................","........................","........................","........................","....40506070203040506...","........................"],{"0":"#ffffff","2":"#ff9fe8","3":"#c9a4ff","4":"#7fd8ff","5":"#8ef0d0","6":"#ffef9f","7":"#ffb98c"},2),makeSprite(["........................","...........72...........","..........6..0..........",".........0....3.........","........5......0........",".......0........4.......","......4..........0......",".....0............5.....",".....3............0.....",".....0............6.....",".....2............0.....",".....0............7.....",".....7............0.....","......0..........2......",".....6............0.....","....0..............3....","...5................0...","........................","...................0....","........................","........................","........................","....70203040506070203...","........................"],{"0":"#ffffff","2":"#ff9fe8","3":"#c9a4ff","4":"#7fd8ff","5":"#8ef0d0","6":"#ffef9f","7":"#ffb98c"},2)]; // prism rim, 4 phases: floor(G.time*6)%4
+const SHARD=makeSprite(["..KK..",".K00K.","K0004K","K0044K","K3044K",".K34K.",".K33K.","..KK.."],{"0":"#ffffff","3":"#c9a4ff","4":"#7fd8ff","K":"#101018"},2); // 6x8 rows = 3x4 units, at (x+7,y-9+sin(G.time*3))
+const ACCENT_NECRO=makeSprite(["........................","........................","........................","........................","........................","........................","........................","........................","........................","........................","........................","........................","........................","........................","...........BB...........","...........NB...........","...........BN...........","........................","...VU..............UV...","...UU..............UU...","...V..D..D....D..D..V...",".....M..M...M..M...M....","....LMLLMLMLLMLLMLLML...",".........DM..DD........."],pal(MAT.rot,{V:'#8a5cff',U:'#4a2a7a',B:'#e8dcc0',N:'#8a7a66'}),2); // overlay: rot hem eaten edge, bone charm, violet hand shadow (V/U grave, B/N bone)
 
-const chaserSprite=makeSprite([
-'G........G','GG.GGGG.GG','.GGGGGGGG.','.GWRGGRWG.','.GGGGGGGG.',
-'..GDKKDG..','.GGGGGGGG.','.GG.GG.GG.','.G..GG..G.','....GG....'],
-{G:'#5cae3e',D:'#3a7828',W:'#fff',R:'#e33c3c',K:'#1a2410'});
-const swarmSprite=makeSprite([
-'M....M','MM..MM','MMMMMM','MKMMKM','.MMMM.','.M..M.'],{M:'#9a5cd8',K:'#ffd23e'});
-const tankSprite=makeSprite([
-'......PP......','.....PPPP.....','....TTTTTT....','...TTTTTTTT...',
-'...TDKKKKDT...','...TTTTTTTT...','..STTTTTTTTS..','.TTTTTTTTTTTT.',
-'.TTSTTTTTTSTT.','.TTTTTTTTTTTT.','..TTT.TT.TTT..','..TT..TT..TT..',
-'..T...TT...T..','..TT..TT..TT..'],{T:'#8a92a0',D:'#5c6470',K:'#14161c',S:'#ffd23e',P:'#d8452e'});
-const spitSprite=makeSprite([
-'..WWWWWW..','.WWWWWWWW.','.WGGWWGGW.','.WWWWWWWW.','..WKKKKW..',
-'..WKWWKW..','.WWWWWWWW.','.WW.WW.WW.','..W.WW.W..','....WW....'],
-{W:'#e8e0cc',G:'#6fe84a',K:'#241f18'});
-const bombSprite=makeSprite([
-'....FF..','...F....','..KKKK..','.BLLLLB.','.SSSSSS.','.BLLLLB.','.SSSSSS.','..BBBB..'],
-{K:'#3c3630',B:'#6a4522',L:'#96703c',S:'#4a443c',F:'#ffb62e'});
+const chaserSprite=makeSprite(['.......KKKKKK.......','.....KKHHLLMMKK.....','....KHHLLLMMMMMK....','...KHLLLLMMMMMMMK...','...KLKKKKMMKKKKDK...','...KLKRRKMMKRRKDK...','...KLKRRKMMKRRKDK...','...KLLMMMMMMMMMDK...','...KLMKWKWKWKMDDK...','..KLKKMMMMMMMMKKDK..','.KLLMKKMMMMMMKKMDDK.','KLLMMMKMMMMMMKDMMDDK','KLMMMMKMMMMMDKDMMMDK','KKMMDK.KMMMDK.KDMDKK','.KWKK..KMMMDK..KKWK.','.KK....KMDDDK....KK.','......KMMKKMDK......','......KMMK.KMDK.....','.....KDMMK.KMDDK....','.....KKKKK.KKKKK....'],MAT.chaser,2); // 20x20 for r=5, feet row 19
+const swarmSprite=makeSprite(['KKK......KKK','KHLK....KLDK','KLLMK..KMMDK','KLLMMKKMMMDK','.KLMKYMMYKDK','.KMMKYMMYKDK','..KMMMMMMDK.','..KMMMMMMDK.','...KMDMMDK..','...KMKKKMK..','..KMMK.KMDK.','..KKK..KKK..'],MAT.swarm,2); // 12x12 for r=3.5, feet row 11
+const tankSprite=makeSprite(['...........KKKKKK...........','..........KRRRRRRK..........','.........KRRRRRRRRK.........','........KHKKKKKKKKKKKK......','.......KHHLLLLLLMMMDK.......','.......KHLLLLLLMMMMDK.......','.......KLLYYYYYYYYMDK.......','.......KLLKKKKKKKKMDK.......','.......KLMKKKKKKKKMDK.......','.......KKLMMMMMMMMDKK.......','.....KKKLLMMMMMMMMDKKK......','...KKHLLLLLMMMMMMMMMMDKKK...','..KHHLLLLLLMMMMMMMMMMMMDDK..','.KHLLLLLLLLMMMMMMMMMMMMMDDK.','.KHLLLLLLMMMMMYYMMMMMMMMDDK.','KHLLLLLLMMMMMMMMMMMMMMMMDDDK','KLLLLLLMMMMMMMMMMMMMMMMMDDDK','KLLLLMKLMMMMMMDMMMMMMKDDDDDK','KLLLMMKMMMMYYYYYYMMMMKDDDDDK','KLLLMMKMDDDDDDDDDDDDDKMDDDDK','KKLLMKKMMMMMMMMMMMMMMKKDDDKK','.KLLMK.KMMMMMMMMMMMDK.KDDDK.','.KKKK..KMMMMMMMMMMMDK..KKKK.','.......KMMMMKKKKDMMMK.......','.......KMMMMK..KDMMMK.......','.......KMMMMK..KDMMMK.......','.......KDMMDK..KDMDDK.......','.......KKKKKK..KKKKKK.......'],MAT.tank,2); // 28x28 for r=9, feet row 27
+const spitSprite=makeSprite(['......KKKKKKKK......','....KKHHLLLMMMKK....','...KHHLLLLMMMMMMK...','..KHLLLLLLMMMMMMMK..','..KLLLLLLMMMMMMMMDK.','..KLKKGGKLMMKGGKKDK.','..KLKGGGKMMMKGGGKDK.','..KLLKKKLMMMMKKKMDK.','..KKLLLLLMMMMMMMDDK.','...KKKKKKKKKKKKKKK..','..KLKMKMKMKMKMKMDK..','..KGKKKKKKKKKKKKGK..','...KGKMMMMMMMMKGK...','..KLMKMMMMMMMMKDDK..','.KLMK.KMMMMMMK.KDDK.','.KMK..KMMDDMMK..KDK.','.KK...KMMKKMMK...KK.','.....KMMK..KMDK.....','....KDMMK..KMDDK....','....KKKKK..KKKKK....'],MAT.spit,2); // 20x20 for r=5, feet row 19
+const bombSprite=makeSprite(['..........KOO...','.........KKOO...','........KK......','.....KKKSKKK....','....KHSSSSSDK...','...KHHLLLMMMDK..','...KHLLLLMMMDK..','..KSSSSSSSSSSSK.','..KHLLKMMMKMMDK.','..KLLLKMMMKMMDK.','..KSSSSSSSSSSSK.','...KLMMMMMMMDK..','...KKMMMMMDDDK..','....KKMMDDDKK...','....KMKKKKKDK...','....KKK...KKK...'],MAT.bomber,2); // 16x16 for r=4.5, feet row 15
 // ---- the volcano fauna (waves 2-5): each one glows in the colour of the
 // Slagmaw primitive it rehearses — orange slam, gold burst, red lava ----
 // SMASHER: a squat basalt brute with a molten core and two stone fists
 const SMASHER_PAL={O:'#ff7a1f',L:'#ffd23e',W:'#fff2c0',D:'#7a2e0a',K:'#2a0f04',S:'#4a3a3a',T:'#6a5a5a'};
-const smasherSprite=makeSprite([
-'....SSSSSS....','...STTTTTTS...','..STTTTTTTTS..','..STWTTTTWTS..','..STTKTTKTTS..',
-'.SSTTTTTTTTSS.','SSSSTOOOOTSSSS','STTSOOLLOOSTTS','STTSOOLLOOSTTS','.SSSTOOOOTSSS.',
-'...SSTTTTSS...','...ST.TT.TS...','..SST.TT.TSS..','..SS..SS..SS..'],SMASHER_PAL);
-const smasherCastSprite=makeSprite([
-'SS..........SS','STS..SSSS..STS','STTSSTTTTSSTTS','.STTTTTTTTTTS.','..STWTTTTWTS..',
-'..STTKTTKTTS..','...STOOOOTS...','...SOLLLLOS...','...SOLLLLOS...','...STOOOOTS...',
-'...SSTTTTSS...','...ST.TT.TS...','..SST.TT.TSS..','..SS..SS..SS..'],SMASHER_PAL);
+const smasherSprite=makeSprite(["..........KKKKKKKK..........","........KKHHHHTTTTKK........",".......KHHTTTTTTTTTTK.......","......KHHTTTTTTTTTTTTK......","......KHTTKKTTTTKKTTTK......","......KHTTWWTTTTWWTTTK......","......KTTTWWTTTTWWTTTK......","......KSTTTTTTTTTTTTSK......",".....KKSSTTTTTTTTTTSSKK.....","...KKSSSKKKKKKKKKKKKSSSKK...","..KHTSSSKDOOOOOOOODKSSSTTK..",".KHTTTSKOOOLLLLLLOOOKSTTTTK.","KHTTTTSKOOLLWWWWLLOOKSTTTTTK","KHTTTTSKOOLWWWWWWLOOKSTTTTTK","KTTTTTSKOOLWWWWWWLOOKSTTTTTK","KTTTTTSKOOLLWWWWLLOOKSTTTTTK","KSTTTTSKOOOLLLLLLOOOKSTTTTSK",".KSSSSSSKDOOOOOOOODKSSSSSSK.","..KKKKSSSKDDDDDDDDKSSSKKKK..",".....KSSSSSTTTTTTSSSSSK.....","......KSSTTTTTTTTTTSSK......","......KSTTTTKKKKTTTTSK......",".....KSTTTTK....KTTTTSK.....",".....KSTTTTK....KTTTTSK.....","....KSTTTTSK....KSTTTTSK....","....KSSTTSSK....KSSTTSSK....","...KSSSSSSSK....KSSSSSSSK...","...KKKKKKKKK....KKKKKKKKK..."],Object.assign({},SMASHER_PAL,{H:'#8c7c7c'}),2); // 28x28 for r=6.5, feet row 27, frame set with smasherCastSprite
+const smasherCastSprite=makeSprite([".KKKKKK..............KKKKKK.","KHHTTTSK............KSTTTTTK","KHTTTTSK..KKKKKKKK..KSTTTTTK","KHTTTTSK.KHHTTTTTTK.KSTTTTTK","KHTTTTSK.KHTTTTTTTK.KSTTTTTK","KTTTTTSK.KHKKTTKKTK.KSTTTTTK",".KSSSSSK.KHWWTTWWTK.KSSSSSK.","..KSTTSK.KTWWTTWWTK.KSTTSK..","..KSTTSK.KSTTTTTTSK.KSTTSK..","..KSTTSK..KSSTTSSK..KSTTSK..","..KSTTSSKKKKKKKKKKKKSSTTSK..","..KSSSSSKDOOOOOOOODKSSSSSK..","...KSSKOOOLLLLLLLLOOOKSSK...","....KKKOOLLWWWWWWLLOOKKK....","......KOOLWWWWWWWWLOOK......","......KOOLWWWWWWWWLOOK......","......KOOLLWWWWWWLLOOK......","......KDOOOLLLLLLOOODK......","......KSKDDDOOOODDDKSK......",".....KSSSSKKKKKKKKSSSSK.....","......KSSTTTTTTTTTTSSK......","......KSTTTTKKKKTTTTSK......",".....KSTTTTK....KTTTTSK.....",".....KSTTTTK....KTTTTSK.....","....KSTTTTSK....KSTTTTSK....","....KSSTTSSK....KSSTTSSK....","...KSSSSSSSK....KSSSSSSSK...","...KKKKKKKKK....KKKKKKKKK..."],Object.assign({},SMASHER_PAL,{H:'#8c7c7c'}),2); // 28x28 cast frame (fists up), same palette as smasherSprite
 // BURSTER: a bloated gold ember sac on stubby legs; swells before it pops
 const BURSTER_PAL={Y:'#ffd23e',O:'#ff9a2e',W:'#fff8d0',K:'#5a3a08',D:'#8a5a10'};
-const bursterSprite=makeSprite([
-'....YYYY....','..YYYYYYYY..','.YYWYYYYWYY.','.YYYYYYYYYY.','YYYOOOOOOYYY',
-'YYOOKKKKOOYY','YYOOKKKKOOYY','.YYOOOOOOYY.','.YYYYYYYYYY.','..YYYYYYYY..',
-'...DD.DD.DD.','..DD..DD..DD'],BURSTER_PAL);
-const bursterSwellSprite=makeSprite([
-'...WWWWWW...','.WWYYYYYYWW.','WWYYWYYWYYWW','WYYYYYYYYYYW','WYYOOOOOOYYW',
-'WYOOKKKKOOYW','WYOOKKKKOOYW','WYYOOOOOOYYW','WYYYYYYYYYYW','.WWYYYYYYWW.',
-'..WWWWWWWW..','..DD..DD..DD'],BURSTER_PAL);
+const bursterSprite=makeSprite(["........KKKKKKKK........","......KKYYYYYYYYKK......",".....KYWWYYYYYYYYYK.....","....KYWWYYYYYYYYYYYK....","...KYWYYYYYYYYYYYYYYK...","..KYYWYYKKYYYYKKYYYYYK..","..KYYYYYKKYYYYKKYYYYYK..",".KYYYYYYYYYYYYYYYYYYYYK.",".KYYYYYOOOOOOOOOOYYYYYK.",".KYYYYOOKKKKKKKKOOYYYYK.",".KYYYYOOKKKKKKKKOOYYYYK.",".KYYYYYOOOOOOOOOOYYYYYK.",".KYYYYYYYYYYYYYYYYYYYYK.",".KOYYYYYYYYYYYYYYYYYYOK.","..KOYYYYYYYYYYYYYYYYOK..","..KOOYYYYYYYYYYYYYYOOK..","...KOOOYYYYYYYYYYOOOK...","....KOOOOOOOOOOOOOOK....",".....KKOOOOOOOOOOKK.....",".......KKKKKKKKKK.......","....KDDK.KDDDDK.KDDK....","...KDDK..KDDDDK..KDDK...","...KDDK..KDDDDK..KDDK...","...KKKK..KKKKKK..KKKK..."],BURSTER_PAL,2); // 24x24 for r=5, feet row 23, frame set with bursterSwellSprite
+const bursterSwellSprite=makeSprite(["......KKKKKKKKKKKK......","....KKWWWWWWWWWWWWKK....","...KWWYYYYYYYYYYYYWWK...","..KWYYYYYYYYYYYYYYYYWK..",".KWYYYYYYYYYYYYYYYYYYWK.",".KWYYYYYKKYYYYKKYYYYYWK.","KWYYYYYYKKYYYYKKYYYYYYWK","KWYYYYYYYYYYYYYYYYYYYYWK","KWYYYYYOOOOOOOOOOYYYYYWK","KWYYYYOOOKKWWKKOOOYYYYWK","KWYYYYOOOKKWWKKOOOYYYYWK","KWYYYYYOOOOOOOOOOYYYYYWK","KWYYYYYYYYYYYYYYYYYYYYWK","KWYYYYYYYYYYYYYYYYYYYYWK",".KWYYYYYYYYYYYYYYYYYYWK.",".KWOYYYYYYYYYYYYYYYYOWK.","..KWOOYYYYYYYYYYYYOOWK..","...KWWOOOOOOOOOOOOWWK...","....KKWWWWWWWWWWWWKK....","......KKKKKKKKKKKK......","....KDDK.KDDDDK.KDDK....","...KDDK..KDDDDK..KDDK...","...KDDK..KDDDDK..KDDK...","...KKKK..KKKKKK..KKKK..."],BURSTER_PAL,2); // 24x24 swell frame (drawn at scale 1+0.7k), same palette
 // FIRE SLUG: a long low slug seen from the side — eye stalks up front, a
 // cracked basalt crust along the back, a molten belly that drips behind it
-const fireslugSprite=makeSprite([
-'..W..W..........','..K..K..........','..KKKK..........','.KKRRKKKKKKKKK..','KKRRRRRRRRRRRKK.',
-'KRRRRRKRRKRRRRRK','KRRRRRRRRRRRRRRK','KRLLRRRRRRRRLLRK','.KLLLLLLLLLLLLK.','..KLLLLLLLLLLK..',
-'...LLLL.LLLL.LL.','....LL...LL...L.'],{R:'#ff3c3c',L:'#ffb62e',W:'#ffd0a0',K:'#3a0a0a'});
+const fireslugSprite=makeSprite(["..KKKK..KKKK....................","..KWWK..KWWK....................","..KWWK..KWWK....................","...KK....KK.........KKKKKK......","...KK....KK.......KKKKRKKKKK....","...KKKKKKKK......KKKKRRKKKKKKK..","..KKRRRRRRKKKKKKKKKKRRKKRKKKKKK.",".KKRHHRRRRRRKKKKKKRRKKKKRRKKKKKK","KKRHHHRRRRRRRRKKKRRRRKKKRRRKKRKK","KRHHHRRRRRRRRRRRRRRRRKKKRRRKKKKK","KRHHRRRRRRRRRRRRRRRRRRRKKRRRKKKK","KRHRRRRRRRRRRRRRRRRRRRRRKKRRRKKK","KRRRRRRRRRRRRRRRRRRRRRRRRKRRRRKK","KRRRRRRRRRRRRRRRRRRRRRRRRRKRRRRK","KRRLLRRRRRRRRRRRRRRRRRRRRRRRLLRK","KRLLLLRRRRRRRRRRRRRRRRRRRRLLLLRK",".KLLLLLLLRRRRRRRRRRRRRRRLLLLLLK.",".KLLWWLLLLLLLLLLLLLLLLLLLLLLLLK.","..KLLLLLLLLLLLLLLLLLLLLLLLLLLLK.","...KKLLLLKKLLLLLLKKLLLLLKKLLLKK.",".....KLLK..KLLLLK..KLLLK..KLLK..","......KLK..KLLLLK...KLK...KLLK..","......KK....KLLK.....K.....KLK..",".............KK.............KK.."],{R:'#ff3c3c',L:'#ffb62e',W:'#ffd0a0',K:'#3a0a0a',H:'#ff7a6a'},2); // 32x24 for r=6, side view, feet row 23 (drip), palette exact + H
 const forgeSprites=[['#5a5a66','#3a3a44','#8a8a96'],['#8a4a3a','#4a2a24','#ff7a1f'],['#ff3c3c','#6a1a10','#ffd23e']].map(c=>makeSprite([
 '....BBBBBB....','...BBBBBBBB...','..BBSSSSSSBB..','..BSSSSSSSSB..','..BSSGGGGSSB..',
 '..BSSGGGGSSB..','..BSSSSSSSSB..','..BBSSSSSSBB..','.BBBBBBBBBBBB.','.BBBBBBBBBBBB.',
@@ -193,33 +159,25 @@ const behemothSprite=makeSprite([
 'SRRS.STTTTTTS.SRRS','SSSS.STTRTTTS.SSSS','.....STTTTTTS.....','....SSTT..TTSS....',
 '....STTS..STTS....','....SSSS..SSSS....'],
 {S:'#2a1f22',T:'#4a3a3e',R:'#ff3c3c',Y:'#ffd23e',L:'#ff9a2e'});
-const volcanoSprite=makeSprite([
-'.....OYO.....','....OOYOO....','....BBBBB....','...BBBBBBB...','...BBDBBDB...',
-'..BBBBBBBBB..','..BBBBBBBBB..','.BBBDBBBBDBB.','.BBBBBBBBBBB.','BBBBBBBBBBBBB',
-'BBBBBBBBBBBBB'],{B:'#3a3238',D:'#241e26',O:'#ff7a1f',Y:'#ffd23e'});
-const caveMouthSprite=makeSprite([
-'....KKKKKKKK....','..KKKKKKKKKKKK..','.KKKDDDDDDDDKKK.','KKKDDDDDDDDDDKKK','KKDDDDDDDDDDDDKK',
-'KKDDDDDDDDDDDDKK','KKDDDDOOOODDDDKK','KKDDDDDDDDDDDDKK','KKDDDDDDDDDDDDKK','KKDDDDDDDDDDDDKK'],
-{K:'#2a2428',D:'#0a0608',O:'#ff7a1f'});
-const crateSprite=makeSprite([
-'..BBBBBBBB..','.BLLLLLLLLB.','BLLLLLLLLLLB','BGGGGGGGGGGB','BLLLLGGLLLLB',
-'BLLLLGGLLLLB','BGGGGGGGGGGB','BLLLLLLLLLLB','BLLLLLLLLLLB','BBBBBBBBBBBB',
-'.B.B....B.B.','............'],{B:'#6a4522',L:'#96703c',G:'#ffd23e'});
-const heartSprite=makeSprite(['.HH.HH.','HHHHHHH','HHHHHHH','.HHHHH.','..HHH..','...H...'],{H:'#ff4d6d'});
-const gemSprite=makeSprite(['..C..','.CCC.','CCWCC','.CCC.','..C..'],{C:'#39d5ff',W:'#d8f8ff'});
-const bigGemSprite=makeSprite(['..CC..','.CCCC.','CCWWCC','CCCCCC','.CCCC.','..CC..'],{C:'#ffd23e',W:'#fff2c0'});
+const volcanoSprite=makeSprite(["..........KKKKKK..........",".........KOYWWYOK.........","........KOOYYYYOOK........",".......KLMOOOOOOMDK.......",".......KLMMMMOMMDDK.......","......KLLMMMMOMMDDDK......","......KLLMMMOMMMDDDK......",".....KLLMMMMOMMMMDDDK.....",".....KLLMMMOMMMMMDDDK.....","....KHLLMMMOMMMMMMDDDK....","....KHLLMMOMMMMMMODDDK....","...KHLLMMMOMMMMMMMODDDK...","...KHLLMMMMOMMMMMMODDDK...","..KHLLMMMMOMMMMMMMMODDDK..","..KHLLMMMMMMMMMMMMMODDDK..",".KHLLMMMMMMMMMMMMMMMMDDDK.",".KHLLMMMDMMMMMDMMMMMMDDDK.","KHLLMMMMMMMMMMMMMMMMMDDDDK","KLLMMMMMDMMMMMMMMDMMMDDDDK","KLMMMMMMMMMMMMMMMMMMMDDDDK","KDDDDDDDDDDDDDDDDDDDDDDDDK","KKKKKKKKKKKKKKKKKKKKKKKKKK"],{K:'#15100f',D:'#221a1b',M:'#3a2f33',L:'#4a3c40',H:'#5c4c52',O:'#ff7a1f',Y:'#ffd23e',W:'#fff2c0'},2); // 13x11 units, enemy r14 scale 0.3..2.5, feet y+r; no glow
+const caveMouthSprite=makeSprite(["..........KKKKKKKKKKKK..........",".......KKKHHHLLLLLLLLKKK........",".....KKHHLLLMMMMMMMMMLLDKK......","....KHHLLMMMKKKKKKKKMMMLDDK.....","...KHLLMMKKKSSSSSSSSKKKMMDDKK...","..KHLMMKKSSSSSSSSSSSSSSKKMMDDK..","..KHLMMKSSSSSSSSSSSSSSSSKMMDDK..",".KHLMMKSSSSSSSSSSSSSSSSSSKMDDDK.",".KHLMMKSSSSSSSSSSSSSSSSSSKMDDDK.",".KDDDDKSSSSSSSSSSSSSSSSSSKDDDDK.",".KHLMMKSSSSSSSSSSSSSSSSSSKMDDDK.",".KHLMMKSSSSSSSSSSSSSSSSSSKMDDDK.",".KHLMMKSSSSSSSSSSSSSSSSSSKMDDDK.",".KHLMMKSSSSSSSSSOOSSSSSSSKMDDDK.",".KHLMMKSSSSSSSSOYYOSSSSSSKMDDDK.",".KDDDDKSSSSSSSSSOOSSSSSSSKDDDDK.",".KHLMMKSSSSSSSSSSSSSSSSSSKMDDDK.",".KLMMMKSSSSSSSSSSSSSSSSSSKMDDDK.",".KKKKKKSSSSSSSSSSSSSSSSSSKKKKKK.",".......SSSSSSSSSSSSSSSSSS......."],{K:'#0f0a0c',D:'#221a1b',M:'#2c2325',L:'#3d3033',H:'#4a3c40',S:'#07040a',O:'#ff7a1f',Y:'#ffd23e'},2); // 16x10 units drawn at scale 2; optional glow r10 #ff7a1f a0.2 at (x,y+4)
+const crateSprite=makeSprite(["..KKKKKKKKKKKKKKKKKKKK..",".KLLLLLLLLLLLLLLLLLLLLK.","KLMMMMMMMMMMMMMMMMMMMMDK","KLMMMMMMMMMMMMMMMMMMMMDK","KLMMMDMMMMMMMMMMMMDMMMDK","KDDDDDDDDDDDDDDDDDDDDDDK","KYYYYYYYYYYYYYYYYYYYYYOK","KOOOOOOOOOOYOOOOOOOOOOOK","KKKKKKKKKKKYOKKKKKKKKKKK","KLMMMMMMMMKYOKMMMMMMMMDK","KLMMMMMMMMKYOKMMMMMMMMDK","KLMMDMMMMMKYOKMMMMMDMMDK","KDDDDDDDDDKYOKDDDDDDDDDK","KLMMMMMMMMKYOKMMMMMMMMDK","KLMMMMMMMMKYOKMMMMMMMMDK","KKKKKKKKKKKYOKKKKKKKKKKK","KYYYYYYYYYYYYYYYYYYYYYOK","KOOOOOOOOOOYOOOOOOOOOOOK","KDDDDDDDDDDDDDDDDDDDDDDK","KKKKKKKKKKKKKKKKKKKKKKKK","..KK..KK........KK..KK..","..KK..KK........KK..KK..","........................","........................"],{K:'#231409',D:'#6a4522',M:'#96703c',L:'#b08a50',Y:'#ffd23e',O:'#c8901a'},2); // 12x12 units, box rows 0-19, feet 20-21; no glow (slot chest: r12 #ffd23e)
+const GEM_COL='#39d5ff'; // gem hue: today's cyan; bible/2.png say green '#57e86b'
+const heartSprite=makeSprite(["..KKK....KKK..",".KHHMK..KMMMK.","KHHHMMKKMMMMDK","KHWHMMMMMMMMDK","KHHMMMMMMMMDDK","KMMMMMMMMMMDDK",".KMMMMMMMMDDK.","..KMMMMMMDDK..","...KMMMMDDK...","....KMMDDK....",".....KMDK.....","......KK......"],{K:'#3a0a14',D:'#b8203c',M:'#ff4d6d',H:'#ff9ab0',W:'#ffffff'},2); // 7x6 units, centred; glow r8 #ff4d6d a0.2
+const gemSprite=makeSprite(["....KK....","...KHCK...","..KHHCCK..",".KHWHCCDK.","KHWWCCCDDK","KHCCCCCDDK",".KCCCCDDK.","..KCCDDK..","...KCDK...","....KK...."],{K:'#071a20',D:'#155a6e',C:GEM_COL,H:'#d8f8ff',W:'#ffffff'},2); // 5x5 units, centred; glow r5 GEM_COL a0.22
+const bigGemSprite=makeSprite([".....KK.....","....KHHK....","...KHHHCK...","..KHHWHCCK..",".KHHWWHCCDK.","KHHHHHCCCDDK","KLLLLLLLLLLK",".KCCCCCCDDK.","..KCCCCDDK..","...KCCDDK...","....KCDK....",".....KK....."],{K:'#3a2a04',D:'#b8860b',C:'#ffd23e',L:'#e8b820',H:'#fff2c0',W:'#ffffff'},2); // 6x6 units, centred; glow r8 #ffd23e a0.35
 const buffIcons={
-  speed:makeSprite(['....Y....','...YY....','..YYY....','.YYYYYYY.','YYYYYYYYY','.YYYYYYY.','....YYY..','....YY...','....Y....'],{Y:'#ffe94a'}),
-  regen:makeSprite(['....G....','...GGG...','..GGGGG..','.GGGGGGG.','GGGGGGGGG','...WGW...','...GGG...','...GGG...','....G....'],{G:'#57e86b',W:'#c8ffd2'}),
-  maxhp:makeSprite(['.HH...HH.','HHHH.HHHH','HHHHHHHHH','HHHHHHHHH','.HHHHHHH.','..HHHHH..','...HHH...','....H....','.........'],{H:'#ff4d6d'}),
-  damage:makeSprite(['....R....','...RRR...','..RRRRR..','.RR.R.RR.','RR..R..RR','....R....','...RRR...','..RR.RR..','.RR...RR.'],{R:'#ff8b3d'}),
-  magnet:makeSprite(['..MMMMM..','.M.....M.','M..MMM..M','M.M...M.M','M.M.W.M.M','M.M...M.M','M..MMM..M','.M.....M.','..MMMMM..'],{M:'#b06bff',W:'#e8d5ff'}),
-  spark:makeSprite(['....P....','...PWP...','..PWWWP..','.PWWCWWP.','PWWCCCWWP','.PWWCWWP.','..PWWWP..','...PWP...','....P....'],{P:'#7a3ad0',W:'#c9a4ff',C:'#eaffff'}),
-  pod:makeSprite(['....C....','CCC.C.CCC','CWWCCCWWC','CWWWCWWWC','CWWWCWWWC','CWYWCWYWC','CWWWCWWWC','CCCCCCCCC','....C....'],{C:'#3f9c4a',W:'#f0e6c8',Y:'#ffd23e'}),
-  vacuum:makeSprite(['..CCCC...','.C....C..','C..CC..C.','C.C..C.C.','C.C.W..C.','C..CCW.C.','.C....CC.','..CCCC...','.........'],{C:'#39d5ff',W:'#eaffff'})
+  speed:makeSprite(["..................",".........KK.......",".........KHK......",".........KHYK.....",".........KHYYK....",".KKKKKKKKKHYYYK...",".KHHHHHHHHHYYYYK..",".KHYYYYYYYYYYYYYK.",".KHYYYYYYYYYYYYYYK",".KDYYYYYYYYYYYYYK.",".KDDDDDDDDDYYYYK..",".KKKKKKKKKDYYYK...",".........KDYYK....",".........KDYK.....",".........KDK......",".........KK.......","..................",".................."],{K:'#3a3004',D:'#b89a10',Y:'#ffe94a',H:'#fff8b0'},2),
+  regen:makeSprite(["..................","......KKKKKK......",".....KHHHMMMK.....",".....KHHMMMMK.....",".....KHMMMMMK.....",".KKKKKHMMMMMKKKKK.","KHHHHHMMMMMMMMMMMK","KHHMMMMMWWMMMMMMDK","KHMMMMMMWWMMMMMDDK","KHMMMMMMMMMMMMDDDK","KDDDDDMMMMMMDDDDDK",".KKKKKMMMMMDKKKKK.",".....KMMMMMDK.....",".....KMMMMDDK.....",".....KDMMDDDK.....",".....KDDDDDDK.....","......KKKKKK......",".................."],{K:'#0e3a1a',D:'#2c9a44',M:'#57e86b',H:'#a0f5b0',W:'#e8fff0'},2),
+  maxhp:makeSprite(["..................","...KKKK....KKKK...","..KHHMMK..KMMMMK..",".KHHHMMMKKMMMMMMK.",".KHWHMMMMMMMMMMDK.",".KHHMMMMMMMMMMMDK.",".KHMMMMMMMMMMMDDK.",".KMMMMMMMMMMMMDDK.","..KMMMMMMMMMMDDK..","..KMMMMMMMMMMDDK..","...KMMMMMMMMDDK...","....KMMMMMMDDK....",".....KMMMMDDK.....","......KMMDDK......",".......KMDK.......","........KK........","..................",".................."],{K:'#3a0a14',D:'#b8203c',M:'#ff4d6d',H:'#ff9ab0',W:'#ffffff'},2),
+  damage:makeSprite(["........KK........",".......KHMK.......","......KHHMDK......","......KHHMDK......","......KHHMDK......","......KHHMDK......","......KHHMDK......","......KHHMDK......","......KHHMDK......","..KKKKKHHMDKKKKK..",".KHMMMMMMMMMMMMDK.","..KKKKKKDDKKKKKK..",".......KDDK.......",".......KDDK.......",".......KDDK.......","......KDMMDK......","......KDDDDK......",".......KKKK......."],{K:'#3a1404',D:'#b0501a',M:'#ff8b3d',H:'#ffd0a0'},2),
+  magnet:makeSprite(["..................",".....KKKKKKKK.....","...KKHHMMMMMMKK...","..KHHMMMMMMMMMMK..",".KHHMMMKKKKMMMMDK.",".KHMMMKK..KKMMMDK.",".KHMMK......KMMDK.",".KHMMK......KMMDK.",".KHMMK......KMMDK.",".KHMMK......KMMDK.",".KHMMK......KMMDK.",".KKKKK......KKKKK.",".KWWWK......KWWWK.",".KWWWK......KWWWK.",".KWWWK......KWWWK.",".KKKKK......KKKKK.","..................",".................."],{K:'#2a1440',D:'#7a3ad0',M:'#b06bff',H:'#d8b8ff',W:'#e8d5ff'},2),
+  spark:makeSprite(["........KK........",".......KHDK.......",".......KHDK.......",".......KHMK.......","......KHMMDK......","......KHMMDK......",".....KHHMMMDK.....","KKKKKKHMWWMMDKKKKK","KHHHHHMWWCWWMDDDDK","KHHHHHMWWCWWMDDDDK","KKKKKKHMWWMMDKKKKK",".....KHMMMMDK.....","......KHMMDK......","......KHMMDK......",".......KHMK.......",".......KHDK.......",".......KHDK.......","........KK........"],{K:'#2a1440',D:'#7a3ad0',M:'#a070e8',H:'#c9a4ff',W:'#eaffff',C:'#ffffff'},2),
+  pod:makeSprite(["........KK........",".......KMMK.......","......KHMMDK......",".....KHHWWMDK.....","....KHHMWWMMDK....","...KHHMMWWMMMDK...","..KHHMMMWWMMMDDK..","..KHMMYMWWMYMMDK..","..KHMMMMWWMMMDDK..","..KHMMYMWWMYMMDK..","..KHMMMMWWMMMDDK..","..KMMMMMWWMMMDDK..","...KMMMMWWMMDDK...","....KMMMWWMDDK....",".....KMMWWDDK.....","......KMDDDK......",".......KKKK.......",".................."],{K:'#0e3a1a',D:'#2c7a34',M:'#4ab850',H:'#8fe08a',W:'#f0e6c8',Y:'#ffd23e'},2),
+  vacuum:makeSprite(["..................","..KKKKKKKKKKKKKK..",".KHHHMMMMMMMMMMDK.",".KHMMMMMMMMMMMDDK.","..KKKKKKKKKKKKKK..","....KKKKKKKKKKK...","...KHHMMMMMMMMDK..","....KKKKKKKKKKK...",".....KKKKKKKKK....","....KHMMMMMMMDK...",".....KKKKKKKKK....",".......KKKKK......","......KHMMMDK.....",".......KKKKK......","........KKK.......",".......KHMDK......","........KKK.......",".................."],{K:'#0a2a34',D:'#1a8aaa',M:'#39d5ff',H:'#b0f0ff'},2)
 };
-const huntMarkSprite=makeSprite(['.R.R.','RRRRR','.RRR.','..R..'],{R:'#ff3c3c'});
-const eliteMarkSprite=makeSprite(['.Y.','YYY','.Y.'],{Y:'#ffd23e'});
+const huntMarkSprite=makeSprite(['KK......KK','KRK....KRK','KRRK..KRRK','KRRRKKRRRK','.KRRRRRRK.','..KRRRRK..','...KRRK...','....KK....'],{'K':'#3a0a04','R':'#ff3c3c'},2); // 10x8 at y-r-12, gameplay red
+const eliteMarkSprite=makeSprite(['..KK..','.KYYK.','KYHYYK','KYYYYK','.KYYK.','..KK..'],{'K':'#3a2a08','Y':'#ffd23e','H':'#fff2c0'},2); // 6x6 at y-r-8, gold
 const classicIcon=makeSprite([
 '..YYYYYY..','.YWWWWWWY.','YWYYYYYYWY','YWY.YY.YWY','YWYYYYYYWY',
 'YWY.YY.YWY','YWYYYYYYWY','.YWWWWWWY.','..YYYYYY..','...Y..Y...'],{Y:'#ffd23e',W:'#fff2c0'});
@@ -329,7 +287,7 @@ const SLAG_HAMMER_PAL=heat=>Object.assign({K:'#0b080a',a:'#241c26',b:'#382c3a',c
 const slagHammerSprite=makeSprite(SLAG_HAMMER_ROWS,SLAG_HAMMER_PAL('warm'));
 const slagHammerHotSprite=makeSprite(SLAG_HAMMER_ROWS,SLAG_HAMMER_PAL('hot'));
 const slagHammerRedSprite=makeSprite(SLAG_HAMMER_ROWS,SLAG_HAMMER_PAL('red'));
-const slagPupSprite=makeSprite(['..KKKK..','.KEEEEK.','KEKYYKEK','KEYYYYEK','KEEEEEEK','.KK..KK.','.K....K.'],{K:'#2a1512',E:'#ff6a1a',Y:'#ffd23e'});
+const slagPupSprite=makeSprite([".....KKKKKK.....","...KKSSSSSSKK...","..KSSSSSMSSSSK..",".KSSLLSSSSMMSSK.",".KLMHHMMMMHHMMK.","KLMMHHMMMMHHMMMK","KMMMMMMMMMMMMMMK","KMMMDDMMMMDDMMMK","KDMMMMMMMMMMMMDK",".KDDMMMMMMMMDDK.","..KKDDDDDDDDKK..","...KDDK..KDDK...","..KDDK....KDDK..","..KKKK....KKKK.."],{"K":"#2a1512","D":"#7a1a0a","M":"#ff6a1a","L":"#ff9040","H":"#ffd23e","W":"#fff2c0","S":"#4a3a3a"},2); // 16x14 for r=4, feet row 13; MAT.ember with the old pup hue as M, S=basalt crust
 
 const GEMINOX_ROWS=[
 '..KAAK......KCCK..','.KAAAAK....KCCCCK.','.KAWWAK....KCWWCK.','.KAKKAK....KCKKCK.',
@@ -367,10 +325,10 @@ const pyraxisShatteredSprite=makeSprite(PYRAXIS_SHATTERED_ROWS,{K:'#2a0a04',D:'#
 const CROWN_ROWS=['.W....W....W.','YWY..YWY..YWY','EYE.EEYEE.EYE','EEEEEEEEEEEEE','DEEEEEEEEEEED'];
 const pyraxisCrownP2=makeSprite(CROWN_ROWS,{W:'#fff2c0',Y:'#ffd23e',E:'#ff7a1a',D:'#a03a10'});
 const pyraxisCrownP3=makeSprite(CROWN_ROWS,{W:'#ffffff',Y:'#fff2c0',E:'#ffd23e',D:'#ff7a1a'});
-const emberlingSprite=makeSprite(['..KKKK..','.KEEEEK.','KEYYYYEK','KEYWWYEK','KEYYYYEK','KEEEEEEK','.KE..EK.','.K....K.'],{K:'#3a0a04',E:'#ff5a3d',Y:'#ffd23e',W:'#fff2c0'});
-const cinderSprite=makeSprite(['..YYY..','.YEEEY.','YEEWEEY','YEWWWEY','YEEWEEY','.YEEEY.','..YYY..'],{Y:'#ffd23e',E:'#ff5a3d',W:'#fff2c0'});
+const emberlingSprite=makeSprite([".......K........","....K.KHK.K.....","....KHKHHKHK....","...KHHHHHHHHK...","..KMHHHWWHHHMK..",".KMMHHWWWWHHMMK.",".KMMKKWWWWKKMMK.","KMMMKKHWWHKKMMMK","KMMMMHHHHHHMMMMK","KMMMMMHHHHMMMMMK","KDMMMMMMMMMMMMDK",".KDMMMMMMMMMMDK.","..KDDMMMMMMDDK..","...KKKDDDDKKK...","...KDDK..KDDK...","...KKKK..KKKK..."],{"K":"#3a0a04","D":"#7a1a0a","M":"#ff5a3d","L":"#ff9040","H":"#ffd23e","W":"#fff2c0"},2); // 16x16 for r=4, feet row 15; MAT.ember verbatim
+const cinderSprite=makeSprite([".....KKKK.....","...KKHHHHKK...","..KHHHHHHHHK..",".KHHMMMMMMHHK.",".KHMMMHHMMMHK.","KHHMMHWWHMMHHK","KHHMHWWWWHMHHK","KHHMHWWWWHMHHK","KHHMMHWWHMMHHK",".KHMMMHHMMMHK.",".KHHMMMMMMHHK.","..KHHHHHHHHK..","...KKHHHHKK...",".....KKKK....."],{"K":"#3a0a04","D":"#7a1a0a","M":"#ff5a3d","L":"#ff9040","H":"#ffd23e","W":"#fff2c0"},2); // 14x14 met-fx ember (scale 1+2k); MAT.ember verbatim
 const frostBrazierSprite=makeSprite(['..CWC..','.CWWWC.','CWWWWWC','.CWWWC.','..CBC..','..CBC..','.CBBBC.','.CBBBC.','CCCCCCC'],{C:'#eaffff',W:'#ffffff',B:'#2a4a5c'});
-const arenaTorchSprite=makeSprite(['..W..','.WYW.','WYEYW','.YEY.','..E..','..S..','..S..','.SSS.'],{W:'#fff2c0',Y:'#ffd23e',E:'#ff7a1f',S:'#5c626b'});
+const arenaTorchSprite=makeSprite(["....LL....","...LWWL...","..LWWWHL..","..LWWHHL..",".LWHHHHHL.",".LHHHHHLM.",".MLLLLLLM.","..MLLLLM..","...MMMM...","..KSSSSK..","...KSSK...","...KSSK...","...KSSK...","..KSSSSK..",".KSSSSSSK.",".KKKKKKKK."],{K:'#14161c',S:'#5c626b',D:'#7a1a0a',M:'#ff5a3d',L:'#ff9040',H:'#ffd23e',W:'#fff2c0'},2); // 5x8 units at pillar y-16; flame rows 0-8; glow r12 #ffb62e a0.3 at y-18
 
 const WORLDEATER_ROWS=[
 '.KVVK...YY.YY.YY...KVVK.','.KVVK..YYEEYYEEYY..KVVK.','.KVVK.YYYYYYYYYYYY.KVVK.',
@@ -1485,9 +1443,9 @@ function stick(p){
 
 // ---------- terrain ----------
 const TILE=16,CHUNK=16,CHPX=TILE*CHUNK;
-const creepFrames=bakeOverlayFrames(creepTileSprite,'rgba(63,224,90,0.35)'),
-      voidFrames=bakeOverlayFrames(voidTileSprite,'rgba(138,92,255,0.30)'),
-      lavaFrames=bakeOverlayFrames(lavaTileSprite,'rgba(255,210,62,0.30)');
+const creepFrames=[makeSprite(["LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","LLKKKKKKKMMKKKKKKKKKKMMKKKKKKKDL","LLKKKKKKMMKKKKKKKKDDMMKKKKKKKKDL","LLKKDDDMMKKKKKKKKKDMMKKKKKMKKKDL","LLKKDDMMKKKKKKKKKKMMKKKKKKKKKKML","LLKKKMMKKKKKKKKKKMMKKKDDDKKKKMML","LLKKMMKKKKKKKKKKMMKKKKDDDKKKMMDL","LLKMMKKKKKKKHHMMMKKKKKKKKKKMMKDL","LLMMKKKKKKKKHHLMKKKKKKKKKKMMKKDL","LLMKKKKMKKKKLMMKKKKKKKKKKMMKKKDL","LLKKKKKKKKKKMMKKKKKKKKKKMMKKKKDL","LLKKKKKKKKKMMKKKKKKKMKKMMKKDDKDL","LLKKKKKKKDMMKKKKKKKKKKMMKKKDDKDL","LLKKKKKKKMMDKKKKKKKKKMMKKKKKKKDL","LLKKKKKKMMDDKKKKMKKKMMKKKKKKKKDL","LLKDDKKMMKKKKKKKKKKMMKKKKKKKKKDL","LLKDDKMMKKKKKKKKKKMMKKKKMKKKKKML","LLKDDMMKKKKKKKKKKMHHKKKKKKKKKMML","LLKKMMKKKKKKKKKKMMHHLKKKKKKKMMDL","LLKMMMKKKKKKDDDMMKLKKKKKKKKMMKDL","LLMMKKKKKKKKDDMMKKKKKKKKKKMMKKDL","LLMKKKKKKKKKKMMKKKKKKKKKKMMDDKDL","LLKKKKKKKKKKMMKKKKKKKKKKMMDDDKDL","LLKKKKDDDKKMMKKKKKKKKKKMMKKKKKDL","LLKKKKDDDKMMKKKKKKKKKMMMKKKKKKDL","LLKKKKKKKMMKKKKDDDDKKMMKKKKKKKDL","LLKKKKKKMMKKKKKDDDDKMMKKKKKKMKDL","LLKKKKKMMKMKKKKKKKKMMKKKKKKKKKDL","LLKKKKMMKKKKKKKKKKMMKKKKKKKKKKML","LLDDDMMDDDDDDDDDDMMDDDDDDDDDDMMD","LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLDL"],{"K":"#0a1f0c","D":"#163a1c","M":"#2c9640","L":"#3fe05a","H":"#c8ffd2"},2),makeSprite(["LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","LLKKKKKKKKKMMKKKKKKKKKKMMKKKKKDL","LLKKKKKKKKMMKKKKKKDDKKMMKKKKKKDL","LLKKDDDDKMMKKKKKKKDDKMMKKKMKKKDL","LLKKDDDDMMKKKKKKKKKKMMKKKKKKKKDL","LLKKKKKMMKKKKKKKKKKMMKDDDKKKKKDL","LLKKKKMMKKKKKKKKKKMMKKDDDKKKKKML","LLKKKMMKKKKKHHMKKMMKKKKKKKKKKMML","LLKKMMKKKKKKHHLKMMKKKKKKKKKKMMDL","LLKMMKKMKKKKLKKMMKKKKKKKKKKMMKDL","LLMMKKKKKKKKKKMMKKKKKKKKKKMMKKDL","LLMKKKKKKKKKKMMKKKKKMKKKKMMDDKDL","LLKKKKKKKDDDMMKKKKKKKKKKMMKDDKDL","LLKKKKKKKDDMMKKKKKKKKKKMMKKKKKDL","LLKKKKKKKDMMKKKKMKKKKKMMKKKKKKDL","LLKDDKKKKMMKKKKKKKKKKMMKKKKKKKDL","LLKDDKKKMMKKKKKKKKKKMMKKMKKKKKDL","LLKDDKKMMKKKKKKKKKHHMKKKKKKKKKDL","LLKKKKMMKKKKKKKKKKHHLKKKKKKKKKML","LLKKKMMKKKKKDDDKKMLKKKKKKKKKKMML","LLKKMMKKKKKKDDDKMMKKKKKKKKKKMMDL","LLKMMKKKKKKKKKKMMKKKKKKKKDDMMKDL","LLMMKKKKKKKKKKMMKKKKKKKKKDMMDKDL","LLMKKKDDDKKKKMMKKKKKKKKKKMMKKKDL","LLKKKKDDDKKKMMKKKKKKKMKKMMKKKKDL","LLKKKKKKKKKMMKKDDDDKKKKMMKKKKKDL","LLKKKKKKKKMMKKKDDDDKKKMMKKKKMKDL","LLKKKKKKKMMKKKKKKKKKKMMKKKKKKKDL","LLKKKKKKMMKKKKKKKKKKMMKKKKKKKKDL","LLDDDDDMMDDDDDDDDDDMMDDDDDDDDDDM","LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLML"],{"K":"#0a1f0c","D":"#163a1c","M":"#2c9640","L":"#3fe05a","H":"#c8ffd2"},2),makeSprite(["LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","LLMKKKKKKKKKKMMKKKKKKKKKKMMKKKDL","LLKKKKKKKKKKMMKKKKDDKKKKMMKKKKDL","LLKKDDDDKKKMMKKKKKDDKKKMMKMKKKDL","LLKKDDDDKKMMKKKKKKKKKKMMKKKKKKDL","LLKKKKKKKMMKKKKKKKKKKMMDDKKKKKDL","LLKKKKKKMMKKKKKKKKKKMMDDDKKKKKDL","LLKKKKKMMKKKHHMKKKKMMKKKKKKKKKDL","LLKKKKMMKKKKHHLKKKMMKKKKKKKKKKML","LLKKKMMMKKKKLKKKKMMKKKKKKKKKKMML","LLKKMMKKKKKKKKKKMMKKKKKKKKKKMMDL","LLKMMKKKKKKKKKKMMKKKMKKKKKKMMKDL","LLMMKKKKKDDDKKMMKKKKKKKKKKMMDKDL","LLMKKKKKKDDDKMMKKKKKKKKKKMMKKKDL","LLKKKKKKKDDDMMKKMKKKKKKKMMKKKKDL","LLKDDKKKKKKMMKKKKKKKKKKMMKKKKKDL","LLKDDKKKKKMMKKKKKKKKKKMMMKKKKKDL","LLKDDKKKKMMKKKKKKKHHKMMKKKKKKKDL","LLKKKKKKMMKKKKKKKKHHLMKKKKKKKKDL","LLKKKMKMMKKKDDDKKKLMMKKKKKKKKKDL","LLKKKKMMKKKKDDDKKKMMKKKKKKKKKKML","LLKKKMMKKKKKKKKKKMMKKKKKKDDDDMML","LLKKMMKKKKKKKKKKMMKKKKKKKDDDMMDL","LLKMMKDDDKKKKKKMMKKKKKKKKKKMMKDL","LLMMKKDDDKKKKKMMKKKKKMKKKKMMKKDL","LLMKKKKKKKKKKMMDDDDKKKKKKMMKKKDL","LLKKKKKKKKKKMMKDDDDKKKKKMMKKMKDL","LLKKKKKKKKMMMKKKKKKKKKKMMKKKKKDL","LLKKKKKKKKMMKKKKKKKKKKMMKKKKKKDL","LLDDDDDDDMMDDDDDDDDDDMMDDDDDDDDD","LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLDL"],{"K":"#0a1f0c","D":"#163a1c","M":"#2c9640","L":"#3fe05a","H":"#c8ffd2"},2),makeSprite(["LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","LLKMMKKKKKKKKKKMMKKKKKKKKKKMMKDL","LLMMKKKKKKKKKKMMKKDDKKKKKKMMKKDL","LLMKDDDDKKKKKMMKKKDDKKKKKMMKKKDL","LLKKDDDDKKKKMMKKKKKKKKKKMMKKKKDL","LLKKKKKKKKKMMKKKKKKKKKDMMKKKKKDL","LLKKKKKKKKMMKKKKKKKKKKMMDKKKKKDL","LLKKKKKKKMMKHHMKKKKKKMMKKKKKKKDL","LLKKKKKKMMKKHHLKKKKKMMKKKKKKKKDL","LLKKKKKMMKKKLKKKKKKMMKKKKKKKKKDL","LLKKKKMMKKKKKKKKKKMMKKKKKKKKKKML","LLKKKMMKKKKKKKKKKMMKMKKKKKKDDMML","LLKKMMKKKDDDKKKKMMKKKKKKKKKDMMDL","LLKMMKKKKDDDKKKMMKKKKKKKKKKMMKDL","LLMMKKKKKDDDKKMMMKKKKKKKKKMMKKDL","LLMDDKKKKKKKKMMKKKKKKKKKKMMKKKDL","LLKDDKKKKKKKMMKKKKKKKKKKMMKKKKDL","LLKDDKKKKKKMMKKKKKHHKKKMMKKKKKDL","LLKKKKKKKKMMKKKKKKHHLKMMKKKKKKDL","LLKKKMKKKMMKDDDKKKLKKMMKKKKKKKDL","LLKKKKKKMMKKDDDKKKKKMMKKKKKKKKDL","LLKKKKKMMKKKKKKKKKKMMKKKKDDDDKDL","LLKKKKMMKKKKKKKKKKMMKKKKKDDDDKML","LLKKKMMDDKKKKKKKKMMKKKKKKKKKKMML","LLKKMMDDDKKKKKKKMMKKKMKKKKKKMMDL","LLKMMKKKKKKKKKKMMDDKKKKKKKKMMKDL","LLMMKKKKKKKKKKMMDDDKKKKKKKMMMKDL","LLMKKKKKKKMKKMMKKKKKKKKKKMMKKKDL","LLKKKKKKKKKKMMKKKKKKKKKKMMKKKKDL","LLDDDDDDDDDMMDDDDDDDDDDMMDDDDDDD","LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLDL"],{"K":"#0a1f0c","D":"#163a1c","M":"#2c9640","L":"#3fe05a","H":"#c8ffd2"},2),makeSprite(["LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","LLKKKMMKKKKKKKKKKMMKKKKKKKKKKMML","LLKKMMKKKKKKKKKKMMDDKKKKKKKKMMDL","LLKMMDDDKKKKKKKMMKDDKKKKKKMMMKDL","LLMMDDDDKKKKKKMMKKKKKKKKKKMMKKDL","LLMKKKKKKKKKKMMKKKKKKKDDDMMKKKDL","LLKKKKKKKKKKMMKKKKKKKKDDMMKKKKDL","LLKKKKKKKKKMHHMKKKKKKKKMMKKKKKDL","LLKKKKKKKKMMHHLKKKKKKKMMKKKKKKDL","LLKKKKKMKMMKLKKKKKKKKMMKKKKKKKDL","LLKKKKKKMMKKKKKKKKKKMMKKKKKKKKDL","LLKKKKKMMKKKKKKKKKKMMKKKKKKDDKDL","LLKKKKMMKDDDKKKKKKMMKKKKKKKDDKML","LLKKKMMKKDDDKKKKKMMKKKKKKKKKKMML","LLKKMMKKKDDDKKKKMMKKKKKKKKKKMMDL","LLKMMKKKKKKKKKKMMKKKKKKKKKKMMKDL","LLMMDKKKKKKKKKMMKKKKKKKKMKMMKKDL","LLMDDKKKKKKKKMMKKKHHKKKKKMMKKKDL","LLKKKKKKKKKKMMKKKKHHLKKKMMKKKKDL","LLKKKMKKKKKMMDDKKKLKKKKMMKKKKKDL","LLKKKKKKKKMMDDDKKKKKKKMMKKKKKKDL","LLKKKKKKKMMKKKKKKKKKKMMKKDDDDKDL","LLKKKKKKMMKKKKKKKKKKMMKKKDDDDKDL","LLKKKKDMMKKKKKKKKKKMMKKKKKKKKKDL","LLKKKKMMDKKKKKKKKKMMKMKKKKKKKKML","LLKKKMMKKKKKKKKDDMMKKKKKKKKKKMML","LLKKMMKKKKKKKKKDMMDKKKKKKKKKMMDL","LLKMMKKKKKMKKKKMMKKKKKKKKKKMMKDL","LLMMKKKKKKKKKKMMKKKKKKKKKKMMKKDL","LLMDDDDDDDDDDMMDDDDDDDDDDMMDDDDD","LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLDL"],{"K":"#0a1f0c","D":"#163a1c","M":"#2c9640","L":"#3fe05a","H":"#c8ffd2"},2),makeSprite(["LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","LLKKKKKMMKKKKKKKKKKMMKKKKKKKKKDL","LLKKKKMMKKKKKKKKKKMMKKKKKKKKKKML","LLKKDMMDKKKKKKKKKMMDKKKKKKMKKMML","LLKKMMDDKKKKKKKKMMKKKKKKKKKKMMDL","LLKMMKKKKKKKKKKMMKKKKKDDDKKMMKDL","LLMMKKKKKKKKKKMMKKKKKKDDDKMMKKDL","LLMKKKKKKKKKHHMKKKKKKKKKKMMKKKDL","LLKKKKKKKKKKHHLKKKKKKKKKMMKKKKDL","LLKKKKKMKKKMLKKKKKKKKKKMMKKKKKDL","LLKKKKKKKKMMKKKKKKKKKKMMKKKKKKDL","LLKKKKKKKMMKKKKKKKKKMMMKKKKDDKDL","LLKKKKKKMMDDKKKKKKKKMMKKKKKDDKDL","LLKKKKKMMDDDKKKKKKKMMKKKKKKKKKDL","LLKKKKMMKDDDKKKKMKMMKKKKKKKKKKML","LLKDDMMKKKKKKKKKKMMKKKKKKKKKKMML","LLKDMMKKKKKKKKKKMMKKKKKKMKKKMMDL","LLKMMKKKKKKKKKKMMKHHKKKKKKKMMKDL","LLMMKKKKKKKKKKMMKKHHLKKKKKMMKKDL","LLMKKMKKKKKKDMMKKKLKKKKKKMMKKKDL","LLKKKKKKKKKKMMDKKKKKKKKKMMKKKKDL","LLKKKKKKKKKMMKKKKKKKKKKMMDDDDKDL","LLKKKKKKKKMMKKKKKKKKKKMMKDDDDKDL","LLKKKKDDDMMKKKKKKKKKKMMKKKKKKKDL","LLKKKKDDMMKKKKKKKKKKMMKKKKKKKKDL","LLKKKKKMMKKKKKKDDDDMMKKKKKKKKKDL","LLKKKKMMKKKKKKKDDDMMKKKKKKKKMKML","LLKKKMMKKKMKKKKKKMMKKKKKKKKKKMML","LLKKMMKKKKKKKKKKMMKKKKKKKKKKMMDL","LLDMMDDDDDDDDDDMMDDDDDDDDDDMMDDD","LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLDL"],{"K":"#0a1f0c","D":"#163a1c","M":"#2c9640","L":"#3fe05a","H":"#c8ffd2"},2)]; // creep hazard 16x16u (32x32 den 2) x6, hatch phase = frame index; index floor(phase*8)%6
+const voidFrames=[makeSprite(["HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH","HLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","HLKKKKKKKMMKKKKKKKKKKMMKKKKKKDLL","HLKKKKKKMMKKKKKKKKDDMMKKKKKKKDLL","HLKKKKKMMKKKKKKKKKDMMKKKKKKKKDLL","HLKKKDMMKKKKKKKKKKMMKKKKKVKKKDLL","HLKKKMMDKKKKKKKKKMMKKKKKKKKKKMLL","HLKKMMKKKKKKKKKKMMKKKDDDKKKKMMLL","HLKMMKKKKKKKVVKMMKKKKDDDKKKMMDLL","HLMMKKKKKKKKVVMMKKKKKDDDKKMMKDLL","HLMKKKKKKKKKKMMKKKKKKKKKKMMKKDLL","HLKKKKKKKKKKMMKKKKKKKKKKMMKKKDLL","HLKKKKKKKKKMMKKKKKKKKKKMMKKKKDLL","HLKKKKKKKKMMKKKKKKKKKKMMKKDDKDLL","HLKKKKKKKMMDDDKKKKKKKMMKKKDDKDLL","HLKKKKKKMMDDDDKKKKKKMMKKKKKKKDLL","HLKKKKKMMKKKKKKKKKKMMKKKKKKKKDLL","HLKDDKMMKKKKKKKKKKMMKKKKKKKKKDLL","HLKDDMMKKKKKKKKKKMVVKKKKKKKKKMLL","HLKDMMKKKKKKKKKKMMVVKKKKKKKKMMLL","HLKMMKKKKKKKKKKMMKKKKKKKKKKMMDLL","HLMMKKKKKKKKKDMMKKKKKKKKKKMMKDLL","HLMKKKKVKKKKKMMDKKKKKKKKKMMKKDLL","HLKKKKKKKKKKMMKKKKKKKKKKMMDKKDLL","HLKKKKKKKKKMMKKKKKKKKKKMMDDKKDLL","HLKKKKKDDDMMKKKKKKKKKKMMKKKKKDLL","HLKKKKKDDMMKKKKKKKKKKMMKKKKKKDLL","HLKKKKKKMMKKKKKKDDDKMMKKKKKKKDLL","HLKKKKKMMKKKKKKKDDDMMKKKKKKKKDLL","HLDDDDMMDDDDDDDDDDMMDDDDDDDDDDLL","HLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","HLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"],{"K":"#07040f","D":"#161028","M":"#3d2c78","L":"#3a2f4a","H":"#5a4a74","V":"#8a5cff"},2),makeSprite(["HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH","HLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","HLKKKKKKKKKMMKKKKKKKKKKMMKKKKDLL","HLKKKKKKKKMMKKKKKKDDKKMMKKKKKDLL","HLKKKKKKKMMKKKKKKKDDKMMKKKKKKDLL","HLKKKDDDMMKKKKKKKKKKMMKKKVKKKDLL","HLKKKDDMMKKKKKKKKKKMMKKKKKKKKDLL","HLKKKKMMKKKKKKKKKKMMKDDDKKKKKDLL","HLKKKMMKKKKKVVKKKMMKKDDDKKKKKMLL","HLKKMMKKKKKKVVKKMMKKKDDDKKKKMMLL","HLKMMKKKKKKKKKKMMKKKKKKKKKKMMDLL","HLMMKKKKKKKKKKMMKKKKKKKKKKMMKDLL","HLMKKKKKKKKKKMMKKKKKKKKKKMMKKDLL","HLKKKKKKKKKKMMKKKKKKKKKKMMDDKDLL","HLKKKKKKKKDMMDKKKKKKKKKMMKDDKDLL","HLKKKKKKKKMMDDKKKKKKKKMMKKKKKDLL","HLKKKKKKKMMKKKKKKKKKKMMKKKKKKDLL","HLKDDKKKMMKKKKKKKKKKMMKKKKKKKDLL","HLKDDKKMMKKKKKKKKKVVMKKKKKKKKDLL","HLKDDKMMKKKKKKKKKKVVKKKKKKKKKDLL","HLKKKMMKKKKKKKKKKMMKKKKKKKKKKMLL","HLKKMMKKKKKKKDDDMMKKKKKKKKKKMMLL","HLKMMKKVKKKKKDDMMKKKKKKKKKKMMDLL","HLMMKKKKKKKKKKMMKKKKKKKKDDMMKDLL","HLMKKKKKKKKKKMMKKKKKKKKKDMMKKDLL","HLKKKKKDDDKKMMKKKKKKKKKKMMKKKDLL","HLKKKKKDDDKMMKKKKKKKKKKMMKKKKDLL","HLKKKKKKKKMMKKKKDDDKKKMMKKKKKDLL","HLKKKKKKKMMKKKKKDDDKKMMKKKKKKDLL","HLDDDDDDMMDDDDDDDDDDMMDDDDDDDDLL","HLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","HLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"],{"K":"#07040f","D":"#161028","M":"#3d2c78","L":"#3a2f4a","H":"#5a4a74","V":"#8a5cff"},2),makeSprite(["HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH","HLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","HLMKKKKKKKKKKMMKKKKKKKKKKMMKKDLL","HLKKKKKKKKKKMMKKKKDDKKKKMMKKKDLL","HLKKKKKKKKKMMKKKKKDDKKKMMKKKKDLL","HLKKKDDDKKMMKKKKKKKKKKMMKVKKKDLL","HLKKKDDDKMMKKKKKKKKKKMMKKKKKKDLL","HLKKKKKKMMKKKKKKKKKKMMDDKKKKKDLL","HLKKKKKMMKKKVVKKKKKMMDDDKKKKKDLL","HLKKKKMMKKKKVVKKKKMMKDDDKKKKKDLL","HLKKKMMKKKKKKKKKKMMKKKKKKKKKKMLL","HLKKMMKKKKKKKKKKMMKKKKKKKKKKMMLL","HLKMMKKKKKKKKKKMMKKKKKKKKKKMMDLL","HLMMKKKKKKKKKKMMKKKKKKKKKKMMKDLL","HLMKKKKKKKDDDMMKKKKKKKKKKMMDKDLL","HLKKKKKKKKDDMMKKKKKKKKKKMMKKKDLL","HLKKKKKKKKKMMKKKKKKKKKKMMKKKKDLL","HLKDDKKKKKMMKKKKKKKKKKMMKKKKKDLL","HLKDDKKKKMMKKKKKKKVVKMMKKKKKKDLL","HLKDDKKKMMKKKKKKKKVVMMKKKKKKKDLL","HLKKKKKMMKKKKKKKKKKMMKKKKKKKKDLL","HLKKKKMMKKKKKDDDKKMMKKKKKKKKKDLL","HLKKKMMVKKKKKDDDKMMKKKKKKKKKKMLL","HLKKMMKKKKKKKKKKMMKKKKKKDDDKMMLL","HLKMMKKKKKKKKKKMMKKKKKKKDDDMMDLL","HLMMKKKDDDKKKKMMKKKKKKKKKKMMKDLL","HLMKKKKDDDKKKMMKKKKKKKKKKMMKKDLL","HLKKKKKKKKKKMMKKDDDKKKKKMMKKKDLL","HLKKKKKKKKKMMKKKDDDKKKKMMKKKKDLL","HLDDDDDDDDMMDDDDDDDDDDMMDDDDDDLL","HLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","HLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"],{"K":"#07040f","D":"#161028","M":"#3d2c78","L":"#3a2f4a","H":"#5a4a74","V":"#8a5cff"},2),makeSprite(["HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH","HLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","HLKMMKKKKKKKKKKMMKKKKKKKKKKMMDLL","HLMMKKKKKKKKKKMMKKDDKKKKKKMMKDLL","HLMKKKKKKKKKKMMKKKDDKKKKKMMKKDLL","HLKKKDDDKKKKMMKKKKKKKKKKMVKKKDLL","HLKKKDDDKKKMMKKKKKKKKKKMMKKKKDLL","HLKKKKKKKKMMKKKKKKKKKDMMKKKKKDLL","HLKKKKKKKMMKVVKKKKKKKMMDKKKKKDLL","HLKKKKKKMMKKVVKKKKKKMMDDKKKKKDLL","HLKKKKKMMKKKKKKKKKKMMKKKKKKKKDLL","HLKKKKMMKKKKKKKKKKMMKKKKKKKKKDLL","HLKKKMMKKKKKKKKKKMMKKKKKKKKKKMLL","HLKKMMKKKKKKKKKKMMKKKKKKKKDDMMLL","HLKMMKKKKKDDDDKMMKKKKKKKKKDMMDLL","HLMMKKKKKKDDDDMMKKKKKKKKKKMMKDLL","HLMKKKKKKKKKKMMKKKKKKKKKKMMKKDLL","HLKDDKKKKKKKMMKKKKKKKKKKMMKKKDLL","HLKDDKKKKKKMMKKKKKVVKKKMMKKKKDLL","HLKDDKKKKKMMKKKKKKVVKKMMKKKKKDLL","HLKKKKKKKMMKKKKKKKKKKMMKKKKKKDLL","HLKKKKKKMMKKKDDDKKKKMMKKKKKKKDLL","HLKKKKKVMKKKKDDDKKKMMKKKKKKKKDLL","HLKKKKMMKKKKKKKKKKMMKKKKDDDKKDLL","HLKKKMMKKKKKKKKKKMMKKKKKDDDKKMLL","HLKKMMKDDDKKKKKKMMKKKKKKKKKKMMLL","HLKMMKKDDDKKKKKMMKKKKKKKKKKMMDLL","HLMMKKKKKKKKKKMMDDDKKKKKKKMMKDLL","HLMKKKKKKKKKKMMKDDDKKKKKKMMKKDLL","HLDDDDDDDDDDMMDDDDDDDDDDMMDDDDLL","HLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","HLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"],{"K":"#07040f","D":"#161028","M":"#3d2c78","L":"#3a2f4a","H":"#5a4a74","V":"#8a5cff"},2),makeSprite(["HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH","HLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","HLKKKMMKKKKKKKKKKMMKKKKKKKKKKMLL","HLKKMMKKKKKKKKKKMMDDKKKKKKKKMMLL","HLKMMKKKKKKKKKKMMKDDKKKKKKKMMDLL","HLMMKDDDKKKKKKMMKKKKKKKKKVMMKDLL","HLMKKDDDKKKKKMMKKKKKKKKKKMMKKDLL","HLKKKKKKKKKKMMKKKKKKKDDDMMKKKDLL","HLKKKKKKKKKMVVKKKKKKKDDMMKKKKDLL","HLKKKKKKKKMMVVKKKKKKKDMMKKKKKDLL","HLKKKKKKKMMKKKKKKKKKKMMKKKKKKDLL","HLKKKKKKMMKKKKKKKKKKMMKKKKKKKDLL","HLKKKKKMMKKKKKKKKKKMMKKKKKKKKDLL","HLKKKKMMKKKKKKKKKKMMKKKKKKDDKDLL","HLKKKMMKKKDDDDKKKMMKKKKKKKDDKMLL","HLKKMMKKKKDDDDKKMMKKKKKKKKKKMMLL","HLKMMKKKKKKKKKKMMKKKKKKKKKKMMDLL","HLMMDKKKKKKKKKMMKKKKKKKKKKMMKDLL","HLMDDKKKKKKKKMMKKKVVKKKKKMMKKDLL","HLKDDKKKKKKKMMKKKKVVKKKKMMKKKDLL","HLKKKKKKKKKMMKKKKKKKKKKMMKKKKDLL","HLKKKKKKKKMMKDDDKKKKKKMMKKKKKDLL","HLKKKKKVKMMKKDDDKKKKKMMKKKKKKDLL","HLKKKKKKMMKKKKKKKKKKMMKKDDDKKDLL","HLKKKKKMMKKKKKKKKKKMMKKKDDDKKDLL","HLKKKKMMDDKKKKKKKKMMKKKKKKKKKDLL","HLKKKMMDDDKKKKKKKMMKKKKKKKKKKMLL","HLKKMMKKKKKKKKKKMMDKKKKKKKKKMMLL","HLKMMKKKKKKKKKKMMDDKKKKKKKKMMDLL","HLMMDDDDDDDDDDMMDDDDDDDDDDMMDDLL","HLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","HLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"],{"K":"#07040f","D":"#161028","M":"#3d2c78","L":"#3a2f4a","H":"#5a4a74","V":"#8a5cff"},2),makeSprite(["HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH","HLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","HLKKKKKMMKKKKKKKKKKMMKKKKKKKKDLL","HLKKKKMMKKKKKKKKKKMMKKKKKKKKKDLL","HLKKKMMKKKKKKKKKKMMDKKKKKKKKKMLL","HLKKMMDDKKKKKKKKMMKKKKKKKVKKMMLL","HLKMMDDDKKKKKKKMMKKKKKKKKKKMMDLL","HLMMKKKKKKKKKKMMKKKKKDDDKKMMKDLL","HLMKKKKKKKKKVVMKKKKKKDDDKMMKKDLL","HLKKKKKKKKKKVVKKKKKKKDDDMMKKKDLL","HLKKKKKKKKKMMKKKKKKKKKKMMKKKKDLL","HLKKKKKKKKMMKKKKKKKKKKMMKKKKKDLL","HLKKKKKKKMMKKKKKKKKKKMMKKKKKKDLL","HLKKKKKKMMKKKKKKKKKKMMKKKKDDKDLL","HLKKKKKMMKDDDDKKKKKMMKKKKKDDKDLL","HLKKKKMMKKDDDDKKKKMMKKKKKKKKKDLL","HLKKKMMKKKKKKKKKKMMKKKKKKKKKKMLL","HLKDMMKKKKKKKKKKMMKKKKKKKKKKMMLL","HLKMMKKKKKKKKKKMMKVVKKKKKKKMMDLL","HLMMDKKKKKKKKKMMKKVVKKKKKKMMKDLL","HLMKKKKKKKKKKMMKKKKKKKKKKMMKKDLL","HLKKKKKKKKKKMMDDKKKKKKKKMMKKKDLL","HLKKKKKVKKKMMDDDKKKKKKKMMKKKKDLL","HLKKKKKKKKMMKKKKKKKKKKMMDDDKKDLL","HLKKKKKKKMMKKKKKKKKKKMMKDDDKKDLL","HLKKKKKDMMKKKKKKKKKKMMKKKKKKKDLL","HLKKKKKMMDKKKKKKKKKMMKKKKKKKKDLL","HLKKKKMMKKKKKKKKDDMMKKKKKKKKKDLL","HLKKKMMKKKKKKKKKDMMKKKKKKKKKKMLL","HLDDMMDDDDDDDDDDMMDDDDDDDDDDMMLL","HLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","HLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"],{"K":"#07040f","D":"#161028","M":"#3d2c78","L":"#3a2f4a","H":"#5a4a74","V":"#8a5cff"},2)]; // devoured floor 16x16u (32x32 den 2) x6, hatch phase = frame index
+const lavaFrames=[makeSprite(["DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD","DMMMMMMMMMLLMMMMMMMMMMLLMMMMMMMD","DMMMMMMMMLLMMMMMMMMMMLDDDMMMMMMD","DMMDDDDMLLMMMMMMMMMMLLDDDMMMMMMD","DMMDDDDLLWMMMMMMMMMLLMMMMDDDMMMD","DMMDDDDLMHMMMMMMMMLLMMMMMDDDMMLD","DMMMMLDDHMMMMMMMMLLMMMMMMDDDMLLD","DMMMLLDDHMMMMMMMLLMMMMMMMMMMLLMD","DMMLLMMHMMMMMMMLLMMMMHHHMMMLLMMD","DMLLMMMHMMMMMMLLMMMHHHHMHHLLMMMD","HHWMMMHMMMMMMLLMMMWMHMMMHHHHMMHH","HHHHHMHMMMMMLLMMMHHWMMMMLLHMHHWD","DMMMHHHMMMMLLMDHHHMHHMMLLMMMHHMD","DMMMMHHHHHLLMHHDHMMHMMLLMMMMMMMD","DMMMMMMMHHHHHHHMDDMMHHLMMMMMMMMD","DMMHMMMMLLHMHMMMDDMMLHHMMMMDDDMD","DMMMMMMLLMMMMMMMMMMLLHHMMMMDDDMD","DMMMMMLLMMMMMMMMMMLLMMHMMMMMMMLD","DMMMDDDMMMMMMMMMMLLMMMHHMMMMMLLD","DMMMDDDMMMMMMMMMLLMMMHHMMMMMLLMD","DMMLDDDMMMMMMMMLLMMMMHHMMMMLLMMD","DMLLMMDDMMMMMMLLMMMMHMMMMMLHHMMD","DLLMMMDDMMMMMLLMMMMMHHMMMLLMMMMD","DLMMMMMMMMMMLHMMMMMHHMMMLLMMMMMD","DMMMMMMMMMMLLMMMMMHWWHDDDMMMMMMD","DMMMMMMMMMLLMMMMMMHHHHDDDMMMMMMD","DMMMMMMMMLLMMMMMMMMMMLLMDDDDMMMD","DMMMMMMMLLMMMMMMMMMMLLMMDDDDMMMD","DMMMMMMLLDHDMMMMMMMLLMMMDDDDMMMD","DMMMMMLLMDDDMMMMMMLLMMMMMMMMMHLD","DMMMMLLMMMMMMMMMMLLMMMMMMMMMMLLD","DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"],{"D":"#c62a2a","M":"#ff3c3c","L":"#ff8a44","H":"#ffd23e","W":"#fff2c0"},2),makeSprite(["DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD","DLMMMMMMMMMMLLMMMMMMMMMMLLMMMMMD","DMMMMMMMMMMLLMMMMMMMMMDDDMMMMMMD","DMMDDDDMMMLLMMMMMMMMMMDDDMMMMMMD","DMMDDDDMMWLMMMMMMMMMMLLMMDDDMMMD","DMMDDDDMLHMMMMMMMMMMLLMMMDDDMMMD","DMMMMMDDHMMMMMMMMMMLLMMMMDDDMMMD","DMMMMMDDHMMMMMMMMMLLMMMMMMMMMMLD","DMMMMLLHMMMMMMMMMLLMMHHHMMMMMLLD","DMMMLLMHMMMMMMMMLLMHHHHMHHMMLLMD","HHWLLMHMMMMMMMMLLMWMHMMMHHHHLMHH","HHHHHMHMMMMMMMLLMHHWMMMMMMHLHHWD","DLLMHHHMMMMMMLDHHHMHHMMMMLLMHHMD","DLMMMHHHHHMMLHHDHMMHMMMMLLMMMMMD","DMMMMMMMHHHHHHHMDDMMHHMLLMMMMMMD","DMMHMMMMMMHLHMMMDDMMMHHLMMMDDDMD","DMMMMMMMMLLMMMMMMMMMMHHMMMMDDDMD","DMMMMMMMLLMMMMMMMMMMLLHMMMMMMMMD","DMMMDDDLLMMMMMMMMMMLLMHHMMMMMMMD","DMMMDDDLMMMMMMMMMMLLMHHMMMMMMMLD","DMMMDDDMMMMMMMMMMLLMMHHMMMMMMLLD","DMMMLLDDMMMMMMMMLLMMHMMMMMMHHLMD","DMMLLMDDMMMMMMMLLMMMHHMMMMMLLMMD","DMLLMMMMMMMMMHLLMMMHHMMMMMLLMMMD","DLLMMMMMMMMMMLLMMMHWWHDDDLLMMMMD","DLMMMMMMMMMMLLMMMMHHHHDDDLMMMMMD","DMMMMMMMMMMLLMMMMMMMMMMLDDDDMMMD","DMMMMMMMMMLLMMMMMMMMMMLLDDDDMMMD","DMMMMMMMMDHDMMMMMMMMMLLMDDDDMMMD","DMMMMMMMLDDDMMMMMMMMLLMMMMMMMHMD","DMMMMMMLLMMMMMMMMMMLLMMMMMMMMMMD","DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"],{"D":"#c62a2a","M":"#ff3c3c","L":"#ff8a44","H":"#ffd23e","W":"#fff2c0"},2),makeSprite(["DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD","DMLLMMMMMMMMMMLLMMMMMMMMMMLLMMMD","DLLMMMMMMMMMMLLMMMMMMMDDDLLMMMMD","DLMDDDDMMMMMLLMMMMMMMMDDDLMMMMMD","DMMDDDDMMWMLLMMMMMMMMMMLLDDDMMMD","DMMDDDDMMHLLMMMMMMMMMMLLMDDDMMMD","DMMMMMDDHLLMMMMMMMMMMLLMMDDDMMMD","DMMMMMDDHLMMMMMMMMMMLLMMMMMMMMMD","DMMMMMMHLMMMMMMMMMMLLHHHMMMMMMMD","DMMMMMLHMMMMMMMMMMLHHHHMHHMMMMLD","HHWMMLHMMMMMMMMMMLWMHMMMHHHHMLHH","HHHHHLHMMMMMMMMMLHHWMMMMMMHMHHWD","DMMLHHHMMMMMMMDHHHMHHMMMMMMLHHMD","DMLLMHHHHHMMMHHDHMMHMMMMMMLLMMMD","DLLMMMMMHHHHHHHMDDMMHHMMMLLMMMMD","DLMHMMMMMMHMHLMMDDMMMHHMLLMDDDMD","DMMMMMMMMMMLLMMMMMMMMHHLLMMDDDMD","DMMMMMMMMMLLMMMMMMMMMMHLMMMMMMMD","DMMMDDDMMLLMMMMMMMMMMLHHMMMMMMMD","DMMMDDDMLLMMMMMMMMMMLHHMMMMMMMMD","DMMMDDDLLMMMMMMMMMMLLHHMMMMMMMMD","DMMMMMDDMMMMMMMMMMLLHMMMMMMHHMLD","DMMMMLDDMMMMMMMMMLLMHHMMMMMMMLLD","DMMMLLMMMMMMMHMMLLMHHMMMMMMMLLMD","DMMLLMMMMMMMMMMLLMHWWHDDDMMLLMMD","DMLLMMMMMMMMMMLLMMHHHHDDDMLLMMMD","DLLMMMMMMMMMMLLMMMMMMMMMDDDDMMMD","DLMMMMMMMMMMLLMMMMMMMMMMDDDDMMMD","DMMMMMMMMDHDLMMMMMMMMMMLDDDDMMMD","DMMMMMMMMDDDMMMMMMMMMMLLMMMMMHMD","DMMMMMMMMLLMMMMMMMMMMLLMMMMMMMMD","DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"],{"D":"#c62a2a","M":"#ff3c3c","L":"#ff8a44","H":"#ffd23e","W":"#fff2c0"},2),makeSprite(["DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD","DMMMLLMMMMMMMMMMLLMMMMMMMMMMLLMD","DMMLLMMMMMMMMMMLLMMMMMDDDMMLLMMD","DMLDDDDMMMMMMMLLMMMMMMDDDMLLMMMD","DLLDDDDMMWMMMLLMMMMMMMMMMDDDMMMD","DLMDDDDMMHMMLLMMMMMMMMMMLDDDMMMD","DMMMMMDDHMMLLMMMMMMMMMMLLDDDMMMD","DMMMMMDDHMLLMMMMMMMMMMLLMMMMMMMD","DMMMMMMHMLLMMMMMMMMMMHHHMMMMMMMD","DMMMMMMHLLMMMMMMMMMHHHHMHHMMMMMD","HHWMMMHLLMMMMMMMMMWLHMMMHHHHMMHH","HHHHHMHLMMMMMMMMMHHWMMMMMMHMHHWD","DMMMHHHMMMMMMMDHHHLHHMMMMMMMHHLD","DMMMLHHHHHMMMHHDHLMHMMMMMMMMLLMD","DMMLLMMMHHHHHHHLDDMMHHMMMMMLLMMD","DMLHMMMMMMHMHMLLDDMMMHHMMMLDDDMD","DLLMMMMMMMMMMLLMMMMMMHHMMLLDDDMD","DLMMMMMMMMMMLLMMMMMMMMHMLLMMMMMD","DMMMDDDMMMMLLMMMMMMMMMHHLMMMMMMD","DMMMDDDMMMLLMMMMMMMMMHHLMMMMMMMD","DMMMDDDMMLLMMMMMMMMMMHHMMMMMMMMD","DMMMMMDDLLMMMMMMMMMMHLMMMMMHHMMD","DMMMMMDDLMMMMMMMMMMLHHMMMMMMMMMD","DMMMMMLLMMMMMHMMMMLHHMMMMMMMMMLD","DMMMMLLMMMMMMMMMMLHWWHDDDMMMMLLD","DMMMLLMMMMMMMMMMLLHHHHDDDMMMLLMD","DMMLLMMMMMMMMMMLLMMMMMMMDDDDLMMD","DMLLMMMMMMMMMMLLMMMMMMMMDDDDMMMD","DLLMMMMMMDHDMLLMMMMMMMMMDDDDMMMD","DLMMMMMMMDDDLLMMMMMMMMMMLLMMMHMD","DMMMMMMMMMMLLMMMMMMMMMMLLMMMMMMD","DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"],{"D":"#c62a2a","M":"#ff3c3c","L":"#ff8a44","H":"#ffd23e","W":"#fff2c0"},2),makeSprite(["DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD","DMMMMMLLMMMMMMMMMMLLMMMMMMMMMMLD","DMMMMLLMMMMMMMMMMLLMMMDDDMMMMLLD","DMMDDDDMMMMMMMMMLLMMMMDDDMMMLLMD","DMMDDDDMMWMMMMMLLMMMMMMMMDDDLMMD","DMLDDDDMMHMMMMLLMMMMMMMMMDDDMMMD","DLLMMMDDHMMMMLLMMMMMMMMMMDDDMMMD","DLMMMMDDHMMMLLMMMMMMMMMMLLMMMMMD","DMMMMMMHMMMLLMMMMMMMMHHHLMMMMMMD","DMMMMMMHMMLLMMMMMMMHHHHLHHMMMMMD","HHWMMMHMMLLMMMMMMMWMHLLMHHHHMMHH","HHHHHMHMLLMMMMMMMHHWLLMMMMHMHHWD","DMMMHHHLLMMMMMDHHHMHHMMMMMMMHHMD","DMMMMHHHHHMMMHHDHMLHMMMMMMMMMMLD","DMMMMLLMHHHHHHHMDDLMHHMMMMMMMLLD","DMMHLLMMMMHMHMMMDDMMMHHMMMMDDDMD","DMMLLMMMMMMMMMMLLMMMMHHMMMMDDDMD","DMLLMMMMMMMMMMLLMMMMMMHMMMLLMMMD","DLLMDDDMMMMMMLLMMMMMMMHHMLLMMMMD","DLMMDDDMMMMMLLMMMMMMMHHMLLMMMMMD","DMMMDDDMMMMLLMMMMMMMMHHLLMMMMMMD","DMMMMMDDMMLLMMMMMMMMHMLLMMMHHMMD","DMMMMMDDMLLMMMMMMMMMHHLMMMMMMMMD","DMMMMMMMLLMMMHMMMMMHHLMMMMMMMMMD","DMMMMMMLLMMMMMMMMMHWWHDDDMMMMMMD","DMMMMMLLMMMMMMMMMMHHHHDDDMMMMMLD","DMMMMLLMMMMMMMMMMLLMMMMMDDDDMLLD","DMMMLLMMMMMMMMMMLLMMMMMMDDDDLLMD","DMMLLMMMMDHDMMMLLMMMMMMMDDDDLMMD","DMLLMMMMMDDDMMLLMMMMMMMMMMLLMHMD","DLLMMMMMMMMMMLLMMMMMMMMMMLLMMMMD","DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"],{"D":"#c62a2a","M":"#ff3c3c","L":"#ff8a44","H":"#ffd23e","W":"#fff2c0"},2),makeSprite(["DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD","DMMMMMMMLLMMMMMMMMMMLLMMMMMMMMMD","DMMMMMMLLMMMMMMMMMMLLMDDDMMMMMMD","DMMDDDDLMMMMMMMMMMLLMMDDDMMMMMLD","DMMDDDDMMWMMMMMMMLLMMMMMMDDDMLLD","DMMDDDDMMHMMMMMMLLMMMMMMMDDDLLMD","DMMLLMDDHMMMMMMLLMMMMMMMMDDDLMMD","DMLLMMDDHMMMMMLLMMMMMMMMMMLLMMMD","DLLMMMMHMMMMMLLMMMMMMHHHMLLMMMMD","DLMMMMMHMMMMLLMMMMMHHHHMHHMMMMMD","HHWMMMHMMMMLLMMMMMWMHMMLHHHHMMHH","HHHHHMHMMMLLMMMMMHHWMMLLMMHMHHWD","DMMMHHHMMLLMMMDHHHMHHLLMMMMMHHMD","DMMMMHHHHHMMMHHDHMMHLLMMMMMMMMMD","DMMMMMMLHHHHHHHMDDMLHHMMMMMMMMMD","DMMHMMLLMMHMHMMMDDLLMHHMMMMDDDLD","DMMMMLLMMMMMMMMMMLLMMHHMMMMDDDLD","DMMMLLMMMMMMMMMMLLMMMMHMMMMMLLMD","DMMLDDDMMMMMMMMLLMMMMMHHMMMLLMMD","DMLLDDDMMMMMMMLLMMMMMHHMMMLLMMMD","DLLMDDDMMMMMMLLMMMMMMHHMMLLMMMMD","DLMMMMDDMMMMLLMMMMMMHMMMLLMHHMMD","DMMMMMDDMMMLLMMMMMMMHHMLLMMMMMMD","DMMMMMMMMMLLMHMMMMMHHMLLMMMMMMMD","DMMMMMMMMLLMMMMMMMHWWHDDDMMMMMMD","DMMMMMMMLLMMMMMMMMHHHHDDDMMMMMMD","DMMMMMMLLMMMMMMMMMMLLMMMDDDDMMMD","DMMMMMLLMMMMMMMMMMLLMMMMDDDDMMLD","DMMMMLLMMDHDMMMMMLLMMMMMDDDDMLLD","DMMMLLMMMDDDMMMMLLMMMMMMMMMMLHMD","DMMLLMMMMMMMMMMLLMMMMMMMMMMLLMMD","DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"],{"D":"#c62a2a","M":"#ff3c3c","L":"#ff8a44","H":"#ffd23e","W":"#fff2c0"},2)]; // lava river 16x16u (32x32 den 2) x6, hatch phase = frame index (phase=G.time*1.5)
 const T_GRASS=0,T_ROCK=1,T_MUD=2,T_ACID=3,T_LAVA=4;
 // world-wide terrain modes. 'pressure' (classic wave 4): noise-carved lava
 // rivers across the WHOLE map — iso-bands of a value noise, so they wind
@@ -9615,7 +9573,7 @@ function renderWavePattern(ctx,W2V,vw,vh){
   // the cave mouth the party walks into (and out of)
   if(G.descent){
     const q=W2V(G.descent.mouth.x,G.descent.mouth.y);
-    drawSpriteC(ctx,caveMouthSprite,q[0],q[1],2);
+    drawSpriteC(ctx,caveMouthSprite,q[0],q[1],2);glow(q[0],q[1]+4,10,'#ff7a1f',0.2);
   }
   // the augur's health bar: same shape as the forge's, in its lava red
   if(P&&P.aug&&P.aug.e&&!P.aug.e.dead){
@@ -10948,16 +10906,16 @@ function glowLine(x1,y1,x2,y2,r,col,a){const d=Math.hypot(x2-x1,y2-y1),n=Math.ma
 // per-kind fx emitters, run at drawFx entry (kinds not listed — every boss telegraph — emit nothing)
 const FX_GLOW={
   lance:(f,x,y,k,W2V)=>{const a1=W2V(f.x1,f.y1),a2=W2V(f.x2,f.y2),w0=f.w?f.w*(0.55+0.75*k):6;glowLine(a1[0],a1[1],a2[0],a2[1],w0+4,f.col2||f.col,0.4*k);},
-  zap:(f,x,y,k,W2V)=>{if(!f.glow)return;const a1=W2V(f.x1,f.y1),a2=W2V(f.x2,f.y2);glowLine(a1[0],a1[1],a2[0],a2[1],6,f.col,0.35*k);},
-  nerve:(f,x,y,k,W2V)=>{const a1=W2V(f.x1,f.y1),a2=W2V(f.x2,f.y2);glowLine(a1[0],a1[1],a2[0],a2[1],6,'#c04aff',0.3*k);},
+  zap:(f,x,y,k,W2V)=>{if(!f.glow)return;const a1=W2V(f.x1,f.y1),a2=W2V(f.x2,f.y2);glowLine(a1[0],a1[1],a2[0],a2[1],8,f.col,0.42*k);},
+  nerve:(f,x,y,k,W2V)=>{const a1=W2V(f.x1,f.y1),a2=W2V(f.x2,f.y2);glowLine(a1[0],a1[1],a2[0],a2[1],8,MAT.grave.L,0.38*k);},
   sbloom:(f,x,y,k)=>glow(x,y,f.r*0.8,'#ffffff',0.4*k),
   sring:(f,x,y,k)=>glow(x,y,f.r,prismCol(G.time*6+(f.seed||0)),0.06),
   mzone:(f,x,y,k)=>glow(x,y,f.r,prismCol(G.time*5),0.06),
-  boom:(f,x,y,k)=>glow(x,y,f.r,f.col||'#ffb62e',0.3*k),
+  boom:(f,x,y,k)=>glow(x,y,f.r*(0.4+0.6*(1-k)),f.col||'#ffb62e',0.3*k), // rides the ring out, fades with k
   rburn:(f,x,y,k)=>glow(x,y,f.r*0.8,f.col,f.soft?0.10:0.14),
   scorch:(f,x,y,k)=>glow(x,y,f.r*0.8,f.col||'#ff5a3d',0.12*k),
-  rot:(f,x,y,k)=>glow(x,y,f.r*0.8,f.col||'#5a7a3a',0.10*k),
-  soulvoid:(f,x,y,k)=>glow(x,y,f.r*0.8,f.col,0.12),
+  rot:(f,x,y,k)=>glow(x,y,f.r*(0.5+0.5*(1-k)),f.col||MAT.rot.L,0.10*k),
+  soulvoid:(f,x,y,k)=>{const br=0.5+0.5*Math.sin(G.time*2.6);glow(x,y,f.r*(0.72+0.1*br),MAT.rot.L,0.09+0.05*br);glow(x,y,f.r*0.36,MAT.grave.L,0.20+0.08*br);},
   rvoid:(f,x,y,k)=>glow(x,y,f.r*0.8,f.col,0.12),
   rmet:(f,x,y,k)=>glow(x,y,f.r*0.8,f.col,0.12),
   rchase:(f,x,y,k)=>glow(x,y,f.r*0.8,f.col,0.12),
@@ -11147,13 +11105,23 @@ function drawFx(f,W2V,g){
         g.beginPath();g.arc(x,y,f.r,0,TAU);g.fill();
         g.strokeStyle='rgba('+rgb+','+(0.30*fade).toFixed(3)+')';g.lineWidth=1;
         g.beginPath();g.arc(x,y,f.r*0.8,0,TAU);g.stroke();
-        break;
+      }else{
+        g.fillStyle='rgba('+rgb+','+(0.14*fade).toFixed(3)+')';
+        g.beginPath();g.arc(x,y,f.r,0,TAU);g.fill();
+        g.strokeStyle='rgba('+rgb+','+(0.75*fade).toFixed(3)+')';g.lineWidth=1;
+        g.beginPath();g.arc(x,y,f.r,0,TAU);g.stroke();
+        stripes(g,x-f.r,y-f.r,f.r*2,f.r*2,'rgba('+rgb+',0.25)',G.time*0.6);
       }
-      g.fillStyle='rgba('+rgb+','+(0.14*fade).toFixed(3)+')';
-      g.beginPath();g.arc(x,y,f.r,0,TAU);g.fill();
-      g.strokeStyle='rgba('+rgb+','+(0.75*fade).toFixed(3)+')';g.lineWidth=1;
-      g.beginPath();g.arc(x,y,f.r,0,TAU);g.stroke();
-      stripes(g,x-f.r,y-f.r,f.r*2,f.r*2,'rgba('+rgb+',0.25)',G.time*0.6);
+      // cooling crust: half-unit MAT.ember.D flakes at h2 positions (seeded off
+      // the pool's world position so they sit still), 1.5x1 / 1x1.5 flakes,
+      // one in three re-igniting to ember-red on a slow G.time cycle
+      {const n=f.soft?3:7,rad=f.r*(f.soft?0.7:0.85),cyc=Math.floor(G.time*3),sx=f.x*7,sy=f.y*7;
+      for(let i=0;i<n;i++){
+        const an=h2(sx+i*13,sy,41)*TAU,rr=rad*(0.25+0.7*h2(sx,sy+i*13,43));
+        const px=Math.round((x+Math.cos(an)*rr)*2)/2,py=Math.round((y+Math.sin(an)*rr)*2)/2;
+        g.fillStyle=((cyc+i)%3)?'rgba(122,26,10,'+fade.toFixed(2)+')':'rgba(255,90,61,'+fade.toFixed(2)+')';
+        if(i&1)g.fillRect(px,py,1,1.5);else g.fillRect(px,py,1.5,1);
+      }}
       break;}
     case 'rvoid':{
       const rgb=hexRgb(f.col);
@@ -11184,11 +11152,15 @@ function drawFx(f,W2V,g){
       }
       break;}
     case 'soulvoid':{ // the maw: a rot-green whirl, souls spiralling inward
-      const rgb=hexRgb(f.col);
-      g.fillStyle='rgba('+rgb+',0.16)';
-      g.beginPath();g.arc(x,y,f.r,0,TAU);g.fill();
+      // the disc breathes inside a fixed rim (the rim IS the hitbox) and the
+      // throat is grave violet: rot outside, the void within
+      const rgb=hexRgb(f.col),br=0.5+0.5*Math.sin(G.time*2.6);
+      g.fillStyle='rgba('+hexRgb(MAT.rot.M)+','+(0.16+0.10*br).toFixed(3)+')';
+      g.beginPath();g.arc(x,y,f.r*(0.86+0.12*br),0,TAU);g.fill();
       g.strokeStyle='rgba('+rgb+',0.85)';g.lineWidth=2;
       g.beginPath();g.arc(x,y,f.r,0,TAU);g.stroke();
+      g.fillStyle='rgba('+hexRgb(MAT.grave.D)+','+(0.22+0.12*br).toFixed(3)+')';
+      g.beginPath();g.arc(x,y,f.r*(0.28+0.05*br),0,TAU);g.fill();
       g.strokeStyle='rgba(42,16,48,0.7)';
       g.beginPath();g.arc(x,y,f.r*0.35,0,TAU);g.stroke();
       for(let i=0;i<6;i++){
@@ -11205,10 +11177,16 @@ function drawFx(f,W2V,g){
       // the spell has — the old draw bloomed to 26px over a 16px box, which is
       // most of why the ray read as fat no matter how far the hitbox came down.
       const w0=f.w?f.w*(0.55+0.75*k):6;
-      const halo=Math.max(2,w0*0.35);
-      g.strokeStyle='rgba('+hexRgb(f.col2)+','+(0.40*k).toFixed(3)+')';g.lineWidth=w0+halo;
+      if(!(LIGHT_ON&&g===ctx)){ // halo pass lives in FX_GLOW.lance; stroke it only when the light layer is off
+        const halo=Math.max(2,w0*0.35);
+        g.strokeStyle='rgba('+hexRgb(f.col2)+','+(0.40*k).toFixed(3)+')';g.lineWidth=w0+halo;
+        g.beginPath();g.moveTo(a1[0],a1[1]);g.lineTo(a2[0],a2[1]);g.stroke();
+      }
+      // cooling crust: a MAT.ember.D ray one unit wider than the body shows as
+      // a lineWidth-0.5 dark rim on each edge, inside the width the hitbox owns
+      g.strokeStyle='#7a1a0a';g.lineWidth=w0;
       g.beginPath();g.moveTo(a1[0],a1[1]);g.lineTo(a2[0],a2[1]);g.stroke();
-      g.strokeStyle=f.col2;g.lineWidth=w0;
+      g.strokeStyle=f.col2;g.lineWidth=Math.max(1,w0-1);
       g.beginPath();g.moveTo(a1[0],a1[1]);g.lineTo(a2[0],a2[1]);g.stroke();
       g.strokeStyle=f.col;g.lineWidth=Math.max(1,w0*0.5);
       g.beginPath();g.moveTo(a1[0],a1[1]);g.lineTo(a2[0],a2[1]);g.stroke();
@@ -11381,13 +11359,13 @@ function drawFx(f,W2V,g){
       const e=1-k;                        // 0 -> 1 over the life
       const grow=f.r*(0.28+0.72*Math.sqrt(e));
       g.globalAlpha=k;
-      g.fillStyle='rgba(255,255,255,'+(0.30*k*k).toFixed(3)+')';
+      g.fillStyle='rgba(255,255,255,'+(0.16*k*k).toFixed(3)+')'; // dimmed: the light layer flashes
       g.beginPath();g.arc(x,y,Math.max(1,f.r*0.55*k),0,TAU);g.fill();
       for(let i=0;i<3;i++){
         const rr=grow*(1-i*0.17);
         if(rr<1)continue;
         g.strokeStyle=i===0?'#ffffff':prismCol(i*2+G.time*11+(f.seed||0));
-        g.lineWidth=i===0?2:1;
+        g.lineWidth=i===0?1.5:0.5; // white lead ring, prism hairlines behind it
         g.beginPath();g.arc(x,y,rr,0,TAU);g.stroke();
       }
       const pts=f.pts||8;
@@ -11395,7 +11373,7 @@ function drawFx(f,W2V,g){
         const a=i*TAU/pts+e*1.6+(f.seed||0);
         const px=Math.round(x+Math.cos(a)*grow),py=Math.round(y+Math.sin(a)*grow);
         g.fillStyle=prismCol(i+G.time*13);
-        g.fillRect(px-2,py,5,1);g.fillRect(px,py-2,1,5);
+        g.fillRect(px-3,py,7,0.5);g.fillRect(px,py-3,0.5,7); // half-unit needles
         g.fillStyle='#ffffff';g.fillRect(px,py,1,1);
       }
       g.globalAlpha=1;
@@ -11404,7 +11382,7 @@ function drawFx(f,W2V,g){
       // the dream that lingers: a slow prismatic hoop over dazed ground
       const fade=f.t<0.5?f.t/0.5:1;
       g.globalAlpha=fade*0.9;
-      g.strokeStyle=prismCol(G.time*6+(f.seed||0));g.lineWidth=1;
+      g.strokeStyle=prismCol(G.time*6+(f.seed||0));g.lineWidth=0.5; // prism hairline rim
       g.beginPath();g.arc(x,y,f.r,0,TAU);g.stroke();
       g.strokeStyle='rgba(255,255,255,0.35)';
       g.beginPath();g.arc(x,y,f.r*0.72,0,TAU);g.stroke();
@@ -11412,15 +11390,26 @@ function drawFx(f,W2V,g){
         const a=G.time*0.9+i*TAU/6;
         const px=Math.round(x+Math.cos(a)*f.r),py=Math.round(y+Math.sin(a)*f.r);
         g.fillStyle=prismCol(i*2+G.time*9);
-        g.fillRect(px-1,py,3,1);g.fillRect(px,py-1,1,3);
+        g.fillRect(px-2,py,5,0.5);g.fillRect(px,py-2,0.5,5); // half-unit needles
       }
       g.globalAlpha=1;
       break;}
     case 'rot':{
-      // NECROMANCY's residue: a patch of ground going sour under the aura
+      // NECROMANCY's residue: a patch of ground going sour under the aura.
+      // The disc seeps outward as it fades; a handful of half-unit specks
+      // (h2-keyed, so they sit still frame to frame) dither its edge into the
+      // floor instead of leaving a clean arc.
+      const rr=f.r*(0.5+0.5*(1-k)),gr=(Math.floor(f.x+f.y)&1);
       g.globalAlpha=k*0.32;
-      g.fillStyle=(Math.floor(f.x+f.y)&1)?'#5a7a3a':'#3a2456';
-      g.beginPath();g.arc(x,y,f.r*(0.5+0.5*(1-k)),0,TAU);g.fill();
+      g.fillStyle=gr?MAT.rot.M:'#3a2456';
+      g.beginPath();g.arc(x,y,rr,0,TAU);g.fill();
+      if(k>0.25){ // flecks a step lighter than the body, straddling the rim
+        g.globalAlpha=k*0.7;g.fillStyle=gr?MAT.rot.L:MAT.grave.M;
+        for(let i=0;i<6;i++){
+          const a=h2(f.x*3,f.y*3,i)*TAU,d=rr*(0.7+0.55*h2(f.x*3,f.y*3,i+9)),s=i&1?1:0.5;
+          g.fillRect(Math.round((x+Math.cos(a)*d)*2)/2,Math.round((y+Math.sin(a)*d)*2)/2,s,s);
+        }
+      }
       g.globalAlpha=1;
       break;}
     case 'nerve':{
@@ -11437,7 +11426,7 @@ function drawFx(f,W2V,g){
       const dx=a2[0]-a1[0],dy=a2[1]-a1[1],L=Math.hypot(dx,dy)||1;
       const nx=-dy/L,ny=dx/L;                    // perpendicular
       const segs=Math.max(6,Math.min(20,Math.round(L/9)));
-      const run=(amp,alpha,wid,off)=>{
+      const run=(amp,alpha,wid,off,core)=>{
         g.lineWidth=wid;
         g.beginPath();g.moveTo(a1[0],a1[1]);
         for(let i=1;i<=segs;i++){
@@ -11447,6 +11436,7 @@ function drawFx(f,W2V,g){
           g.lineTo(a1[0]+dx*t+nx*(j+off),a1[1]+dy*t+ny*(j+off));
         }
         g.strokeStyle=alpha;g.stroke();
+        if(core){g.strokeStyle=core;g.lineWidth=0.5;g.stroke();} // same path, hairline core
       };
       const pulse=0.5+0.5*Math.sin(G.time*17+(f.seed||0));
       const green='rgba(159,232,74,',violet='rgba(192,74,255,';
@@ -11454,8 +11444,9 @@ function drawFx(f,W2V,g){
       run(5,'rgba(26,10,40,'+(0.55*k).toFixed(3)+')',5,0);
       run(5,(pulse>0.5?violet:green)+(0.55*k).toFixed(3)+')',3,0);
       run(3,(pulse>0.5?green:violet)+(0.95*k).toFixed(3)+')',2,0);
-      // the core: near-white, barely jittered, so there is always a hard line
-      run(1.5,'rgba(245,225,255,'+(0.92*k).toFixed(3)+')',1,0);
+      // the core: near-white, barely jittered, so there is always a hard line —
+      // a lavender 1.25 body with a 0.5-unit pure-white filament down its centre
+      run(1.5,'rgba(232,213,255,'+(0.90*k).toFixed(3)+')',1.25,0,'rgba(255,255,255,'+(0.98*k).toFixed(3)+')');
       // two ghost filaments running alongside, so it reads as a bundle
       run(6,'rgba(120,170,70,'+(0.55*k).toFixed(3)+')',1.5,3);
       run(6,'rgba(168,120,255,'+(0.55*k).toFixed(3)+')',1.5,-3);
@@ -11487,6 +11478,16 @@ function drawFx(f,W2V,g){
         g.strokeStyle='rgba('+hexRgb(e<0.25?'#ffb62e':'#ff5a3d')+','+(0.6*(1-e*2)).toFixed(3)+')';
         g.lineWidth=1;g.beginPath();g.arc(x,y,f.r*0.8,0,TAU);g.stroke();
       }
+      // cooling crust: half-unit MAT.ember.D flakes (seeded off the mark's
+      // position), every other one ember-orange while the mark is still hot
+      g.globalAlpha=Math.min(1,k*0.55+0.35);
+      {const rad=f.r*0.65,hot=e<0.35,sx=(f.seed||f.x)*7,sy=f.y*7;
+      for(let i=0;i<6;i++){
+        const an=h2(sx+i*13,sy,41)*TAU,rr=rad*(0.25+0.7*h2(sx,sy+i*13,43));
+        const px=Math.round((x+Math.cos(an)*rr)*2)/2,py=Math.round((y+Math.sin(an)*rr)*2)/2;
+        g.fillStyle=hot&&!(i&1)?'#ff9040':'#7a1a0a';
+        if(i&1)g.fillRect(px,py,1,1.5);else g.fillRect(px,py,1.5,1);
+      }}
       g.globalAlpha=1;
       break;}
     case 'constel':{
@@ -11497,7 +11498,7 @@ function drawFx(f,W2V,g){
       // already uses `pts` for a point COUNT and the two must not collide in
       // the net encoder.
       const P=f.line;
-      g.lineWidth=1;
+      g.lineWidth=0.5; // hairline links
       for(let i=2;i<P.length;i+=2){
         const a=W2V(P[i-2],P[i-1]),b2=W2V(P[i],P[i+1]);
         g.strokeStyle='rgba('+hexRgb(prismCol(i+G.time*9))+','+(0.7*k).toFixed(3)+')';
@@ -11506,7 +11507,7 @@ function drawFx(f,W2V,g){
       for(let i=0;i<P.length;i+=2){
         const a=W2V(P[i],P[i+1]),s=Math.max(1,Math.round(1+k*2));
         g.fillStyle='rgba(255,255,255,'+k.toFixed(3)+')';
-        g.fillRect(a[0]-s,a[1],s*2+1,1);g.fillRect(a[0],a[1]-s,1,s*2+1);
+        g.fillRect(a[0]-s-1,a[1],s*2+3,0.5);g.fillRect(a[0],a[1]-s-1,0.5,s*2+3); // half-unit needles
       }
       break;}
     case 'mzone':{
@@ -11518,7 +11519,7 @@ function drawFx(f,W2V,g){
       g.beginPath();g.arc(x,y,f.r,0,TAU);g.fill();
       for(let i=0;i<3;i++){
         const rr=f.r*(0.35+0.3*i)+Math.sin(G.time*1.8+i*2.1)*3;
-        g.strokeStyle='rgba('+hexRgb(prismCol(i*3+G.time*5))+',0.30)';g.lineWidth=1;
+        g.strokeStyle='rgba('+hexRgb(prismCol(i*3+G.time*5))+',0.38)';g.lineWidth=0.5; // prism hairlines
         g.beginPath();g.arc(x,y,rr,0,TAU);g.stroke();
       }
       g.globalAlpha=1;
@@ -11539,8 +11540,7 @@ function drawFx(f,W2V,g){
         for(let i=1;i<pts.length;i++)g.lineTo(pts[i][0],pts[i][1]);
         g.stroke();
       };
-      if(f.glow){ // prismatic bolt: coloured halo, coloured body, white core
-        stroke('rgba('+hexRgb(f.col)+','+(0.30*k).toFixed(3)+')',6);
+      if(f.glow){ // prismatic bolt: coloured body, white core (the halo is FX_GLOW.zap's glowLine)
         stroke('rgba('+hexRgb(f.col)+','+k.toFixed(3)+')',3);
         stroke('rgba(255,255,255,'+k.toFixed(3)+')',1);
       }else stroke('rgba('+(f.col?hexRgb(f.col):'176,107,255')+','+k.toFixed(3)+')',1.5);
@@ -11651,7 +11651,7 @@ function render(){
     const g=G.gems[gi],q=W2V(g.x,g.y);
     if(q[0]<-8||q[1]<-8||q[0]>vw+8||q[1]>vh+8)continue;
     drawSpriteC(ctx,g.v>=4?bigGemSprite:gemSprite,q[0],q[1]+Math.sin(g.t*4)*1.5);
-    if(g.v>=4||G.gems.length<=150||(gi&1)===0)glow(q[0],q[1],g.v>=4?8:5,g.v>=4?'#ffd23e':'#39d5ff',g.v>=4?0.35:0.22);
+    if(g.v>=4||G.gems.length<=150||(gi&1)===0)glow(q[0],q[1],g.v>=4?8:5,g.v>=4?'#ffd23e':GEM_COL,g.v>=4?0.35:0.22);
   }
   for(const pk of G.pickups){
     const q=W2V(pk.x,pk.y);
@@ -11742,9 +11742,13 @@ function render(){
     if(p.dead)continue;
     const q=W2V(p.x,p.y),x=q[0],y=q[1];
     if(p.invuln>0&&Math.floor(G.time*10)%2===0)continue;
-    const bobY=(p.anim%1)<0.5?0:-1;
-    if(p.flash>0){ctx.fillStyle='rgba(255,80,80,0.6)';ctx.fillRect(x-6,y-8+bobY,12,14);}
-    drawSpriteC(ctx,playerSprites[p.col],x,y-2+bobY);
+    const walkB=(p.anim%1)>=0.5; // den-2 walk frame B stands in for the old 1 px bob
+    if(p.flash>0){ctx.fillStyle='rgba(255,80,80,0.6)';ctx.fillRect(x-6,y-8,12,14);}
+    drawSpriteC(ctx,walkB?playerSpritesB[p.col]:playerSprites[p.col],x,y-2);
+    // path accents: transparent 12x12 overlays on the bare hero (the robe colour never changes)
+    if(p.school==='destro'){drawSpriteC(ctx,ACCENT_DESTRO,x,y-2);glow(x,y+5,6,'#ff9040',0.12);}
+    else if(p.school==='illusion'){drawSpriteC(ctx,ACCENT_ILLUSION[Math.floor(G.time*6)%4],x,y-2);const sy=y-9+Math.sin(G.time*3);drawSpriteC(ctx,SHARD,x+7,sy);glow(x+7,sy,4,'#c9a4ff',0.20);}
+    else if(p.school==='necro'){drawSpriteC(ctx,ACCENT_NECRO,x,y-2);glow(x,y+5,6,'#9fe84a',0.10);}
     glow(x,y,14,PCOLORS[p.col],0.20);
     const fw=p.weapons.flame;
     if(fw){
@@ -11775,10 +11779,10 @@ function render(){
       if(!aw&&!dt)continue;
       const rad=aw?auraRad(aid,Math.min(aw.lv,6)+(aw.evo?2:0)):dtRad(p);
       const rot=aid==='decay';
-      glow(x,y,rad,aw?(rot?'#9fe84a':'#ffb62e'):'#c04aff',0.08);
-      if(dt){ // violet rim: glowLine between 8 rim points (turning with the motes)
-        const rp=[];for(let i=0;i<8;i++){const a=(rot?-G.time*1.1:G.time*1.6)+i*TAU/8;rp.push(x+Math.cos(a)*rad,y+Math.sin(a)*rad);}
-        for(let i=0;i<8;i++){const j=(i+1)%8;glowLine(rp[i*2],rp[i*2+1],rp[j*2],rp[j*2+1],8,'#c04aff',0.10);}
+      glow(x,y,rad,aw?(rot?MAT.rot.L:'#ffb62e'):MAT.grave.L,0.06);
+      { // rim glow: rot-green stamps riding the rim (turning with the motes), grave violet when DEATH TOUCH is on it
+        const rc=dt?MAT.grave.L:(rot?MAT.rot.L:'#ffb62e'),n=Math.max(8,Math.ceil(TAU*rad/10)),a0=rot?-G.time*1.1:G.time*1.6;
+        for(let i=0;i<n;i++){const a=a0+i*TAU/n;glow(x+Math.cos(a)*rad,y+Math.sin(a)*rad,10,rc,0.10);}
       }
       if(!aw){ // passive only: a thin violet rim, no rot fill
         ctx.strokeStyle='rgba(192,74,255,'+(0.30+0.14*Math.sin(G.time*5))+')';
@@ -11823,10 +11827,10 @@ function render(){
       // (its radius is gameplay) without owning an 80px disc of the screen —
       // with a full party inside it the old two-ring/eight-glyph version was
       // most of what the eye saw
-      ctx.setLineDash([3,5]);
-      ctx.globalAlpha=0.5;
+      ctx.setLineDash([3,4]);
+      ctx.globalAlpha=0.6;
       ctx.strokeStyle=prismCol(G.time*4);
-      ctx.lineWidth=1;
+      ctx.lineWidth=0.5; // dashed hairline
       ctx.beginPath();ctx.arc(x,y,KA_RADIUS-3,G.time*0.7,G.time*0.7+TAU);ctx.stroke();
       ctx.globalAlpha=1;
       ctx.setLineDash([]);
@@ -11835,7 +11839,7 @@ function render(){
         const a=G.time*0.5+i*TAU/4;
         const gx=Math.round(x+Math.cos(a)*KA_RADIUS),gy=Math.round(y+Math.sin(a)*KA_RADIUS);
         ctx.fillStyle=prismCol(i+G.time*6);
-        ctx.fillRect(gx-2,gy,5,1);ctx.fillRect(gx,gy-2,1,5);
+        ctx.fillRect(gx-3,gy,7,0.5);ctx.fillRect(gx,gy-3,0.5,7); // half-unit needles
         ctx.fillStyle='#fff';ctx.fillRect(gx,gy,1,1);
       }
       if(Math.random()<0.04){
@@ -11909,28 +11913,36 @@ function render(){
       // a hurled stone: dark rock core in a bleed of fire. Deliberately NOT
       // the ground-ring + falling-cinder language — that telegraph now
       // belongs to boss meteors alone.
-      const r=b.r;
+      const r=b.r,cx=Math.round(q[0]),cy=Math.round(q[1]);
       ctx.fillStyle=b.col;
-      ctx.fillRect(Math.round(q[0]-r-1),Math.round(q[1]-1),r*2+2,2);
-      ctx.fillRect(Math.round(q[0]-1),Math.round(q[1]-r-1),2,r*2+2);
-      ctx.fillStyle='#7a4a30';
-      ctx.fillRect(Math.round(q[0]-1),Math.round(q[1]-1),3,3);
+      ctx.fillRect(cx-r-1,cy-1,r*2+2,2);
+      ctx.fillRect(cx-1,cy-r-1,2,r*2+2);
+      // the rock: a lit basalt body, a shadowed facet that walks round it as
+      // the stone tumbles (G.time, no per-bullet state), and a half-unit hot
+      // fleck on the corner opposite the shadow
+      const sp=[0,1,3,2][Math.floor(G.time*12+cx*0.37)&3],sx=(sp&1)*2,sy=(sp>>1)*2;
+      ctx.fillStyle='#4a3c40';
+      ctx.fillRect(cx-2,cy-2,4,4);
+      ctx.fillStyle='#221a1b';
+      ctx.fillRect(cx-2+sx,cy-2+sy,2,2);
       ctx.fillStyle='#fff2c0';
-      ctx.fillRect(Math.round(q[0]),Math.round(q[1]),1,1);
+      ctx.fillRect(cx-0.5+(1-sx/2)*1,cy-0.5+(1-sy/2)*1,0.5,0.5);
     }else if(b.star){
       // a seeking star, not a pellet: prismatic arms that breathe (the halo is
       // the light layer's now), diagonals a frame apart so the volley shimmers.
       // Kept TIGHT on purpose — at r*2+2 arms and a 3x3 core these read as
       // fireballs rather than starlight, and a full volley swallowed the
       // screen. The arms are the silhouette; the glow is the wake behind them.
-      const r=b.r,arm=r+1,col=prismCol((b.prism||1)+G.time*15);
+      // Step 10: the arms are half-unit needles (one buffer px under DEN) so a
+      // volley reads as starlight, not pellets; the white core stays a full unit.
+      const r=b.r,arm=r+2,col=prismCol((b.prism||1)+G.time*15);
       ctx.fillStyle=col;
-      ctx.fillRect(q[0]-arm,q[1],arm*2+1,1);
-      ctx.fillRect(q[0],q[1]-arm,1,arm*2+1);
+      ctx.fillRect(q[0]-arm,q[1],arm*2+1,0.5);
+      ctx.fillRect(q[0],q[1]-arm,0.5,arm*2+1);
       if(Math.floor(G.time*14+q[0])&1){
         const d=Math.max(1,r-1);
-        ctx.fillRect(q[0]-d,q[1]-d,1,1);ctx.fillRect(q[0]+d,q[1]-d,1,1);
-        ctx.fillRect(q[0]-d,q[1]+d,1,1);ctx.fillRect(q[0]+d,q[1]+d,1,1);
+        ctx.fillRect(q[0]-d,q[1]-d,0.5,0.5);ctx.fillRect(q[0]+d+0.5,q[1]-d,0.5,0.5);
+        ctx.fillRect(q[0]-d,q[1]+d+0.5,0.5,0.5);ctx.fillRect(q[0]+d+0.5,q[1]+d+0.5,0.5,0.5);
       }
       ctx.fillStyle='#ffffff';
       ctx.fillRect(q[0],q[1],1,1);

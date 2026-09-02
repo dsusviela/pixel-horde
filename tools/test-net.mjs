@@ -138,10 +138,10 @@ function buildHostG(sb) {
 
   const chaser = { type:'chaser', spr:sb.chaserSprite, x:100, y:100, r:5, hp:18, maxhp:18,
     sp:42, dmg:8, xp:1, flash:0, fuse:-1, shootT:1, orbCd:{0:1.2}, slow:1, boss:false,
-    huntLv:0, hunted:false, life:-1 };
+    huntLv:0, hunted:false, eventBounty:true, life:-1 };
   const tank = { ...chaser, type:'tank', spr:sb.tankSprite, x:150, y:90, r:9, hp:200, maxhp:200,
-    elite:true, scale:1.25, hunted:true };
-  const bomber = { ...chaser, type:'bomber', spr:sb.bombSprite, x:80, y:140, fuse:0.8 };
+    elite:true, scale:1.25, hunted:true, eventBounty:false };
+  const bomber = { ...chaser, type:'bomber', spr:sb.bombSprite, x:80, y:140, fuse:0.8, eventBounty:false };
   const boss = { type:'cboss3', def:sb.CLASSIC_BOSSES[3], spr:sb.worldeaterSpr[1],
     x:0, y:-60, r:22, hp:14000, maxhp:24000, sp:28, dmg:28, xp:700, vulnMul:1,
     flash:0.05, fuse:-1, shootT:2, orbCd:{}, slow:1, boss:true, scale:2,
@@ -224,6 +224,7 @@ class FakeWS {
   ok(sBoss && sBoss.spr === 'we1' && sBoss.def === 'worldeater' && sBoss.ai && sBoss.ai.enrageT === 25,
     'boss sprite/def/ai encoded by name');
   ok(snap.enemies.find(e => e.type === 'pylon').def === 'pylon', 'pylon def mapped without an id');
+  ok(snap.enemies.find(e => e.type === 'chaser').eventBounty === 1, 'event bounty marker serialized');
   ok(snap.tiles && snap.tiles.length === 2, 'tileOverride shipped on first snapshot');
   ok(snap.ev.s.includes('boom') && snap.ev.b.length === 2, 'sfx + big bursts captured, dribble filtered');
   ok(snap.bossNid === snap.enemies.find(e => e.boss).nid, 'bossNid points at the boss enemy');
@@ -250,6 +251,7 @@ class FakeWS {
     && gg.pickups.length === 2 && gg.crates.length === 1 && gg.texts.length === 1,
     'collection counts match after round-trip');
   ok(gg.enemies.every(e => e.spr && e.spr.__spr), 'every guest enemy sprite resolved via lookup');
+  ok(gg.enemies.find(e => e.type === 'chaser').eventBounty, 'event bounty marker rebuilt for guest rendering');
   const gBoss = gg.enemies.find(e => e.boss);
   ok(gBoss && gBoss.spr === guestSb.worldeaterSpr[1], 'boss phase sprite resolved to guest canvas');
   ok(gg.boss === gBoss && gBoss.def && gBoss.def.id === 'worldeater'

@@ -1,7 +1,6 @@
-// THE RAID (v3), end to end: wave 1 → the PATH pick → the surface block →
-// SLAUGHTERHULK at 5 → the descent → the volcano block 6-9 (fire-slug
-// trails, burster shoves, THE OFFERING with smashers, THE SLAG AUGUR's
-// rites) → Slagmaw's three phases at 10 → the ascent → wave 11.
+// THE SLAGMAW RAID (v5), end to end: wave 1 → the PATH pick → descent →
+// eight volcano events (red harvest, gold rush, smashers, band, offering,
+// vents, slagstorm, Augur) → Slagmaw's three phases at 10 → ascent → wave 11.
 //   node tools/test-slagmaw.mjs [seed]
 import {boot} from './headless.mjs';
 
@@ -9,19 +8,20 @@ const seed=+(process.argv[2]||5);
 let fail=0;
 const say=(ok,msg)=>{console.log((ok?'ok   ':'FAIL ')+msg);if(!ok)fail=1;};
 
-for(const NP of [1,3]){
+for(const NP of (process.env.NP?process.env.NP.split(",").map(Number):[1,2,3,4])){
   const g=boot(seed+NP);
   for(let i=0;i<NP;i++)g.addPad();
   g.G.state='title';
   for(let i=0;i<NP;i++)g.ev('joinPlayer')(i,0);
   g.ev('startRun')('classic');
   const G=g.G;
-  const seen={descent:0,volcano:0,lavamix:0,slugforge:0,pressure:0,forgeLive:0,orbs:0,lava:0,
+  const seen={descent:0,volcano:0,lavamix:0,band:0,slugforge:0,pressure:0,forgeLive:0,orbs:0,lava:0,
     phase2:0,phase3:0,bossLava:0,ascent:0,surfaceBack:0,wave6:0,ring:0,rimBorn:0,
     smasher:0,burster:0,fireslug:0,types6:0,bossDead:0,
     slams:0,forgeHeal:0,forgeEnd:'',safe:0,inward:0,schoolW2:0,twoDiscs:0,
-    hulkDead:0,trailW6:0,pops:0,augurUp:0,augurRites:0,brandPool:0,augurGone:0};
-  const fxSeen=new WeakSet();let lastForgeHp=-1;const bstate=new WeakMap();let augRef=null;
+    trailW2:0,pops:0,augurUp:0,augurRites:0,brandPool:0,augurGone:0,
+    redBounty:0,goldBounty:0,stormBounty:0,forgeWounded:0,forgeAim:0,augurAim:0};
+  const fxSeen=new WeakSet();let lastForgeHp=-1;const bstate=new WeakMap();let augRef=null,maxGems=0;
   let maxFade=0,dpsMul=4,lastWave=0;
   const dt=1/60;
   for(let f=0;f<60*900;f++){
@@ -42,19 +42,26 @@ for(const NP of [1,3]){
       else{pad.axes[0]=0;pad.axes[1]=0;}
     }
     g.step(dt);
+    maxGems=Math.max(maxGems,G.gems.length);
     if(f%9===0)g.render();
     if(G.waveState==='descent'){seen.descent=1;maxFade=Math.max(maxFade,G.fade);if(G.descent&&G.descent.dir==='up')seen.ascent=1;}
     if(G.biome==='volcano')seen.volcano=1;
     if(G.wavePat){
       const P=G.wavePat;
       if(P.id==='lavamix'&&P.ei>0)seen.lavamix=1;
+      if(P.id==='band'&&P.ei>0)seen.band=1;
       if(P.id==='slugforge'&&P.ei>0)seen.slugforge=1;
       if(P.id==='pressure'&&P.ei>0)seen.pressure=1;
       if(P.forge){
         seen.heat=Math.max(seen.heat||0,P.forge.heat);
         const fe=P.forge.e;
         // a fed slug visibly refills the bar: hp went UP between frames
-        if(fe&&!fe.dead){if(lastForgeHp>=0&&fe.hp>lastForgeHp+0.01)seen.forgeHeal=1;lastForgeHp=fe.hp;}
+        if(fe&&!fe.dead){
+          if(fe.hp<fe.maxhp*0.8)seen.forgeWounded=1;
+          if(fe.aimBias===0.36)seen.forgeAim=1;
+          if(lastForgeHp>=0&&fe.hp>lastForgeHp+0.01)seen.forgeHeal=1;
+          lastForgeHp=fe.hp;
+        }
         if(P.forge.st!=='idle')seen.forgeEnd=P.forge.st;
       }
       if(P.id==='pressure'){
@@ -72,15 +79,18 @@ for(const NP of [1,3]){
         if(n>20)seen.lava=1;
       }
     }
-    if(G.wave>=6&&G.wave<=9)for(const e of G.enemies){
+    if(G.wave>=2&&G.wave<=9)for(const e of G.enemies){
       if(e.type==='smasher')seen.smasher=1;if(e.type==='burster')seen.burster=1;if(e.type==='fireslug')seen.fireslug=1;
+      if(G.wave===2&&e.type==='fireslug'&&e.eventBounty)seen.redBounty=1;
+      if(G.wave===3&&e.type==='burster'&&e.eventBounty)seen.goldBounty=1;
+      if(G.wave===8&&e.eventBounty)seen.stormBounty=1;
       if(e.sm&&e.sm.st==='cast'&&e.sm.tel&&!fxSeen.has(e.sm.tel)){fxSeen.add(e.sm.tel);seen.slams++;}
       if(e.type==='burster'){const ls=bstate.get(e);if(e.fuse>=0&&ls!=='f')seen.pops++;bstate.set(e,e.fuse>=0?'f':'h');}
     }
-    if(G.wave===6&&G.lava&&G.lava.size>0)seen.trailW6=1;
+    if(G.wave===2&&G.lava&&G.lava.size>0)seen.trailW2=1;
     if(G.wave===9&&G.wavePat&&G.wavePat.aug){
       const A=G.wavePat.aug;
-      if(A.e){augRef=A.e;if(!A.e.dead)seen.augurUp=1;}
+      if(A.e){augRef=A.e;if(!A.e.dead)seen.augurUp=1;if(A.e.aimBias===0.36)seen.augurAim=1;}
       for(const x of G.fx){
         if(x.t<=0||fxSeen.has(x))continue;
         if(x.kind==='safe'){fxSeen.add(x);seen.augurRites++;}
@@ -88,7 +98,6 @@ for(const NP of [1,3]){
         if(x.kind==='pool'&&x.r>=40){fxSeen.add(x);seen.brandPool=1;seen.augurRites++;}
       }
     }
-    if(G.wave===5&&G.waveState==='clear')seen.hulkDead=1;
     if(G.wave===2&&G.waveState==='pre'&&G.players.every(p=>p.school))seen.schoolW2=1;
     if(G.boss&&!G.boss.dead&&G.boss.def&&G.boss.def.id==='slagmaw'){
       if(G.boss.phase>=2)seen.phase2=1;
@@ -112,23 +121,33 @@ for(const NP of [1,3]){
   say(maxFade>=0.99,'descent faded to black ('+maxFade.toFixed(2)+')'+tag);
   say(seen.volcano,'volcano palette after the descent'+tag);
   say(seen.schoolW2,'every player picked a PATH before wave 2'+tag);
-  say(seen.hulkDead,'SLAUGHTERHULK fell at wave 5'+tag);
-  say(seen.fireslug&&seen.trailW6,'wave 6: fire slugs left burning trails'+tag);
-  say(seen.burster&&seen.pops>=3,'wave 7: bursters planted their swell ('+seen.pops+')'+tag);
+  say(seen.fireslug&&seen.trailW2,'wave 2: fire slugs left burning trails'+tag);
+  say(seen.redBounty,'THE RED HARVEST: fire slugs carried visible bounties'+tag);
+  say(seen.burster&&seen.pops>=3,'wave 3: bursters planted their swell ('+seen.pops+')'+tag);
+  say(seen.goldBounty,'THE GOLD RUSH: bursters carried pre-pop bounties'+tag);
+  say(seen.lavamix,'THE SMASHERS fired at wave 4'+tag);
+  say(seen.band,'THE BAND replaced the wave-5 boss check'+tag);
+  say(seen.pressure&&seen.safe>0,'THE CINDER VENTS fired safe-disc rings'+tag);
+  say(seen.stormBounty,'THE SLAGSTORM combined both bounty creatures'+tag);
   say(seen.smasher&&seen.slams>=6,'the smashers cast their slam discs ('+seen.slams+')'+tag);
-  // a party that intercepts EVERY slug is the taught play at its extreme:
-  // the forge never lights, cannot be broken, and sinks — also a pass
-  say(((seen.heat||0)>0&&seen.forgeHeal)||((seen.heat||0)===0&&(seen.forgeEnd==='gone'||seen.forgeEnd==='dead')),'THE OFFERING: fed+healed, or perfectly intercepted (fed '+(seen.heat||0)+', '+seen.forgeEnd+')'+tag);
+  // A feed is observable through heat/FED even when same-frame focus damage
+  // outweighs the heal and the sampled hp bar never ticks upward.
+  say((seen.heat||0)>0||((seen.heat||0)===0&&(seen.forgeEnd==='gone'||seen.forgeEnd==='dead')),
+    'THE OFFERING: accepted feeds, or was perfectly intercepted (fed '+(seen.heat||0)+', '+seen.forgeEnd+')'+tag);
   say(seen.forgeEnd==='dead'||seen.forgeEnd==='gone','THE OFFERING: the forge died or sank ('+seen.forgeEnd+')'+tag);
+  say(seen.forgeWounded,'THE OFFERING: the forge opened wounded so feeds moved its bar'+tag);
   say(seen.augurUp&&seen.augurRites>=3,'THE SLAG AUGUR: stood and cast its rites ('+seen.augurRites+')'+tag);
   say(seen.brandPool,'THE SLAG AUGUR: a brand pool was dropped'+tag);
   say(!!(augRef&&augRef.dead),'THE SLAG AUGUR: broken or sunk'+tag);
+  say(seen.forgeAim&&seen.augurAim,'event targets use Slagmaw proximity bias'+tag);
+  const gemCap=350-40*(NP-1);
+  say(maxGems<=gemCap+20,'loose XP stayed inside the '+gemCap+' gem visual budget (peak '+maxGems+')'+tag);
   say(seen.phase2&&seen.phase3,'slagmaw reached phases 2 and 3'+tag);
   say(seen.bossLava,'cauldron cracked (lava in P3)'+tag);
   say(seen.ring&&seen.rimBorn,'cinder ring born on the rim'+tag);
   say(seen.bossDead,'slagmaw died'+tag);
   say(seen.ascent,'ascent played'+tag);
-  say(seen.surfaceBack,'surface palette back by wave 6'+tag);
+  say(seen.surfaceBack,'surface palette back by wave 11'+tag);
   say(seen.wave6,'wave 11 reached'+tag);
   say(!seen.types6,'no volcano fauna in wave 11'+tag);
   say(!G.lava,'lava cleared after the arc'+tag);

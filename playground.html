@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>PIXEL HORDE!</title>
+<title>PIXEL HORDE — EVENT PLAYGROUND</title>
 <style>
   html,body{margin:0;padding:0;background:#0e0b14;overflow:hidden;height:100%;}
   canvas{display:block;width:100vw;height:100vh;image-rendering:pixelated;image-rendering:crisp-edges;}
@@ -44,6 +44,18 @@ const screenC=document.getElementById('screen');
 const sctx=screenC.getContext('2d');
 const view=document.createElement('canvas');
 const ctx=view.getContext('2d');
+// ---- density plumbing ----
+// A world unit is what a buffer pixel used to be; nothing gameplay-facing
+// changes. DEN = buffer pixels per world unit, applied once per frame as
+// ctx.setTransform(DEN,0,0,DEN,0,0) and undone only in blit(). Sprites carry
+// their own density (makeSprite den tag) so den-2 art fills the same world box
+// its den-1 predecessor did.
+const Q=typeof URLSearchParams==='function'?new URLSearchParams(location.search)
+  :{get:k=>{const m=location.search.match(new RegExp('[?&]'+k+'(?:=([^&]*))?(?:&|$)'));return m?decodeURIComponent(m[1]||''):null;}}; // headless sandboxes have no URLSearchParams
+let DEN=Q.get('density')==='1'?1:2;   // buffer px per world unit (runtime-mutable, see step 12)
+let SUBPX=false;                       // step 11 flips to true
+const DEV=/[?&]dev/.test(location.search);
+const lightC=document.createElement('canvas'),lctx=lightC.getContext('2d'); // step 4
 function resize(){
   const dpr=Math.min(window.devicePixelRatio||1,2);
   screenC.width=Math.floor(innerWidth*dpr);
@@ -52,9 +64,11 @@ function resize(){
 addEventListener('resize',resize); resize();
 
 // ---------- sprites ----------
-function makeSprite(rows,pal){
+function makeSprite(rows,pal,den){
   const w=rows[0].length,h=rows.length;
   const c=document.createElement('canvas');c.width=w;c.height=h;
+  c.den=den||1;c.uw=w/c.den;c.uh=h/c.den; // texels per world unit; uw/uh = footprint in world units
+  if(DEV)for(const r of rows)if(r.length!==w)throw new Error('ragged sprite row: '+r);
   const g=c.getContext('2d');
   for(let y=0;y<h;y++)for(let x=0;x<rows[y].length;x++){
     const ch=rows[y][x];
@@ -190,22 +204,97 @@ const bannerSkullSprite=makeSprite([
 
 
 // ---------- boss sprites ----------
-const SLAGMAW_ROWS=[
-'...KK............KK...','..KEK............KEK..','..KSK...KKKKKK...KSK..',
-'.KSSSK.KSDDDDSK.KSSSK.','KSSSSSSDDDDDDDDSSSSSSK','KSSEESSDDDDDDDDSSEESSK',
-'KSSSSSKRRRRRRRRKSSSSSK','KSSSSSKRRKEEKRRKSSSSSK','KSSSSSKREKEEKERKSSSSSK',
-'KSSSSSKRRKREKRRKSSSSSK','KSSSSSKRRRRRRRRKSSSSSK','KSSSSSSKKKKKKKKSSSSSSK',
-'KSSK..KSSSSSSSSK..KSSK','KEEK..KSEEEEEESK..KEEK','.KK...KSSSSSSSSK...KK.',
-'......KSSSKKSSSK......','......KSSK..KSSK......','.....KEEEK..KEEEK.....'];
-const slagmawSprite=makeSprite(SLAGMAW_ROWS,{K:'#120c10',S:'#453a52',D:'#7a6e8f',R:'#8c2a14',E:'#ff7a1f',Y:'#ffb62e',W:'#fff2c0'});
-const SLAGMAW_OPEN_ROWS=[
-'...YY............YY...','..KYK............KYK..','..KYK...KKKKKK...KYK..',
-'.KSESK.KSDEEDSK.KSESK.','KSSESSEDDEEEEDDESSESSK','KSSWWSSDDEEEEDDSSWWSSK',
-'KSESSEKYYYYYYYYKESSESK','KSSSSEKYWKWWKWYKESSSSK','KESSSSKWWKWWKWWKSSSSEK',
-'KSSSSSKYWKWWKWYKSSSSSK','KSESSEKYYYYYYYYKESSESK','KSSESSEKKKKKKKKESSESSK',
-'KEEK..KSEESSEESK..KEEK','KYYK..KSYYYYYYSK..KYYK','.KK...KSEEEEEESK...KK.',
-'......KSESKKSESK......','......KSSK..KSSK......','.....KYYYK..KYYYK.....'];
-const slagmawOpenSprite=makeSprite(SLAGMAW_OPEN_ROWS,{K:'#1c1010',S:'#5c2a20',D:'#7d3a26',E:'#ff8a1f',Y:'#ffd85a',W:'#fff8e0'});
+// SLAGMAW — a forge with jaws (slag + maw). The mouth is the body's state
+// (shut / the forge open / the cauldron cracked); the right arm and the
+// hammer are drawn by the boss's own draw hook and are the attack's state.
+// 36x29 at scale 2, lit from the top-left: f/d light faces, b/a shadow faces,
+// K outlines. Rows are authored as five aligned segments so the towers, the
+// head and the arms never drift: [left arm 3][tower 7][gap+head+gap 16][tower 7][socket 3].
+const SLAG_W=36,SLAG_H=29;
+const slagRow=(...segs)=>{const r=segs.join('');if(r.length!==SLAG_W)throw new Error('slag row '+r.length+': '+r);return r;};
+const SLAG_SHUT_ROWS=[
+ slagRow('...','.KKKKK.','................','.KKKKK.','...'), // 0 chimney rims
+ slagRow('...','KdoyodK','................','KdoyodK','...'), // 1 vents
+ slagRow('...','KfdcbaK','................','KfdcbaK','...'), // 2
+ slagRow('...','KfdcbaK','....KKKKKKKK....','KfdcbaK','...'), // 3 crown
+ slagRow('...','KdaaabK','..KKfddccbbaKK..','KdaaabK','...'), // 4 iron band
+ slagRow('...','KfdcbaK','.KffddccccbbaaK.','KfdcbaK','...'), // 5 brow ridge
+ slagRow('...','KfdcbaK','.KfddKcccKcbbaK.','KfdcbaK','...'), // 6 brow cracks
+ slagRow('...','KfeceaK','.KfdKyoKcKoyKaK.','KfeceaK','...'), // 7 eyes; molten vein in the towers
+ slagRow('.KK','KfdcbaK','KKfddcccccbbaaKK','KfdcbaK','KK.'), // 8 shoulders
+ slagRow('Kfc','KfdcbaK','.KKKKKKKKKKKKKK.','KfdcbaK','KeK'), // 9 upper jaw rim; right shoulder socket
+ slagRow('Kfc','KfdcbaK','.KtTrtTrrtTrtTK.','KfdcbaK','KeK'), // 10 upper teeth
+ slagRow('Kfc','KfdcbaK','.KrrreooeerrrrK.','KfdcbaK','...'), // 11 the maw
+ slagRow('Kfc','KdaaabK','.KrreoyyyyoerrK.','KdaaabK','...'), // 12 iron band
+ slagRow('Kfc','KfeceaK','.KreoywwwwyoerK.','KfeceaK','...'), // 13 hottest
+ slagRow('Kfc','KfdcbaK','.KrreoyyyyoerrK.','KfdcbaK','...'), // 14
+ slagRow('Kfc','KfdcbaK','.KrrreooooerrrK.','KfdcbaK','...'), // 15
+ slagRow('Kec','KfdcbaK','.KTtrTtrrTtrTtK.','KfdcbaK','...'), // 16 lower teeth; left elbow joint
+ slagRow('Kfc','KfdcbaK','.KKKKKKKKKKKKKK.','KfdcbaK','...'), // 17 jaw rim
+ slagRow('KdK','KKKKKKK','KfddcccceyecccbK','KKKKKKK','...'), // 18 tower bases; the belly seam
+ slagRow('KoK','KfddddcccccccceyyecccccbbbbaaK','...'),        // 19 torso (cols 3-32)
+ slagRow('KKK','KfdddcccKcccccceyyeccKcccbbbaaK','..'),        // 20 stone cracks
+ slagRow('...','.KfddccccccccceyecccccccbbbaK.','...'),        // 21
+ slagRow('...','..KKfddcKcccceyeccccKcbbaKK...','...'),        // 22
+ slagRow('...','....KfddcccccKKKKccccccbbaK...','...'),        // 23 legs split
+ slagRow('...','....KfddcccbK....KfdcccbbaK...','...'),        // 24
+ slagRow('...','....KfdccbbaK....KfdccbbbaK...','...'),        // 25
+ slagRow('...','...KKfdccbbaK...KKfdccbbbaKK..','...'),        // 26 ankles
+ slagRow('...','...KeoyyoeaK.....KeoyyoooeaK..','...'),        // 27 molten feet
+ slagRow('...','...KKKKKKKKK.....KKKKKKKKKKK..','...')];       // 28
+const slagWith=(rows,over)=>rows.map((r,i)=>over[i]!==undefined?slagRow(...over[i]):r);
+// the jaw shut (a chomp on an offering / a clench on a shard): teeth meet on a dark seam
+const SLAG_CHOMP_ROWS=slagWith(SLAG_SHUT_ROWS,{
+ 11:['Kfc','KfdcbaK','.KTtTtTtTtTtTtK.','KfdcbaK','...'],
+ 12:['Kfc','KfdcbaK','.KKKKKKKKKKKKKK.','KfdcbaK','...'],
+ 13:['Kfc','KfeceaK','.KfdddccccbbbaK.','KfeceaK','...'],
+ 14:['Kfc','KfdcbaK','.KfddKcccKbbaaK.','KfdcbaK','...'],
+ 15:['Kfc','KfdcbaK','.KfddccccbbbaaK.','KfdcbaK','...'],
+ 16:['Kec','KfdcbaK','.KKKKKKKKKKKKKK.','KfdcbaK','...'],
+ 17:['Kfc','KfdcbaK','.KfddccccbbbaaK.','KfdcbaK','...']});
+// THE FORGE OPENS: the jaw drops two rows and the maw runs white
+const SLAG_OPEN_ROWS=slagWith(SLAG_SHUT_ROWS,{
+ 11:['Kfc','KfdcbaK','.KreeoyyyyoeerK.','KfdcbaK','...'],
+ 12:['Kfc','KdaaabK','.KeoyyywwyyyoeK.','KdaaabK','...'],
+ 13:['Kfc','KfeceaK','.KeoyywwwwyyoeK.','KfeceaK','...'],
+ 14:['Kfc','KfdcbaK','.KeoyyywwyyyoeK.','KfdcbaK','...'],
+ 15:['Kfc','KfdcbaK','.KreoyyyyyyoerK.','KfdcbaK','...'],
+ 16:['Kec','KfdcbaK','.KrreoyyyyoerrK.','KfdcbaK','...'],
+ 17:['Kfc','KfdcbaK','.KTtrTtrrTtrTtK.','KfdcbaK','...'],
+ 18:['KdK','KKKKKKK','KKKKKKKKKKKKKKKK','KKKKKKK','...']});
+// THE CAULDRON CRACKS: fissures across the towers and the belly, glowing
+const SLAG_CRACKS=[[5,4,'K'],[6,5,'e'],[7,6,'K'],[6,10,'K'],[5,11,'e'],[28,4,'K'],[29,5,'e'],[30,6,'K'],[30,11,'K'],[29,12,'e'],[13,5,'K'],[14,6,'e'],[8,20,'K'],[9,21,'e'],[10,22,'K'],[26,20,'e'],[27,21,'K']];
+const slagCrack=rows=>{const r=rows.map(x=>x.split(''));for(const [x,y,c] of SLAG_CRACKS)if(r[y][x]!=='.')r[y][x]=c;return r.map(x=>x.join(''));};
+const SLAG_PAL={
+ p1:{K:'#0b080a',a:'#241c26',b:'#382c3a',c:'#4d3f52',d:'#6a5a70',f:'#8d7f94',r:'#7a1a0a',e:'#e8451a',o:'#ff7a1f',y:'#ffc63a',w:'#fff6d6',t:'#e0d6c4',T:'#9c8f80'},
+ p2:{K:'#120a0a',a:'#2a1c1c',b:'#42302c',c:'#5a423c',d:'#7a5a50',f:'#9c7a6a',r:'#ff6a1f',e:'#ffa02e',o:'#ffd23e',y:'#fff0a0',w:'#ffffff',t:'#e8dcc8',T:'#a89880'},
+ p3:i=>({K:'#140808',a:'#2c1414',b:'#4a2020',c:['#682a26','#7a2a24','#8c2820'][i],d:['#8a3a30','#9a3a2c','#aa3a28'][i],f:['#a85040','#b85040','#c05038'][i],r:'#8c1010',e:'#ff3c3c',o:'#ff6a3a',y:'#ffa060',w:'#ffd0a0',t:'#e0d0c0',T:'#9c8070'})};
+const slagmawSprite=makeSprite(SLAG_SHUT_ROWS,SLAG_PAL.p1);
+const slagmawOpenSprite=makeSprite(SLAG_OPEN_ROWS,SLAG_PAL.p2);
+const slagmawChompSprite=makeSprite(SLAG_CHOMP_ROWS,SLAG_PAL.p2);
+const slagmawCrackedSprites=[0,1,2].map(i=>makeSprite(slagCrack(SLAG_OPEN_ROWS),SLAG_PAL.p3(i)));
+const slagmawClenchSprite=makeSprite(slagCrack(SLAG_CHOMP_ROWS),SLAG_PAL.p3(2));
+const slagBlankSprite=makeSprite(Array.from({length:SLAG_H},()=>'.'.repeat(SLAG_W)),{}); // the enemy loop draws this; the hook draws the body
+// the right arm: shoulder ball at the top (the pivot), a molten elbow, a fist
+// with glowing knuckles; the haft passes between the K's of the hand
+const SLAG_ARM_ROWS=[
+'..KKKK..','.KfddcK.','.KfdccK.','.KfdcbK.','.KdccbK.','.KKeoKK.','.KdccbK.','.KdccbK.','.KdcbbK.',
+'.KdcbbK.','.KcbbaK.','KKcbbaKK','KfdKKcbK','KfdKKcbK','KdcKKbaK','KKoKKoKK','.KKKKKK.','........'];
+const SLAG_ARM_W=8,SLAG_ARM_H=18,SLAG_ARM_PIVOT={px:4,py:1.5},SLAG_ARM_HAND=12; // hand is 12px below the pivot
+const slagArmSprite=makeSprite(SLAG_ARM_ROWS,SLAG_PAL.p1);
+const slagArmSprites={1:slagArmSprite,2:makeSprite(SLAG_ARM_ROWS,SLAG_PAL.p2),3:makeSprite(SLAG_ARM_ROWS,SLAG_PAL.p3(1))};
+// the hammer: a bevelled basalt head with a molten rune band and a white-hot
+// core line, an iron haft with a leather wrap at the grip, a molten pommel
+const SLAG_HAMMER_ROWS=[
+'...KKKKKKK...','..KfffdddcK..','.KffdddcccbK.','KfdyoooooybaK','KfdowwwwwobaK','KfdyoooooybaK','.KdcccbbbbaK.','.KdccbbbaaaK.','..KKKKKKKKK..',
+'....KKeKK....','....KjihK....','....KjihK....','....KjihK....','....KjihK....','....KgGgK....','....KjihK....','....KgGgK....','....KjihK....',
+'....KgGgK....','....KjihK....','....KgGgK....','....KjihK....','....KjihK....','...KKjihKK...','...KfeoebK...','...KKKKKKK...'];
+const SLAG_HAMMER_W=13,SLAG_HAMMER_H=26,SLAG_HAMMER_GRIP={px:6.5,py:18.5},SLAG_HAMMER_HEAD=14.5; // head centre is 14.5px up the haft from the grip
+const SLAG_HAMMER_PAL=heat=>Object.assign({K:'#0b080a',a:'#241c26',b:'#382c3a',c:'#4d3f52',d:'#6a5a70',f:'#8d7f94',h:'#3a2a30',i:'#5c4a52',j:'#7a6670',g:'#5a3418',G:'#8a5a2a'},
+ heat==='hot'?{e:'#ffd85a',o:'#ffe98a',y:'#fff4c0',w:'#ffffff'}:heat==='red'?{e:'#ff3c3c',o:'#ff5a3a',y:'#ff8a5a',w:'#ffd0b0'}:{e:'#e8451a',o:'#ff7a1f',y:'#ffc63a',w:'#fff6d6'});
+const slagHammerSprite=makeSprite(SLAG_HAMMER_ROWS,SLAG_HAMMER_PAL('warm'));
+const slagHammerHotSprite=makeSprite(SLAG_HAMMER_ROWS,SLAG_HAMMER_PAL('hot'));
+const slagHammerRedSprite=makeSprite(SLAG_HAMMER_ROWS,SLAG_HAMMER_PAL('red'));
 const slagPupSprite=makeSprite(['..KKKK..','.KEEEEK.','KEKYYKEK','KEYYYYEK','KEEEEEEK','.KK..KK.','.K....K.'],{K:'#2a1512',E:'#ff6a1a',Y:'#ffd23e'});
 
 const GEMINOX_ROWS=[
@@ -289,6 +378,17 @@ const creepTileSprite=makeSprite(['BBBBBBBB','BAAAAAAB','BAAWAAAB','BAAAAAAB','B
 // hazards coexist in a rush run and must read as different bosses' work
 const voidTileSprite=makeSprite(['BBBBBBBB','BAAAAAAB','BAAWAAAB','BAAAAAAB','BAAAWAAB','BAAAAAAB','BAAAAAAB','BBBBBBBB'],{A:'#07040f',B:'#3a2f4a',W:'#8a5cff'});
 const lavaTileSprite=makeSprite(['BABBBBAB','AAABBAAA','BBAAAABB','BBBAABBB','BBAAAABB','AAABBAAA','BABBBBAB','BBBBBBBB'],{A:'#ffd23e',B:'#ff3c3c'});
+// six baked frames per hazard overlay: the diagonal hatch stripes() used to
+// stroke over every tile is pre-drawn at the six integer offsets
+// floor(phase*8)%6 walks through, so a creep/void/lava tile is ONE drawImage
+// instead of save+clip+7 strokes+restore (~15k calls/frame on a lava wave).
+// The frames are baked next to TILE (declared later); step 9 swaps in the
+// authored 32x32 sets and the helper in render() is unchanged.
+function bakeOverlayFrames(spr,col){
+  return [0,1,2,3,4,5].map(o=>{const c=document.createElement('canvas');c.width=c.height=TILE;const g=c.getContext('2d');
+    g.drawImage(spr,0,0,TILE,TILE);g.strokeStyle=col;g.lineWidth=1;
+    for(let i=-TILE;i<TILE*2;i+=6){g.beginPath();g.moveTo(i+o,0);g.lineTo(i+o-TILE,TILE);g.stroke();}
+    c.den=1;c.uw=c.uh=TILE;return c;});}
 
 // ---------- audio ----------
 let AC=null,masterGain=null,comp=null;
@@ -828,7 +928,7 @@ const ES={
   'STARFALL':'LLUVIA DE ESTRELLAS','comets without pause':'cometas sin pausa',
   // buffs
   'PARTY CHARMS':'AMULETOS DEL GRUPO',
-  '+SPEED':'+VELOCIDAD','+REGEN':'+REGEN','+MAX HP':'+VIDA MÁX','+DAMAGE':'+DAÑO','+MAGNET':'+IMÁN','+35 HP':'+35 VIDA',
+  '+SPEED':'+VELOCIDAD','+REGEN':'+REGEN','+MAX HP':'+VIDA MÁX','+DAMAGE':'+DAÑO','+MAGNET':'+IMÁN','+20 HP':'+20 VIDA',
   // victory / game over
   'VICTORY':'VICTORIA','ALL 20 WAVES CLEARED':'LAS 20 OLEADAS SUPERADAS','GAME OVER':'FIN DE LA PARTIDA',
   '(START/ESC) RUN IT AGAIN     (BACK/BACKSPACE) TITLE':'(START/ESC) OTRA RONDA     (BACK/RETROCESO) TÍTULO',
@@ -859,6 +959,21 @@ const ES={
   'HARVEST THE OFFERINGS — BREAK THE FORGE FOR A JACKPOT':'COSECHA LAS OFRENDAS — ROMPE LA FORJA PARA EL PREMIO GORDO',
   'THE AUGUR BOUNTY — BREAK IT BEFORE IT SINKS':'RECOMPENSA DEL AUGUR — RÓMPELO ANTES DE QUE SE HUNDA',
   'FORGE BOUNTY CLAIMED':'RECOMPENSA DE LA FORJA COBRADA','AUGUR BOUNTY CLAIMED':'RECOMPENSA DEL AUGUR COBRADA',
+  // event playground prototypes
+  'CINDERFALL':'LLUVIA DE BRASAS','OBSIDIAN BLOOM':'FLORACIÓN DE OBSIDIANA',
+  'EMBER MOTHS':'POLILLAS DE BRASA','SUN SHRINES':'SANTUARIOS SOLARES',
+  'RUNE RUN':'CARRERA DE RUNAS','THE CALDERA':'LA CALDERA',
+  'TREASURE STORM':'TORMENTA DE TESOROS',
+  'DODGE THE FALL — BREAK THE GLOWING CORES':'ESQUIVA LA CAÍDA — ROMPE LOS NÚCLEOS BRILLANTES',
+  'ENTER THE RING — BREAK THE OPEN BLOOM':'ENTRA EN EL CÍRCULO — ROMPE LA FLOR ABIERTA',
+  'CHASE THE GOLDEN FLOCKS':'PERSIGUE LOS ENJAMBRES DORADOS',
+  'STAND IN THE LIGHT — CHARGE THE BLAST':'QUÉDATE EN LA LUZ — CARGA LA EXPLOSIÓN',
+  'TOUCH THE RUNE — FOLLOW THE LINE':'TOCA LA RUNA — SIGUE LA LÍNEA',
+  'RUN TO THE SOURCE — THE WHITE DISC IS SAFE':'CORRE A LA FUENTE — EL DISCO BLANCO ES SEGURO',
+  'FALLING CORES AND GOLDEN FLOCKS':'NÚCLEOS CAÍDOS Y ENJAMBRES DORADOS',
+  'RED FLOOR BURNS — ORANGE SLAMS THROW YOU':'EL SUELO ROJO QUEMA — LOS GOLPES NARANJAS TE LANZAN',
+  'GET INSIDE THE WHITE DISC':'ENTRA EN EL DISCO BLANCO','CINDER RING — GET CLOSE':'ANILLO DE CENIZA — ACÉRCATE',
+  'RUN HERE':'CORRE AQUÍ','SAFE NEAR IT':'CERCA ESTÁS A SALVO',
   // benched arc v1 strings kept for the benched code paths
   'THE FORGE WAKES!':'¡LA FORJA DESPIERTA!','THE BEHEMOTH BREAKS':'EL BEHEMOT SE ROMPE','BREAK IT — IT BLEEDS THE XP IT ATE':'RÓMPELA — SANGRA LA XP QUE COMIÓ',
   'IT SINKS INTO THE SLAG':'SE HUNDE EN LA ESCORIA','SLAG BEHEMOTH':'BEHEMOT DE ESCORIA',
@@ -1228,6 +1343,9 @@ function stick(p){
 
 // ---------- terrain ----------
 const TILE=16,CHUNK=16,CHPX=TILE*CHUNK;
+const creepFrames=bakeOverlayFrames(creepTileSprite,'rgba(63,224,90,0.35)'),
+      voidFrames=bakeOverlayFrames(voidTileSprite,'rgba(138,92,255,0.30)'),
+      lavaFrames=bakeOverlayFrames(lavaTileSprite,'rgba(255,210,62,0.30)');
 const T_GRASS=0,T_ROCK=1,T_MUD=2,T_ACID=3,T_LAVA=4;
 // world-wide terrain modes. 'pressure' (classic wave 4): noise-carved lava
 // rivers across the WHOLE map — iso-bands of a value noise, so they wind
@@ -1335,7 +1453,7 @@ function chunkCanvas(cx,cy){
     }
   }
   chunkCanvases.set(k,c);
-  if(chunkCanvases.size>140){
+  if(chunkCanvases.size>48){
     const first=chunkCanvases.keys().next().value;
     if(first!==k)chunkCanvases.delete(first);
   }
@@ -1666,6 +1784,7 @@ const G={
   overSince:0, flashMsg:null, flashT:0, subFlash:null, subFlashT:0,
   wave:0, startWave:1, waveState:'fight', waveT:0, interLen:8,
   waveQuota:0, waveSpawned:0, waveSpawnT:0, waveSpawnGap:0, wavePulses:[], cleanT:0, wavePat:null,
+  softTransitions:0, softOverlaps:0, softCrumbled:0,
   bankSeen:0, bankFlash:0,
   mobDmgAcc:0, fightT:0, waveDPS:0, killsWave:0,
   slotChest:null, reel:null, lastJack:false, vacuumT:0,
@@ -1817,6 +1936,7 @@ function startRun(mode){
   setTerrain(null);G.ventChunks=null;G.moveX=0;G.moveY=0;
   G.bankSeen=0;G.bankFlash=0;
   G.mobDmgAcc=0;G.fightT=0;G.waveDPS=0;G.killsWave=0;
+  G.softTransitions=0;G.softOverlaps=0;G.softCrumbled=0;
   G.slotChest=null;G.reel=null;G.lastJack=false;G.vacuumT=0;
   G.flashMsg=null;G.flashT=0;G.subFlash=null;G.subFlashT=0;G.subQueue=[];G.objective=null;
   G.tileOverride.clear();chunkCanvases.clear();
@@ -1875,53 +1995,22 @@ function startRun(mode){
 }
 function resetRun(){startRun(G.mode);}
 
-// ---------- classic waves ----------
-// pattern: notebook wave choreography (see WAVE_PATTERNS). Every trash wave
-// after the opener carries one; the base spawner drip is thinned to make room.
-// lv:{b,x} is the wave's XP budget in LEVELS — b is what any party that clears
-// the wave earns, x is the execution ceiling on top (band farming, the ring
-// champion). Gems are priced at runtime via xpNeed(current level), so the
-// budget scales with party size and self-corrects a behind-schedule party.
+// ---------- event playground ----------
+// A disposable ten-wave laboratory for movement-only opportunities. Wave 1
+// calibrates the basic horde, waves 2-6 build the survivor rhythm, waves 7
+// and 9 rehearse Slagmaw's movement language, and wave 10 is the raid.
+// None of these pattern ids are used by index.html.
 const CLASSIC_WAVES=[
-// Waves 1-10 are THE SLAGMAW RAID (v5, 2026-08-31): one surface onboarding
-// wave, then the descent and eight increasingly dangerous volcano events.
-// Slaughterhulk no longer interrupts the arc at wave 5; it remains intact in
-// BOSS RUSH. Every event changes the valuable targets or the route through
-// the horde and pays for engaging with it: bounty fauna, smashers, THE BAND,
-// the forge, vents, a combined slagstorm, and finally the Augur. Movement is
-// the whole input: dodge, proximity aim, farm route, pickup. Recognition of
-// Slagmaw's creatures and colours is a bonus, not homework.
-// Wave 10 is SLAGMAW, met at ~L9-10 with passives online; the kill is the
-// ASCENT. Counts in 1-10 are authored (dpsFactor is 1 there), sized so a
-// decent party clears late in the timer — slightly behind is the feel.
-// `obj:[text,col]` = the standing HUD objective for pattern-less lessons.
-// Counts are sized against MEASURED kit output (tools/bench-schools.mjs
-// kits: early ≈ 176-544 swarm dps), not against probe bots: the wave's
-// hp-throughput demand sits at roughly half the expected kit's bench, so
-// the stream leaks on a stander and melts for a mover. v3.0 shipped
-// 3-10x under that and a player could literally stand still (playtest,
-// 2026-08-31). Every wave from 3 on also carries a RANGED answer
-// (spitters/bombers) that dps alone cannot pre-empt.
-{n:18,dur:30,mix:{chaser:1},elite:0,lv:{b:0,x:0}},
-{n:48,dur:45,mix:{chaser:0.8,swarm:0.5,fireslug:0.8},elite:0,lv:{b:1,x:0},event:'redharvest',obj:['HUNT FIRE SLUGS — EACH KILL SPILLS XP','#ff3c3c']},
-{n:60,dur:48,mix:{chaser:0.7,swarm:0.6,fireslug:0.35,burster:0.9,spitter:0.2},elite:0,lv:{b:1,x:0},event:'goldrush',obj:['BREAK BURSTERS BEFORE THEY POP — CLAIM THEIR XP','#ffd23e']},
-{n:72,dur:52,mix:{chaser:0.6,swarm:0.5,smasher:1.2,spitter:0.35},elite:0,pattern:'lavamix',lv:{b:1,x:0}},
-{n:52,dur:50,mix:{chaser:0.7,swarm:1,spitter:0.35,bomber:0.2},elite:0,pattern:'band',lv:{b:0,x:1}},
-{n:40,dur:58,mix:{chaser:0.5,smasher:0.8,spitter:0.4,bomber:0.2},elite:0,pattern:'slugforge',lv:{b:1,x:1}},
-{n:80,dur:58,mix:{chaser:0.7,swarm:0.8,fireslug:0.4,spitter:0.5,bomber:0.25},elite:0,pattern:'pressure',lv:{b:1,x:0}},
-{n:104,dur:62,mix:{chaser:0.55,swarm:0.8,smasher:0.65,burster:0.65,fireslug:0.5,spitter:0.55,bomber:0.35},elite:0.04,lv:{b:1,x:0},event:'slagstorm',obj:['CHASE EVERY BOUNTY — SURVIVE THE ERUPTION','#ff7a1f']},
-{n:72,dur:65,mix:{chaser:0.65,swarm:0.7,smasher:0.55,fireslug:0.35,spitter:0.5,bomber:0.3},elite:0,pattern:'augur',lv:{b:1,x:0}},
-{boss:1,dur:120},
-{n:54,dur:52,mix:{chaser:0.7,swarm:1.0,spitter:1.0,tank:0.4,bomber:0.5},elite:0.05,pattern:'stonefall',lv:{b:2,x:1}},
-{n:58,dur:55,mix:{chaser:0.7,swarm:1.1,spitter:1.0,tank:0.45,bomber:0.6},elite:0.06,pattern:'wards',lv:{b:3,x:1}},
-{n:62,dur:55,mix:{chaser:0.6,swarm:1.0,spitter:1.1,tank:0.5,bomber:0.6},elite:0.08,pattern:'band',lv:{b:3,x:4}},
-{n:66,dur:58,mix:{chaser:0.6,swarm:1.0,spitter:1.1,tank:0.6,bomber:0.7},elite:0.08,pattern:'dance',lv:{b:2,x:4}},
-{boss:2,dur:110},
-{n:70,dur:58,mix:{chaser:0.5,swarm:1.1,spitter:1.1,tank:0.6,bomber:0.7},elite:0.09,pattern:'swarm',lv:{b:5,x:2}},
-{n:74,dur:60,mix:{chaser:0.5,swarm:1.2,spitter:1.2,tank:0.65,bomber:0.8},elite:0.10,pattern:'creep',lv:{b:4,x:2}},
-{n:78,dur:60,mix:{chaser:0.5,swarm:1.2,spitter:1.2,tank:0.7,bomber:0.8},elite:0.11,pattern:'stonefall',lv:{b:3,x:1}},
-{n:84,dur:62,mix:{chaser:0.4,swarm:1.3,spitter:1.2,tank:0.8,bomber:0.9},elite:0.14,pattern:'collapse',lv:{b:4,x:6}},
-{boss:3,dur:125}];
+{n:55,dur:34,mix:{chaser:1},elite:0,lv:{b:1,x:0}},
+{n:105,dur:45,mix:{chaser:0.9,swarm:0.6},elite:0,pattern:'cinderfall',lv:{b:0.75,x:0.25}},
+{n:120,dur:48,mix:{chaser:0.8,swarm:0.6,spitter:0.2},elite:0,pattern:'obsidianbloom',lv:{b:0.75,x:0.25}},
+{n:135,dur:50,mix:{chaser:0.7,swarm:0.9,spitter:0.25},elite:0,pattern:'embermoths',lv:{b:0.5,x:0.65}},
+{n:150,dur:52,mix:{chaser:0.7,swarm:0.8,spitter:0.3,bomber:0.15},elite:0,pattern:'sunshrines',lv:{b:0.75,x:0.25}},
+{n:165,dur:55,mix:{chaser:0.65,swarm:0.9,spitter:0.4,bomber:0.2},elite:0.02,pattern:'runerun',lv:{b:1,x:0.15}},
+{n:180,dur:58,mix:{chaser:0.6,swarm:0.9,spitter:0.45,bomber:0.25},elite:0.03,pattern:'cinderring',lv:{b:1,x:0}},
+{n:200,dur:60,mix:{chaser:0.55,swarm:1,spitter:0.5,bomber:0.3},elite:0.04,pattern:'treasurestorm',lv:{b:0.75,x:0.45}},
+{n:220,dur:62,mix:{chaser:0.5,swarm:1,spitter:0.55,bomber:0.35,tank:0.2,smasher:0.05},elite:0.05,pattern:'caldera',lv:{b:1,x:0}},
+{boss:1,dur:120}];
 // BOSS RUSH: the whole boss roster back to back, nothing in between. Every
 // "wave" is a boss wave, so the classic wave machine drives it unchanged.
 // Filled from RUSH_ROSTER once the boss table below it exists.
@@ -2253,8 +2342,9 @@ function dropLoot(e){
   // execution jackpot
   const gems=e.eventBounty?Math.min(6,Math.max(2,e.xp)):(e.boss||e.champ)?14:(Math.random()<0.15?2:1);
   if(e.eventBounty){
-    addText(e.x,e.y-e.r-6,'XP!',e.type==='burster'?VOLC.burst:VOLC.lava);
-    addSparkles(e.x,e.y-4,e.type==='burster'?VOLC.burst:VOLC.lava,8,80);
+    const bountyCol=e.bountyCol||(e.type==='burster'?VOLC.burst:VOLC.lava);
+    addText(e.x,e.y-e.r-6,'XP!',bountyCol);
+    addSparkles(e.x,e.y-4,bountyCol,8,80);
   }
   const per=Math.max(1,Math.round(e.xp/gems));
   for(let i=0;i<gems;i++){
@@ -2274,11 +2364,11 @@ function dropLoot(e){
     // rush levels come from grantLevels() on the kill, not from banked xp
     if(G.mode==='classic')G.xp+=xpNeed();
     if(isCampaign())G.pickups.push({x:e.x,y:e.y,type:'pod',t:0});
-  }else if(e.type==='tank'&&Math.random()<0.35)G.pickups.push({x:e.x,y:e.y,type:'heart',t:0});
+  }else if(e.type==='tank'&&Math.random()<0.04)G.pickups.push({x:e.x,y:e.y,type:'heart',t:0});
   // the vacuum is a RARE find — at 0.6% it showed up most waves and
   // stopped feeling like a find at all
   else if(Math.random()<0.001)G.pickups.push({x:e.x,y:e.y,type:'vacuum',t:0});
-  else if(Math.random()<0.02)G.pickups.push({x:e.x,y:e.y,type:'heart',t:0});
+  else if(Math.random()<0.002)G.pickups.push({x:e.x,y:e.y,type:'heart',t:0});
 }
 function damageEnemy(e,dmg,owner){
   if(e.dead)return;
@@ -2562,7 +2652,7 @@ function breakCrate(c){
     const types=['speed','regen','maxhp','damage','magnet'];
     G.pickups.push({x:c.x,y:c.y,type:types[(Math.random()*types.length)|0],t:0});
   }else if(r<bp+0.012)G.pickups.push({x:c.x,y:c.y,type:'vacuum',t:0}); // rare
-  else if(r<bp+0.27)G.pickups.push({x:c.x,y:c.y,type:'heart',t:0});
+  else if(r<bp+0.06)G.pickups.push({x:c.x,y:c.y,type:'heart',t:0});
   else for(let i=0;i<4;i++)G.gems.push({x:c.x+(Math.random()*12-6),y:c.y+(Math.random()*12-6),v:2,t:0});
 }
 
@@ -3424,11 +3514,11 @@ const PARTY_BUFFS=new Set(['speed','regen','maxhp','damage','magnet']);
 function applyBuff(p,type){
   switch(type){
     case 'speed':p.speedMul=Math.min(1.9,p.speedMul+0.09);addText(p.x,p.y-12,'+SPEED','#ffe94a');break;
-    case 'regen':p.regen+=0.6;addText(p.x,p.y-12,'+REGEN','#57e86b');break;
+    case 'regen':p.regen+=0.2;addText(p.x,p.y-12,'+REGEN','#57e86b');break;
     case 'maxhp':p.maxhp+=20;p.hp=Math.min(p.maxhp,p.hp+20);addText(p.x,p.y-12,'+MAX HP','#ff4d6d');break;
     case 'damage':p.dmgMul+=0.1;addText(p.x,p.y-12,'+DAMAGE','#ff8b3d');break;
     case 'magnet':p.magnet+=16;addText(p.x,p.y-12,'+MAGNET','#b06bff');break;
-    case 'heart':p.hp=Math.min(p.maxhp,p.hp+35);addText(p.x,p.y-12,'+35 HP','#ff4d6d');sfx('heart');return;
+    case 'heart':p.hp=Math.min(p.maxhp,p.hp+20);addText(p.x,p.y-12,'+20 HP','#ff4d6d');sfx('heart');return;
     // map-wide gem suction for a few seconds — one pickup, whole party's gems
     case 'vacuum':G.vacuumT=3.5;flash('VACUUM!');addText(p.x,p.y-12,'VACUUM','#39d5ff');addSparkles(p.x,p.y,'#8ef0ff',18,90);sfx('douse');return;
     // an arcane mote stolen from ARCANOMAGUS before it could drink it back
@@ -4233,7 +4323,7 @@ function slagRivers(e,one){
     const pick=shuffle(dirs.slice()).slice(0,n);
     pick.forEach((d,i)=>a.rivers.push({dir:d,keys:carveRiver(A.x,A.y,d,A,{quiet:i>0,width:RIVER_W,jitter:0.45})}));
   }
-  subFlash('THE FLOOR CRACKS — LAVA RIVERS',2.0);
+  // (no callout: the cracking floor and the wrenched-out hammer are the tell — the boss is silent, see slagPose)
 }
 // where should the boss stand so the slam's shove throws \`t\` into lava?
 // Score every approach angle by the lava tiles along the ray BEHIND the
@@ -4257,6 +4347,108 @@ function slagPositionForSlam(e,t){
   return best||{x:t.x,y:t.y};
 }
 // ---------------- WAVE 5 : SLAGMAW ----------------
+// BODY LANGUAGE (owner experiment, 2026-09-01): no cast bar, no coaching text
+// for this boss. The arm and the hammer are the cast bar — each attack is one
+// gesture, and the pose at any instant is a pure function of the cast's
+// progress, so the player reads the timer off the arm. slagPose() is that
+// function; the tick keeps only the short reaction timers (recover / chomp /
+// fuse) and the sparks, the draw hook paints body, arm and hammer through one
+// transform chain (feet → lean → squash → shoulder → arm → hand → hammer).
+// Ground telegraphs stay: the body says WHAT, the floor says WHERE.
+//   arm: 0 = hanging straight down, positive swings the hand across the body
+//        (to the left), ~2.9 = over the head, -1.57 = held straight out right
+//   ang: hammer haft angle, 0 = head straight up, -2.84 = the blow (head down-left)
+//   sy:  vertical stretch of the body (1.05 reaching up, 0.86 squashed on impact)
+//   lean: body tilt in radians (negative = back, positive = into the blow)
+const SLAG_SHOULDER={px:34,py:9.5}; // the socket at the right shoulder, in body px
+const ARM_REST=0,ARM_UP=2.9,ARM_BLOW=0.6,ARM_OUT=-1.57;
+const HAM_REST=0.35,HAM_UP=-0.95,HAM_BLOW=-2.84,HAM_OUT=Math.PI/2;
+const slagEaseOut=t=>1-(1-t)*(1-t),slagEaseIn=t=>t*t,slagEaseInOut=t=>t<0.5?2*t*t:1-2*(1-t)*(1-t);
+const slagBack=t=>{const c=1.5;return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2);}; // overshoots past 1 and settles
+function slagPose(e,kOverride){
+  const a=e.ai,P={arm:ARM_REST,ang:HAM_REST,glow:0,col:VOLC.slam,mouth:0,eyes:0,buried:0,sy:1,lean:0,trail:0};
+  if(!a)return P;
+  const k=clamp(kOverride===undefined?e.castP:kOverride,0,1);
+  if(a.mode==='intro'){ // it rises with the hammer thrust up in a roar
+    const t=1-clamp(a.t/2.5,0,1),u=slagBack(Math.min(1,t*1.6));
+    P.arm=lerp(ARM_REST,ARM_UP,u);P.ang=lerp(HAM_REST,-0.2,u);P.sy=1+0.05*u;P.lean=-0.05*u;P.glow=t;P.mouth=1;return P;
+  }
+  if(a.mode==='transition'){
+    const t=clamp(1-a.t/2,0,1);
+    if(e.phase===2){ // THE FORGE OPENS: it drives the hammer into the ground in front — it roots
+      if(t<0.5){const u=slagBack(t/0.5);P.arm=lerp(ARM_REST,ARM_UP,u);P.ang=lerp(HAM_REST,HAM_UP,u);P.sy=1+0.05*u;P.lean=-0.06*u;}
+      else if(t<0.7){const u=slagEaseIn((t-0.5)/0.2);P.arm=lerp(ARM_UP,ARM_BLOW,u);P.ang=lerp(HAM_UP,HAM_BLOW,u);P.sy=1.05-0.2*u;P.lean=-0.06+0.16*u;P.trail=1;}
+      else{const u=(t-0.7)/0.3;P.arm=ARM_BLOW;P.ang=HAM_BLOW;P.buried=1;P.sy=0.85+0.15*slagEaseOut(u);P.lean=0.1*(1-u);}
+      P.glow=t;P.col=VOLC.burst;P.mouth=t;
+    }else{ // THE CAULDRON CRACKS: it wrenches the hammer back out of the ground and walks again
+      if(t<0.5){const q=Math.sin(G.time*30)*0.03;P.arm=ARM_BLOW+q;P.ang=HAM_BLOW+q;P.buried=1;P.sy=0.96;P.lean=0.08;}
+      else{const u=slagBack((t-0.5)/0.5);P.arm=lerp(ARM_BLOW,ARM_REST,u);P.ang=lerp(HAM_BLOW,HAM_REST,u);P.sy=lerp(0.96,1,u);P.lean=lerp(0.08,0,u);P.trail=u<0.6?1:0;}
+      P.glow=1;P.col=VOLC.lava;P.mouth=1;
+    }
+    return P;
+  }
+  if(a.recoverT>0){ // the beat after a blow: head in the ground, the body squashed and leaning into it
+    const u=clamp(a.recoverT/0.35,0,1);
+    P.arm=ARM_BLOW;P.ang=HAM_BLOW;P.buried=1;P.sy=1-0.14*u;P.lean=0.08*u;P.glow=0.4*u;return P;
+  }
+  if(a.cast==='slam'){ // MOLTEN SLAM: a dip back, up over the head, held white-hot and quivering, then down
+    if(k<0.1){const t=k/0.1;P.arm=lerp(ARM_REST,-0.35,t);P.ang=lerp(HAM_REST,0.6,t);P.lean=-0.03*t;P.sy=1-0.04*t;}
+    else if(k<0.55){const t=slagBack((k-0.1)/0.45);P.arm=lerp(-0.35,ARM_UP,t);P.ang=lerp(0.6,HAM_UP,t);P.sy=1+0.05*t;P.lean=-0.03-0.04*t;}
+    else if(k<0.85){const q=Math.sin(G.time*40)*0.05;P.arm=ARM_UP+q;P.ang=HAM_UP+q;P.sy=1.05;P.lean=-0.07;}
+    else{const t=slagEaseIn((k-0.85)/0.15);P.arm=lerp(ARM_UP,ARM_BLOW,t);P.ang=lerp(HAM_UP,HAM_BLOW,t);P.sy=1.05-0.05*t;P.lean=-0.07+0.15*t;P.trail=1;}
+    P.glow=k;P.col=k<0.55?VOLC.slam:'#fff2c0';return P;
+  }
+  if(a.cast==='ring'){
+    P.col=VOLC.burst;P.glow=k;
+    if(a.ringDir>0){ // CINDER RING: held straight out, then one full sweep — it works the OUTSIDE
+      if(k<0.6){const t=slagEaseOut(k/0.6);P.arm=lerp(ARM_REST,ARM_OUT,t);P.ang=lerp(HAM_REST,HAM_OUT,t);P.lean=-0.04*t;}
+      else{const s=slagEaseInOut((k-0.6)/0.4);P.arm=ARM_OUT-TAU*s;P.ang=HAM_OUT-TAU*s;P.lean=-0.04+0.1*Math.sin(TAU*s);P.trail=1;}
+    }else{ // INWARD RING: swept out, then scooped in toward the mouth — the maw inhales
+      if(k<0.35){const t=slagEaseOut(k/0.35);P.arm=lerp(ARM_REST,ARM_OUT,t);P.ang=lerp(HAM_REST,HAM_OUT,t);}
+      else{const t=slagEaseInOut((k-0.35)/0.65);P.arm=lerp(ARM_OUT,0.9,t);P.ang=lerp(HAM_OUT,-0.9,t);P.lean=0.05*t;P.trail=t>0.2&&t<0.8?1:0;}
+      P.mouth=k;
+    }
+    return P;
+  }
+  if(a.cast==='vent'){ // SLAG VENT: two quick pounds at its own feet
+    const h=(k*2)%1,first=k<0.5,fa=first?ARM_REST:ARM_BLOW,fh=first?HAM_REST:HAM_BLOW;
+    if(h<0.55){const t=slagEaseOut(h/0.55);P.arm=lerp(fa,2.2,t);P.ang=lerp(fh,-0.2,t);P.sy=1+0.03*t;P.lean=-0.04*t;}
+    else{const t=slagEaseIn((h-0.55)/0.45);P.arm=lerp(2.2,ARM_BLOW,t);P.ang=lerp(-0.2,HAM_BLOW,t);P.sy=1.03-0.08*t;P.lean=-0.04+0.12*t;P.trail=1;}
+    P.glow=0.5;return P;
+  }
+  if(a.cast==='brand'){ // EMBER BRAND: the hammer set down in front, eyes and core flare red, it spits the brand
+    P.arm=ARM_BLOW;P.ang=HAM_BLOW;P.buried=1;P.col=VOLC.lava;P.glow=0.8+0.2*Math.sin(G.time*18);P.eyes=1;P.mouth=k<0.4?1:0.4;P.lean=0.05;return P;
+  }
+  // idle / walk: the hammer carried upright at its side, the body breathing; a swing and a sway with the step
+  P.arm=0.05*Math.sin(G.time*2)+(a.moving?0.15*Math.sin(G.time*9):0);
+  P.ang=HAM_REST+0.03*Math.sin(G.time*2);
+  P.sy=1+0.01*Math.sin(G.time*2);P.lean=a.moving?0.03*Math.sin(G.time*9):0;
+  if(e.phase>=3)P.col=VOLC.lava;
+  return P;
+}
+// the rig: body-local points (origin at the feet, sprite px * scale, y up is
+// negative) pushed through the feet → lean → squash transform into world space
+function slagRig(e,P){
+  const s=e.scale||2,fx=e.x,fy=e.y+e.r-(e.hopY||0); // the enemy loop puts the sprite's bottom at y+r
+  const cl=Math.cos(P.lean),sl=Math.sin(P.lean),sx=1/Math.sqrt(P.sy),sy=P.sy;
+  const M=(lx,ly)=>{lx*=sx;ly*=sy;return {x:fx+cl*lx-sl*ly,y:fy+sl*lx+cl*ly};};
+  const sh={x:(SLAG_SHOULDER.px+0.5-SLAG_W/2)*s,y:(SLAG_SHOULDER.py-SLAG_H)*s};
+  const hl=SLAG_ARM_HAND*s,hd={x:sh.x-Math.sin(P.arm)*hl,y:sh.y+Math.cos(P.arm)*hl};
+  const L=SLAG_HAMMER_HEAD*s,hh={x:hd.x+Math.sin(P.ang)*L,y:hd.y-Math.cos(P.ang)*L};
+  return {s,sx,sy,feet:{x:fx,y:fy},shoulder:M(sh.x,sh.y),hand:M(hd.x,hd.y),head:M(hh.x,hh.y),M,shLocal:sh,hl};
+}
+// the transform chain shared by the live hammer and its trail ghosts
+function slagHammerDraw(g,e,P,dx,dy,alpha,withArm){
+  const R=slagRig(e,P),s=R.s;
+  g.save();g.globalAlpha=alpha;g.imageSmoothingEnabled=false;
+  g.translate(Math.round(R.feet.x+dx),Math.round(R.feet.y+dy));g.rotate(P.lean);g.scale(R.sx,R.sy);
+  g.translate(R.shLocal.x,R.shLocal.y);g.rotate(P.arm);
+  if(withArm)g.drawImage(slagArmSprites[Math.min(3,e.phase||1)],-SLAG_ARM_PIVOT.px*s,-SLAG_ARM_PIVOT.py*s,SLAG_ARM_W*s,SLAG_ARM_H*s);
+  g.translate(0,R.hl);g.rotate(P.ang-P.arm);
+  const spr=P.col===VOLC.lava?slagHammerRedSprite:(P.glow>0.6?slagHammerHotSprite:slagHammerSprite);
+  g.drawImage(spr,-SLAG_HAMMER_GRIP.px*s,-SLAG_HAMMER_GRIP.py*s,SLAG_HAMMER_W*s,SLAG_HAMMER_H*s);
+  g.restore();
+}
 const SLAGMAW={
  // The Molten Core Ragnaros: out for the slam, in for the ring, Sons walking
  // to the forge. Waves 2-4 rehearse every primitive here (see THE SLAGMAW ARC
@@ -4278,25 +4470,25 @@ const SLAGMAW={
  // the L5 arrival; 25000 was the L7-10 v1 price). Probe-checked.
  // (20000 sat on the wrong side of the P2 heal cliff for a weak solo — the
  // fight stalled once un-intercepted offerings out-healed the party's dps)
- id:'slagmaw',name:'SLAGMAW',hp:9500,hpClassic:100000,classicParty:0.4,dur:120,r:20,sp:40,dmg:16,xp:120,
+ id:'slagmaw',silent:1,name:'SLAGMAW',hp:9500,hpClassic:100000,classicParty:0.4,dur:120,r:20,sp:40,dmg:16,xp:120,
  spr:slagmawSprite,scale:2,barCol:VOLC.slam,phaseCount:3,gates:[0.66,0.33],minCasts:4,
  transName:e=>e.phase>=3?'THE CAULDRON CRACKS':'THE FORGE OPENS',
  aiInit:()=>({mode:'intro',t:2.5,cast:null,castT:0,castLen:0,walk:2.2,next:'slam',cyc:0,pupT:12,step:0,
-   addT:10,riverT:0,rivers:[],ringSafeT:0,pos:null,posT:0}),
+   addT:10,riverT:0,rivers:[],ringSafeT:0,pos:null,posT:0,
+   recoverT:0,chompT:0,fuseT:0,moving:0,ventPound:0}), // body-language timers (slagPose)
  onPhase(e,ph){
    const a=e.ai;
    if(ph===2){
-     e.spr=slagmawOpenSprite;e.barCol=VOLC.burst;G.bossTint='#ffd85a';
+     a.body=slagmawOpenSprite;e.scale=2;e.hopY=0;e.barCol=VOLC.burst;G.bossTint='#ffd85a';
      if(G.arena){e.x=G.arena.x;e.y=G.arena.y;}
      e.sp=0;G.shake=9;sfx('crack');
      addParticles(e.x,e.y,'#ffd85a',40,170);
      for(const f of G.fx)if(f.kind==='pool')f.t=Math.min(f.t,0.4);
-     a.step=0;a.walk=0;a.addT=5;
+     a.step=0;a.walk=0;a.addT=5;a.offT=11;
    }else if(ph===3){
-     e.spr=slagmawOpenSprite;e.barCol=VOLC.lava;G.bossTint=VOLC.lava;
+     a.body=slagmawCrackedSprites[0];e.scale=2;e.hopY=0;e.barCol=VOLC.lava;G.bossTint=VOLC.lava;
      e.sp=38;a.walk=1.5;a.riverT=18;a.step=0;a.pos=null;
      G.lava=G.lava||new Set();slagRivers(e,false);
-     subFlash('IT WALKS YOU TO THE LAVA — DON\'T LET IT LINE YOU UP',4);
      G.shake=12;sfx('crack');
      addParticles(e.x,e.y,VOLC.lava,40,180);
    }
@@ -4306,19 +4498,51 @@ const SLAGMAW={
  tick(e,dt,alive){
    const a=e.ai;
    if(a.ringSafeT>0)a.ringSafeT-=dt;
-   // the slam winds up like a burster: it swells and jitters, gold halo
-   // growing under it, then pops (see resolve) — the same read, bigger
-   if(a.cast==='slam'){
+   // ---- body language (see slagPose): timers, the frame, the sparks ----
+   for(const key of ['recoverT','chompT','fuseT'])if(a[key]>0)a[key]-=dt;
+   {const mv=Math.hypot(e.x-(a.lx??e.x),e.y-(a.ly??e.y));a.lx=e.x;a.ly=e.y;a.moving=mv>0.2?1:0;}
+   const fury=clamp((e.fury||0)/SHARD_FURY_CAP,0,1);
+   a.body=e.phase>=3?(a.fuseT>0?slagmawClenchSprite:slagmawCrackedSprites[Math.min(2,Math.floor(fury*3))])
+        :e.phase===2?(a.chompT>0?slagmawChompSprite:slagmawOpenSprite):slagmawSprite;
+   const pose=slagPose(e),rig=slagRig(e,pose);
+   if(e.scale!==2)e.scale=2;
+   e.hopY=a.chompT>0?2:(a.moving&&!e.frozen&&!a.cast?0.9*Math.abs(Math.sin(G.time*9)):0);
+   // the chimneys breathe embers; the open forge breathes more, and from the mouth
+   {const rate=e.phase>=2?12:6;
+    for(const cx of [6.5,29.5])if(Math.random()<dt*rate){
+      const p=rig.M((cx-SLAG_W/2)*2,(1-SLAG_H)*2);
+      if(G.particles.length<900)G.particles.push({x:p.x+(Math.random()-0.5)*4,y:p.y,vx:(Math.random()-0.5)*16,vy:-20-Math.random()*30,t:0.5+Math.random()*0.5,col:Math.random()<0.5?VOLC.slam:VOLC.burst,size:1,drag:1.2});
+    }
+    if(e.phase>=2&&Math.random()<dt*10){
+      const p=rig.M((Math.random()-0.5)*14,(13.5-SLAG_H)*2);
+      if(G.particles.length<900)G.particles.push({x:p.x,y:p.y,vx:(Math.random()-0.5)*10,vy:-10-Math.random()*20,t:0.4+Math.random()*0.4,col:e.phase>=3?VOLC.lava:'#fff0a0',size:1,drag:1.5,spark:Math.random()<0.3});
+    }}
+   if(a.cast==='slam'){ // the held-high hammer sheds white sparks; the swing sheds a trail (drawn by the hook)
      const k=clamp(e.castP,0,1);
-     e.scale=2+0.6*k;e.hopY=(1+3*k)*Math.sin(G.time*(30+30*k));
-     if(Math.random()<dt*(4+16*k))addSparkles(e.x+(Math.random()-0.5)*40,e.y-10,VOLC.burst,1,50);
-   }else if(e.scale!==2){e.scale=2;e.hopY=0;}
+     if(k>0.55&&Math.random()<dt*(6+18*k))addSparkles(rig.head.x,rig.head.y,k<0.85?VOLC.burst:'#fff8d0',1,50);
+   }
+   if(a.cast==='ring'){
+     const k=clamp(e.castP,0,1),R=a.ringR||72;
+     if(pose.trail&&a.ringDir>0)addSparkles(rig.head.x,rig.head.y,VOLC.burst,2,40); // the head trails gold through the sweep
+     else if(a.ringDir<0&&k>0.35&&Math.random()<dt*45){ // the inhale: sparks pulled from the ring's radius into the mouth
+       const an=Math.random()*TAU,sx=e.x+Math.cos(an)*R,sy=e.y-6+Math.sin(an)*R*0.8,m=rig.M(0,(13.5-SLAG_H)*2);
+       if(G.particles.length<900)G.particles.push({x:sx,y:sy,vx:(m.x-sx)/0.6,vy:(m.y-sy)/0.6,t:0.6,col:VOLC.burst,size:1,spark:true});
+     }
+   }else if(a.cast==='vent'){ // the first pound lands at the half: ash, a small crack, a shake
+     const k=clamp(e.castP,0,1);
+     if(k>=0.5&&!a.ventPound){a.ventPound=1;addParticles(rig.head.x,rig.head.y,'#7a6e8f',14,90);G.fx.push({kind:'crack',ground:1,boss:e,x:rig.head.x,y:rig.head.y,r:16,seed:Math.random(),t:1.2,dur:1.2});G.shake=Math.max(G.shake,3);sfx('slam');}
+   }else a.ventPound=0;
+   if(a.cast==='brand'&&a.marked&&clamp(e.castP,0,1)<0.4){ // it spits the brand at the marked: red embers from the mouth to them
+     const m=rig.M(0,(13.5-SLAG_H)*2);
+     for(const p of a.marked){
+       if(p.dead||Math.random()>dt*30)continue;
+       if(G.particles.length<900)G.particles.push({x:m.x,y:m.y,vx:(p.x-m.x)/0.45,vy:(p.y-m.y)/0.45,t:0.45,col:VOLC.lava,size:2});
+     }
+   }
    // the FIRE SLUG's lesson, done by the boss: wherever it walks (P1, P3) it
    // leaves a burning trail — its wake is a river you don't cross
    if(e.phase===3&&!e.frozen){ // P3 only: the cracked cauldron is where its wake burns
-     const mv=Math.hypot(e.x-(a.lx??e.x),e.y-(a.ly??e.y));
-     a.lx=e.x;a.ly=e.y;
-     if(mv>0.2){
+     if(a.moving){
        a.trailT=(a.trailT||0)-dt;
        // a river two tiles wide in its wake, in the same square tiles as
        // the cracked floor, so P3's rivers and its footprints read as one
@@ -4338,14 +4562,14 @@ const SLAGMAW={
          // P3: the shard FUSES into it — no heal, +damage for the rest of the fight
          e.fury=Math.min(SHARD_FURY_CAP,(e.fury||0)+SHARD_FURY);
          a.fusedN=(a.fusedN||0)+1;
-         if(a.fusedN%3===1)addText(e.x,e.y-e.r-10,'FUSED! +'+Math.round(e.fury*100)+'% DMG',VOLC.lava);
+         a.fuseT=0.2; // the clench frame + the rim flash below say it fused; the body reddens with fury
          addParticles(o.x,o.y,VOLC.lava,8,110);addSparkles(e.x,e.y-10,VOLC.lava,4,60);
          e.flash=0.1;if(Math.random()<0.5)sfx('crack');G.shake=Math.max(G.shake,3);
          continue;
        }
        bossHeal(e,OFFER_HEAL);
        a.fedN=(a.fedN||0)+1;
-       if(a.fedN%3===1)addText(e.x,e.y-e.r-10,'FED!',VOLC.burst);
+       a.chompT=0.18; // the jaw shuts on it: the chomp is the heal's readout
        addParticles(o.x,o.y,'#ffd85a',6,90);
        if(a.fedN%4===0)ringVolley(e,6,VOLC.burst,80,Math.random()*TAU);
        if(Math.random()<0.5)sfx('vent');G.shake=Math.max(G.shake,2);
@@ -4358,8 +4582,6 @@ const SLAGMAW={
      if(a.offT<=0){
        a.offT=10;
        spawnSlagOfferings(8+3*alive.length); // 11/14/17/20, dealt around the rim
-       flash('SLAG OFFERINGS CRAWL TO THE FORGE!');
-       subFlash('INTERCEPT THEM — THEY FEED THE BOSS',3);
        sfx('telegraph');
      }
    }
@@ -4375,8 +4597,6 @@ const SLAGMAW={
      if(a.shardT<=0){
        a.shardT=12;
        spawnSlagOfferings(6+2*alive.length,true); // 8/10/12/14
-       flash('SLAG SHARDS CRAWL TO SLAGMAW!');
-       subFlash('INTERCEPT THEM — EACH ONE FUSED IS +'+Math.round(SHARD_FURY*100)+'% DAMAGE',3);
        sfx('telegraph');
      }
    }
@@ -4388,7 +4608,7 @@ const SLAGMAW={
      if(a.pupT<=0){
        a.pupT=14;const k=alive.length>=3?3:2;
        for(let i=0;i<k;i++){const an=Math.random()*TAU;spawnSlagPup(e.x+Math.cos(an)*22,e.y+Math.sin(an)*22);}
-       subFlash('VOLCANIC PUPS',1.2);sfx('vent');
+sfx('vent');
      }
      const t=nearestPlayer(e,alive);
      if(t)bossWalk(e,t.x,t.y,58); // quick enough to actually reach slam range
@@ -4398,9 +4618,9 @@ const SLAGMAW={
      if(a.next==='slam'){
        // only commit within reach: a slam nobody is near teaches nothing
        if(t&&Math.hypot(t.x-e.x,t.y-e.y)>120){a.walk=0.25;a.cyc--;return;}
-       a.next='ring';armSlam(e,1.7,78);
-     }
-     else{a.next='slam';armRing(e,2.4,72,1);}
+       a.next='ring';armSlam(e,a.cyc===1?2.2:1.7,78);
+    }
+    else{a.next='slam';armRing(e,a.cyc===2?3.0:2.4,72,1);}
    }else if(e.phase===2){
      a.walk-=dt;
      if(a.walk>0)return;
@@ -4412,7 +4632,7 @@ const SLAGMAW={
        bossCast(e,'brand','EMBER BRAND',2.6);
        a.marked=shuffle(alive.slice()).slice(0,Math.min(2,alive.length));
        for(const p of a.marked)pushMark(e,p,{mode:'brand',r:42,t:2.6,dur:2.6,col:VOLC.lava,pct:0});
-       sfx('brand');subFlash('SPREAD OUT — DROP IT AWAY',2.6);
+       sfx('brand');
      }else armRing(e,2.4,170,-1);
    }else{
      // P3: mobile again. It picks the side of you that puts a river at your
@@ -4446,6 +4666,9 @@ const SLAGMAW={
      G.fx.push({kind:'boom',x:e.x,y:e.y,r:R,t:0.3,dur:0.3});
      pushRing(null,e.x,e.y,{rmax:R+60,spd:360,dir:1,gaps:0,gapW:0,pct:0,w:12,dur:(R+60)/360,t:(R+60)/360,col:VOLC.burst});
      {const x=e.x,y=e.y;after(0.12,()=>{G.fx.push({kind:'boom',x,y,r:R+30,t:0.3,dur:0.3});});}
+     {const hp=slagRig(e,slagPose(e,1)).head; // the crater opens where the head lands
+      G.fx.push({kind:'crack',ground:1,boss:e,x:hp.x,y:hp.y,r:34,seed:Math.random(),t:2.4,dur:2.4});
+      addParticles(hp.x,hp.y,'#7a6e8f',18,120);}
      addParticles(e.x,e.y,VOLC.burst,26,150);addSparkles(e.x,e.y-8,'#fff8d0',12,90);
      G.shake=Math.max(G.shake,9);sfx('slam');sfx('boom');
      // the slam SHOVES: harmless in P1, the whole point once the lava is out
@@ -4463,7 +4686,7 @@ const SLAGMAW={
        pushPool(e,e.x+Math.cos(an)*rr,e.y+Math.sin(an)*rr,26,10,0.05,VOLC.slam,'circle');
      }
      a.walk=e.phase===1?2.2:2.4;
-     a.pos=null;
+     a.pos=null;a.recoverT=0.35; // head in the ground, body sunk, before it lifts the hammer again
    }
    if(k==='ring'){
      const dir=a.ringDir,R=a.ringR;
@@ -4484,7 +4707,7 @@ const SLAGMAW={
    if(k==='vent'){
      const kk=clamp(3+2*(alive.length-1),3,9);
      for(let i=0;i<kk;i++){const an=i*TAU/kk+Math.random()*0.2;spawnSlagPup(e.x+Math.cos(an)*30,e.y+Math.sin(an)*30);}
-     G.shake=Math.max(G.shake,4);sfx('vent');a.walk=2.0;
+     G.shake=Math.max(G.shake,4);sfx('vent');a.walk=2.0;a.recoverT=0.3;
    }
    if(k==='brand'){
      const pts=[];
@@ -4498,23 +4721,50 @@ const SLAGMAW={
    }
  },
  draw(g,x,y,e){
+   const a=e.ai;if(!a)return;
+   if(e.spr!==slagBlankSprite)e.spr=slagBlankSprite; // the loop draws nothing; everything below is the boss
+   const s=e.scale||2,P=slagPose(e),R=slagRig(e,P),dx=x-e.x,dy=y-e.y; // view = world + camera offset
+   const k=clamp(e.castP,0,1);
+   // ground shadow under the body (the loop draws its own only when it hops)
+   if(!(e.hopY>1)){g.fillStyle='rgba(0,0,0,0.40)';g.beginPath();g.ellipse(R.feet.x+dx+5,R.feet.y+dy-1,30*R.sx,9,0,0,TAU);g.fill();}
    // the slam's gold halo, growing with the wind-up (the burster's tell)
-   if(e.ai&&e.ai.cast==='slam'){
-     const k=clamp(e.castP,0,1);
-     g.fillStyle='rgba(255,210,62,'+(0.12+0.28*k).toFixed(3)+')';
+   if(a.cast==='slam'){
+     g.fillStyle='rgba(255,210,62,'+(0.10+0.25*k).toFixed(3)+')';
      g.beginPath();g.arc(x,y-4,18+40*k,0,TAU);g.fill();
    }
-   if(e.phase>=2){
-     const pl=0.55+0.45*Math.sin(G.time*7);
-     g.fillStyle='rgba(255,240,190,'+(0.25*pl).toFixed(3)+')';
-     g.beginPath();g.arc(x,y-4,10+3*pl,0,TAU);g.fill();
-     g.fillStyle='#fff8e0';g.fillRect(Math.round(x-2),Math.round(y-7),4,6);
+   // heat on the ground under the open forge
+   if(e.phase>=2){const pl=0.5+0.5*Math.sin(G.time*5);g.fillStyle='rgba(255,140,40,'+(0.06+0.05*pl).toFixed(3)+')';g.beginPath();g.ellipse(R.feet.x+dx,R.feet.y+dy,44,14,0,0,TAU);g.fill();}
+   // the hammer's shadow: on the ground below its head, fainter the higher it is
+   {const hy=Math.max(R.head.y,R.feet.y+2),hgt=clamp((R.feet.y+2-R.head.y)/90,0,1);
+    g.fillStyle='rgba(0,0,0,'+(0.30*(1-0.7*hgt)).toFixed(3)+')';g.beginPath();g.ellipse(R.head.x+dx,hy+dy,(12-5*hgt)*s/2,(4.5-2*hgt)*s/2,0,0,TAU);g.fill();}
+   // the body through the chain: feet → lean → squash; mouth glow and eyes ride in the same frame
+   g.save();g.imageSmoothingEnabled=false;
+   g.translate(Math.round(R.feet.x+dx),Math.round(R.feet.y+dy));g.rotate(P.lean);g.scale(R.sx,R.sy);
+   g.drawImage(a.body||slagmawSprite,-SLAG_W*s/2,-SLAG_H*s,SLAG_W*s,SLAG_H*s);
+   if(e.phase>=2||P.mouth>0){ // the forge in the maw: brighter when it works (inhale, brand, roar)
+     const pl=0.55+0.45*Math.sin(G.time*7),m=e.phase>=2?1:P.mouth,my=(13.5-SLAG_H)*s;
+     g.fillStyle='rgba(255,240,190,'+(0.10*pl*m*(1+P.mouth)).toFixed(3)+')';
+     g.beginPath();g.ellipse(0,my,(14+3*pl)*(1+0.5*P.mouth),(7+2*pl)*(1+0.5*P.mouth),0,0,TAU);g.fill();
    }
-   if(e.castName){
-     g.fillStyle=Math.floor(G.time*14)%2?'#fff2c0':'#ff7a1f';
-     g.fillRect(Math.round(x-16),Math.round(y-19),2,2);
-     g.fillRect(Math.round(x+14),Math.round(y-19),2,2);
+   if(P.eyes){ // the brand: the eye pixels blink red/white
+     g.fillStyle=Math.floor(G.time*16)%2?'#ffffff':VOLC.lava;
+     for(const px of [15,16,20,21])g.fillRect((px-SLAG_W/2)*s,(7-SLAG_H)*s,s,s);
    }
+   g.restore();
+   // heat glow under the head, then the swing's ghosts, then the arm and the hammer
+   if(P.glow>0){
+     g.fillStyle='rgba('+hexRgb(P.col)+','+(0.10+0.28*P.glow).toFixed(3)+')';
+     g.beginPath();g.arc(R.head.x+dx,R.head.y+dy,9+11*P.glow,0,TAU);g.fill();
+   }
+   if(P.trail&&a.mode==='active'&&a.cast){
+     for(let i=3;i>=1;i--){const Pi=slagPose(e,k-0.022*i);slagHammerDraw(g,e,Pi,dx,dy,0.42-0.11*i,false);}
+   }
+   slagHammerDraw(g,e,P,dx,dy,1,true);
+   if(P.buried){ // the head in the ground: a lip of dark earth and embers around it
+     g.fillStyle='rgba(0,0,0,0.35)';g.beginPath();g.ellipse(R.head.x+dx,R.head.y+dy+4,16,6,0,0,TAU);g.fill();
+     g.fillStyle='rgba('+hexRgb(P.col)+',0.5)';g.beginPath();g.ellipse(R.head.x+dx,R.head.y+dy+4,9,3,0,0,TAU);g.fill();
+   }
+   if(a.fuseT>0){g.strokeStyle=VOLC.lava;g.lineWidth=2;g.beginPath();g.arc(x,y,e.r+4,0,TAU);g.stroke();}
  }};
 
 // ---------------- WAVE 10 : GEMINOX ----------------
@@ -5008,7 +5258,7 @@ const PYRAXIS={
    const a=e.ai;
    if(a.crown){
      const s=e.scale||2;
-     drawSpriteC(g,a.crown,x,y-(e.spr.height*s-e.r)-a.crown.height*s/2+2,s);
+     drawSpriteC(g,a.crown,x,y-((e.spr.uh||e.spr.height)*s-e.r)-(a.crown.uh||a.crown.height)*s/2+2,s);
    }
  },
  onDeath(e){G.creep=null;}
@@ -7576,16 +7826,41 @@ const jumperSprite=makeSprite([
 'C.CCC.C',
 'C.....C'
 ],{C:'#4ac8d8',W:'#10202a'});
+// PLAYGROUND-only silhouettes: deliberately simple and high-contrast so the
+// movement idea, not bespoke art, is what this fork evaluates.
+const cinderCoreSprite=makeSprite([
+ '....KKK....','...KYYYK...','..KYYWYYK..','.KYYWWWYYK.',
+ 'KYYWWKWWYYK','KYYYYKYYYYK','.KYYYKYYYK.','..KYYKYYK..',
+ '...KYYYK...','....KKK....'
+],{K:'#451c18',Y:'#ff9f2e',W:'#fff8d0'});
+const obsidianSeedSprite=makeSprite([
+ '...KKK...','..KDDDK..','.KDDVDDK.','KDDVVVDDK','KDVWVWVDK',
+ 'KDDVVVDDK','.KDDVDDK.','..KDDDK..','...KKK...'
+],{K:'#17101f',D:'#4b3860',V:'#9a45d1',W:'#eadcff'});
+const obsidianBloomSprite=makeSprite([
+ 'V....V....V','.V...V...V.','..VVVVVVV..','...VVWVV...',
+ 'VVVVWWWVVVV','..VWWKWWV..','VVVVWWWVVVV','...VVWVV...',
+ '..VVVVVVV..','.V...V...V.','V....V....V'
+],{V:'#c04aff',W:'#fff8d0',K:'#20152e'});
+const emberMothSprite=makeSprite([
+'Y...Y','.YRY.','..W..','.YRY.','Y...Y'
+],{Y:'#ffd23e',R:'#ff7a1f',W:'#fff8d0'});
+const emptyPlaySprite=makeSprite(['.'],{});
 const PATTERN_NAMES={band:'THE BAND',polarity:'POLARITY',swarm:'THE SWARM',jumpers:'JUMPERS',encircle:'THE ENCIRCLE',
   creep:'THE CREEP',dance:'THE DANCE',stonefall:'STONEFALL',collapse:'THE COLLAPSE',wards:'THE WARDS',
   redharvest:'THE RED HARVEST',goldrush:'THE GOLD RUSH',slagstorm:'THE SLAGSTORM',
-  lavamix:'THE SMASHERS',slugforge:'THE OFFERING',pressure:'THE CINDER VENTS',augur:'THE SLAG AUGUR'};
+  lavamix:'THE SMASHERS',slugforge:'THE OFFERING',pressure:'THE CINDER VENTS',augur:'THE SLAG AUGUR',
+  cinderfall:'CINDERFALL',obsidianbloom:'OBSIDIAN BLOOM',embermoths:'EMBER MOTHS',
+  sunshrines:'SUN SHRINES',runerun:'RUNE RUN',cinderring:'CINDER RING',
+  treasurestorm:'TREASURE STORM',caldera:'THE CALDERA'};
 // share of the normal spawn drip a pattern wave keeps — the pattern brings the rest
 // terrain waves (v2): the floor is the choreography and the drip is the
 // harvest, so they keep most of it — except the creep, whose spores ARE the wave
 const PATTERN_QUOTA={band:0.75,polarity:0.65,swarm:0.6,jumpers:0.75,encircle:0.45,
   creep:0.5,dance:0.7,stonefall:0.6,collapse:0.8,wards:0.6,
-  lavamix:1.0,slugforge:0.5,pressure:0.8,augur:0.7}; // Offering runners are the farm; keep its unrelated drip lean at full tables
+  lavamix:1.0,slugforge:0.5,pressure:0.8,augur:0.7,
+  cinderfall:1,obsidianbloom:1,embermoths:1,sunshrines:1,
+  runerun:1,cinderring:1,treasurestorm:1,caldera:1};
 // ---- the number spine ----
 // Density: counts scale with the party's MEASURED clearing output (G.waveDPS)
 // against the output the base counts were tuned at, so every pattern keeps
@@ -7609,7 +7884,9 @@ function dpsFactor(){
 // are absorbed by construction.
 function lvGems(k,from){
   let L=from!=null?from:G.level+bankedLevels().banked,s=0;
-  for(let i=0;i<k;i++)s+=xpNeed(L+i);
+  const whole=Math.floor(Math.max(0,k)),frac=Math.max(0,k)-whole;
+  for(let i=0;i<whole;i++)s+=xpNeed(L+i);
+  if(frac>0)s+=xpNeed(L+whole)*frac;
   return s;
 }
 function mixAvgXp(def){
@@ -7624,6 +7901,34 @@ function patXp(P){
   const v=P.xpPool/P.planned,f=Math.floor(v);
   return f+(Math.random()<v-f?1:0);
 }
+const PLAY_PATTERN_IDS=new Set(['cinderfall','obsidianbloom','embermoths','sunshrines',
+  'runerun','cinderring','treasurestorm','caldera']);
+function initPlaygroundPattern(P,id,d,n,base,bonus){
+  P.events=[0.04*d];P.capBonus=55+12*n;P.planned=1;P.xpPool=base+bonus;
+  if(id==='cinderfall'||id==='treasurestorm'){
+    const casts=id==='treasurestorm'?4:6,cores=1+Math.ceil(n/2);
+    P.cinder={t:1.2,casts,left:casts,marks:[],seq:0};
+    P.planned+=casts*cores;
+  }
+  if(id==='obsidianbloom'){
+    const blooms=4+Math.ceil(n/2);
+    P.bloom={t:1.2,left:blooms,gardens:[],seq:0};P.planned+=blooms;
+  }
+  if(id==='embermoths'||id==='treasurestorm'){
+    const flocks=id==='treasurestorm'?3:5;
+    P.moths={t:2,left:flocks,list:[],seq:0};P.planned+=flocks*(6+2*n);
+  }
+  if(id==='sunshrines'){
+    const shrines=4+Math.ceil(n/2);P.shrines={t:1.2,left:shrines,cur:null,seq:0,completed:0};P.planned+=shrines;
+  }
+  if(id==='runerun'){
+    const chains=4,nodes=4+Math.ceil(n/2);
+    P.runes={t:1.2,left:chains,cur:null,seq:0,nodes,touched:0};P.planned+=chains*nodes;
+  }
+  if(id==='cinderring')P.ring={t:1.0,left:6,cast:null,seq:0,casts:0,volleys:0};
+  if(id==='caldera')P.caldera={t:0,live:0,rivers:[],cycles:0,slams:0,lavaSeen:0};
+  P.planned=Math.max(1,P.planned-1);
+}
 function initWavePattern(id,def){
   const d=def.dur,n=Math.max(1,G.players.length),F=dpsFactor();
   const P={id,ei:0,events:[],capBonus:20,F};
@@ -7633,7 +7938,8 @@ function initWavePattern(id,def){
   // the execution bonus rides only on earnable pattern kills
   const base=Math.max(0,lvGems(lv.b,L0)-Math.round(G.waveQuota*mixAvgXp(def)));
   const bonus=lvGems(lv.x,L0+lv.b);
-  if(id==='band'){
+  if(PLAY_PATTERN_IDS.has(id))initPlaygroundPattern(P,id,d,n,base,bonus);
+  else if(id==='band'){
     P.events=[0.12*d,0.45*d,0.75*d];P.capBonus=Math.round(80*Math.min(F,5));
     P.int=Math.max(0.010,0.03/F);
     P.lanes=n; // one torrent per player: a party faces a braid of lanes
@@ -7753,7 +8059,8 @@ function tickWavePattern(dt,maxAlive){
   if(P.ei<P.events.length&&G.waveT>=P.events[P.ei]
      &&!(P.id==='band'&&P.bands)&&!(P.id==='polarity'&&P.pol)){
     P.ei++;
-    if(P.id==='band')bandArm(P);
+    if(PLAY_PATTERN_IDS.has(P.id))playgroundStart(P);
+    else if(P.id==='band')bandArm(P);
     else if(P.id==='polarity')polarityFire(P,alive);
     else if(P.id==='swarm')swarmBurst(P,room);
     else if(P.id==='jumpers')jumperPack(P,alive,room);
@@ -7784,6 +8091,7 @@ function tickWavePattern(dt,maxAlive){
   if(P.forge)slugforgeTick(P,dt,alive);
   if(P.pr)pressureTick(P,dt,alive);
   if(P.aug&&P.aug.e)augurTick(P,dt,alive);
+  if(PLAY_PATTERN_IDS.has(P.id)&&P.ei>0)playgroundTick(P,dt,alive,room);
   // the floor bites without a boss to bite for it: creep and void DoT live in
   // Pyraxis/Worldeater AI, so a terrain wave ticks its own
   if(!G.boss&&(G.creep||G.voidTiles)){
@@ -7798,6 +8106,231 @@ function tickWavePattern(dt,maxAlive){
     }
   }
   if(!G.boss&&G.lava)lavaTick(dt,alive,P);
+}
+// ================= EVENT PLAYGROUND =================
+// Six new movement verbs. These prototypes intentionally live only in this
+// fork; they can be judged in motion before any one of them earns production
+// code in index.html.
+function playPoint(margin){
+  const c=G.cam,m=margin||55;
+  for(let i=0;i<20;i++){
+    const x=c.x+(Math.random()-0.5)*(c.w-m*2),y=c.y+(Math.random()-0.5)*(c.h-m*2);
+    if(!solidAt(x,y))return{x,y};
+  }
+  return{x:c.x,y:c.y};
+}
+function playTarget(type,x,y,spr,hp,xp,col){
+  const e=spawnEnemy(type,x,y);
+  e.spr=spr;e.sp=0;e.noTouch=1;e.dmg=0;e.hp=e.maxhp=hp;e.xp=xp;
+  e.eventBounty=1;e.bountyCol=col;e.playTarget=1;e.aimBias=0.28;
+  return e;
+}
+function playGemBurst(x,y,total,n,col,label){
+  total=Math.max(0,Math.round(total));n=Math.min(n,total);
+  if(total<=0||n<=0)return;
+  for(let i=0;i<n;i++){
+    const v=Math.round(total*(i+1)/n)-Math.round(total*i/n),a=Math.random()*TAU,s=90+Math.random()*150;
+    if(G.gems.length>gemSoftCap())G.gems[(Math.random()*G.gems.length)|0].v+=v;
+    else G.gems.push({x,y,v,t:0,vx:Math.cos(a)*s,vy:Math.sin(a)*s});
+  }
+  if(label)addText(x,y-14,label,col);
+  addSparkles(x,y,col,Math.min(14,n),90);sfx('gem');
+}
+function playgroundStart(P){
+  flash(PATTERN_NAMES[P.id]+'!');
+  const copy={
+    cinderfall:['DODGE THE FALL — BREAK THE GLOWING CORES','#ff9040'],
+    obsidianbloom:['ENTER THE RING — BREAK THE OPEN BLOOM','#c04aff'],
+    embermoths:['CHASE THE GOLDEN FLOCKS','#ffd23e'],
+    sunshrines:['STAND IN THE LIGHT — CHARGE THE BLAST','#ffd23e'],
+    runerun:['TOUCH THE RUNE — FOLLOW THE LINE','#39d5ff'],
+    cinderring:['RUN TO THE SOURCE — THE WHITE DISC IS SAFE','#fff8d0'],
+    treasurestorm:['FALLING CORES AND GOLDEN FLOCKS','#ffd23e'],
+    caldera:['RED FLOOR BURNS — ORANGE SLAMS THROW YOU','#ff7a1f']
+  }[P.id];
+  if(copy)setObjective(copy[0],copy[1]);
+  sfx('wavestart');
+}
+function cinderSpawn(P,alive){
+  const C=P.cinder;if(!C||C.left<=0)return;
+  C.left--;C.seq++;
+  const count=1+Math.ceil(Math.max(1,G.players.length)/2);
+  for(let i=0;i<count;i++){
+    const p=alive.length?alive[i%alive.length]:null,q=p&&i<alive.length?
+      {x:p.x+(Math.random()*120-60),y:p.y+(Math.random()*100-50)}:playPoint(45);
+    C.marks.push({x:q.x,y:q.y,r:28,t:1.25,dur:1.25,id:C.seq});
+  }
+  sfx('telegraph');
+}
+function cinderTick(P,dt,alive){
+  const C=P.cinder;if(!C)return;
+  C.t-=dt;
+  // Never stack batches: the screen asks the party to read one small set of
+  // breakables, resolve it, and then receives the next set.
+  const active=G.enemies.some(e=>!e.dead&&e.cinderCore);
+  if(C.t<=0&&C.left>0&&!active){C.t=P.id==='treasurestorm'?5.4:3.4;cinderSpawn(P,alive);}
+  for(const m of C.marks){
+    m.t-=dt;if(m.t>0||m.done)continue;m.done=1;
+    for(const p of alive)if(dist2(p.x,p.y,m.x,m.y)<(m.r+p.r)*(m.r+p.r))hurtPlayer(p,11*dmgScale());
+    const e=playTarget('tank',m.x,m.y,cinderCoreSprite,52*hpScale(),patXp(P),'#ff9040');
+    e.r=10;e.scale=1.65;e.life=7;e.cinderCore=1;
+    G.fx.push({kind:'boom',col:'#ff9040',x:m.x,y:m.y,r:m.r,t:0.32,dur:0.32});
+    addParticles(m.x,m.y,'#ff9040',16,130);sfx('cinder');
+  }
+  C.marks=C.marks.filter(m=>m.t>-0.35);
+}
+function bloomSpawn(P){
+  const B=P.bloom;if(!B||B.left<=0)return;
+  B.left--;const q=playPoint(75),id=++B.seq;
+  const e=playTarget('tank',q.x,q.y,obsidianSeedSprite,95*hpScale(),patXp(P),'#c04aff');
+  e.r=11;e.scale=1.7;e.life=18;e.vulnMul=0;e.bloom={id,awake:0};
+  B.gardens.push({id,x:q.x,y:q.y,list:[e],e,awake:0});
+  addParticles(q.x,q.y,'#5b466f',12,55);
+}
+function bloomTick(P,dt,alive){
+  const B=P.bloom;if(!B)return;
+  B.gardens=B.gardens.filter(g=>g.e&&!g.e.dead);
+  B.t-=dt;if(B.t<=0&&B.left>0&&!B.gardens.length){B.t=1.2;bloomSpawn(P);}
+  for(const g of B.gardens){
+    if(g.awake)continue;
+    if(alive.some(p=>dist2(p.x,p.y,g.x,g.y)<92*92)){
+      g.awake=1;
+      const e=g.e;if(!e.dead){e.vulnMul=1;e.bloom.awake=1;e.spr=obsidianBloomSprite;e.scale=1.85;e.aimBias=0.16;addSparkles(e.x,e.y,'#c04aff',14,80);}
+      addText(g.x,g.y-30,'BREAK IT!','#fff8d0');sfx('gazeopen');
+    }
+  }
+}
+function mothSpawn(P){
+  const M=P.moths;if(!M||M.left<=0)return;
+  M.left--;M.seq++;
+  const c=G.cam,side=(Math.random()*4)|0,n=6+2*Math.max(1,G.players.length),list=[];
+  let x,y,vx=0,vy=0;
+  if(side===0){x=c.x-c.w/2-35;y=c.y+(Math.random()-0.5)*c.h*0.65;vx=70;}
+  else if(side===1){x=c.x+c.w/2+35;y=c.y+(Math.random()-0.5)*c.h*0.65;vx=-70;}
+  else if(side===2){x=c.x+(Math.random()-0.5)*c.w*0.65;y=c.y-c.h/2-35;vy=70;}
+  else{x=c.x+(Math.random()-0.5)*c.w*0.65;y=c.y+c.h/2+35;vy=-70;}
+  for(let i=0;i<n;i++){
+    const e=playTarget('swarm',x,y,emberMothSprite,12*hpScale(),patXp(P),'#ffd23e');
+    e.r=4;e.scale=1.1;e.flow=1;e.life=11;e.moth={cx:x,cy:y,vx,vy,a:i*TAU/n,rad:12+8*(i%3),id:M.seq};list.push(e);M.list.push(e);
+  }
+  addSparkles(x,y,'#ffd23e',18,80);sfx('spreadcall');
+}
+function mothTick(P,dt){
+  const M=P.moths;if(!M)return;
+  M.t-=dt;if(M.t<=0&&M.left>0){M.t=P.id==='treasurestorm'?8.5:7.2;mothSpawn(P);}
+  for(const e of M.list){
+    if(e.dead)continue;const m=e.moth;m.cx+=m.vx*dt;m.cy+=m.vy*dt;
+    const a=m.a+G.time*2.4;e.x=m.cx+Math.cos(a)*m.rad;e.y=m.cy+Math.sin(a)*m.rad*0.65;
+  }
+  M.list=M.list.filter(e=>!e.dead);
+}
+function playAnchor(x,y,life){
+  const e=spawnEnemy('tank',x,y);e.spr=emptyPlaySprite;e.sp=0;e.noTouch=1;e.dmg=0;
+  e.hp=e.maxhp=1e9;e.xp=0;e.vulnMul=0;e.life=life;e.playAnchor=1;return e;
+}
+function shrineSpawn(P){
+  const S=P.shrines;if(!S||S.left<=0)return;
+  S.left--;const q=playPoint(75),anchor=playAnchor(q.x,q.y,12);
+  S.cur={x:q.x,y:q.y,r:58,charge:0,need:2.35,life:10,id:++S.seq,anchor};
+  addText(q.x,q.y-42,'STAND HERE','#ffd23e');sfx('telegraph');
+}
+function shrineTick(P,dt,alive){
+  const S=P.shrines;if(!S)return;S.t-=dt;
+  if(!S.cur&&S.t<=0&&S.left>0)shrineSpawn(P);
+  const s=S.cur;if(!s)return;s.life-=dt;
+  const inside=alive.filter(p=>dist2(p.x,p.y,s.x,s.y)<s.r*s.r);
+  if(inside.length)s.charge+=dt*(1+0.35*(inside.length-1));
+  if(s.charge>=s.need){
+    for(const e of G.enemies)if(!e.dead&&!e.playTarget&&!e.playAnchor&&dist2(e.x,e.y,s.x,s.y)<145*145)
+      damageEnemy(e,32*hpScale(),inside[0]);
+    playGemBurst(s.x,s.y,patXp(P),6,'#ffd23e','CHARGED!');
+    G.fx.push({kind:'boom',col:'#ffd23e',x:s.x,y:s.y,r:145,t:0.45,dur:0.45});
+    s.anchor.dead=true;S.cur=null;S.t=1.8;S.completed++;sfx('levelup');
+  }else if(s.life<=0){s.anchor.dead=true;S.cur=null;S.t=1.0;addText(s.x,s.y-12,'FADED','#b3a184');}
+}
+function runePoint(from){
+  let q=playPoint(70);
+  if(from)for(let i=0;i<20&&dist2(q.x,q.y,from.x,from.y)<145*145;i++)q=playPoint(70);
+  return q;
+}
+function runeSpawn(P){
+  const R=P.runes;if(!R||R.left<=0)return;
+  R.left--;const q=runePoint(),anchor=playAnchor(q.x,q.y,28);
+  R.cur={x:q.x,y:q.y,last:null,remaining:R.nodes,life:24,id:++R.seq,anchor,hits:0};
+  addText(q.x,q.y-30,'RUN HERE','#39d5ff');sfx('telegraph');
+}
+function runeTick(P,dt,alive){
+  const R=P.runes;if(!R)return;R.t-=dt;
+  if(!R.cur&&R.t<=0&&R.left>0)runeSpawn(P);
+  const c=R.cur;if(!c)return;c.life-=dt;
+  const runner=alive.find(p=>dist2(p.x,p.y,c.x,c.y)<28*28);
+  if(runner){
+    playGemBurst(c.x,c.y,patXp(P),4,'#39d5ff',c.remaining===1?'CHAIN!':'+XP');
+    queryEnemies(c.x,c.y,72,e=>{if(!e.dead&&!e.playAnchor&&dist2(e.x,e.y,c.x,c.y)<(72+e.r)*(72+e.r))damageEnemy(e,12*hpScale(),runner);});
+    c.hits++;R.touched++;c.remaining--;
+    if(c.remaining<=0){c.anchor.dead=true;R.cur=null;R.t=1.6;sfx('levelup');}
+    else{const old={x:c.x,y:c.y},q=runePoint(old);c.last=old;c.x=q.x;c.y=q.y;c.anchor.x=q.x;c.anchor.y=q.y;sfx('pickup');}
+  }else if(c.life<=0){c.anchor.dead=true;R.cur=null;R.t=1.0;}
+}
+function ringSourcePoint(alive){
+  let x=G.cam.x,y=G.cam.y;
+  if(alive.length){x=0;y=0;for(const p of alive){x+=p.x;y+=p.y;}x/=alive.length;y/=alive.length;}
+  const a=Math.random()*TAU,r=45+Math.random()*45,c=G.cam;
+  x=clamp(x+Math.cos(a)*r,c.x-c.w/2+95,c.x+c.w/2-95);
+  y=clamp(y+Math.sin(a)*r,c.y-c.h/2+80,c.y+c.h/2-80);
+  if(solidAt(x,y)){const q=playPoint(95);x=q.x;y=q.y;}
+  return {x,y};
+}
+function cinderRingArm(P,alive){
+  const R=P.ring,q=ringSourcePoint(alive),dur=R.seq===0?3.0:2.4,r=G.players.length>=3?82:72;
+  R.left--;R.seq++;R.cast={x:q.x,y:q.y,t:dur,dur,r,seq:R.seq};
+  pushSafe(null,q.x,q.y,r,dur+0.9,'#eaffff',0);
+  subFlash(R.seq===1?'GET INSIDE THE WHITE DISC':'CINDER RING — GET CLOSE',dur);
+  sfx('cinder');
+}
+function cinderRingTick(P,dt,alive){
+  const R=P.ring;if(!R)return;
+  if(R.cast){
+    const c=R.cast;c.t-=dt;
+    if(c.t<=0){
+      const src={x:c.x,y:c.y,dmg:10*dmgScale(),boss:1},seq=c.seq;
+      cinderRingAt(src,c.r,95,24,VOLC.burst,0);R.volleys++;R.casts++;R.cast=null;R.t=6.8;
+      after(0.4,()=>{if(G.wavePat===P&&P.ring&&P.ring.seq===seq){cinderRingAt(src,c.r,95,24,VOLC.burst,Math.PI/24);P.ring.volleys++;}});
+    }
+  }else{R.t-=dt;if(R.t<=0&&R.left>0)cinderRingArm(P,alive);}
+}
+function calderaCarve(P){
+  const C=P.caldera;if(!C)return;
+  for(const r of C.rivers)eraseRiver(r.keys);
+  C.rivers=[];G.lava=G.lava||new Set();
+  const f=patField(),dirs=shuffle(['n','s','e','w']).slice(0,G.players.length>=3?3:2);
+  dirs.forEach((d,i)=>C.rivers.push({dir:d,keys:carveRiver(f.x,f.y,d,f,{quiet:i>0,width:2,jitter:0.45})}));
+  C.live=1;C.t=8;C.cycles++;C.lavaSeen=Math.max(C.lavaSeen,G.lava.size);
+  if(C.cycles===1)subFlash('THE FLOOR CRACKS — KEEP LAVA OUT OF YOUR BACK',3.2);
+}
+function calderaClear(P){
+  const C=P&&P.caldera;if(!C)return;
+  for(const r of C.rivers)eraseRiver(r.keys);
+  C.rivers=[];C.live=0;
+  if(G.lava&&!G.lava.size)G.lava=null;
+}
+function calderaTick(P,dt,alive){
+  const C=P.caldera;if(!C)return;
+  C.t-=dt;
+  if(C.t<=0){
+    if(C.live){calderaClear(P);C.t=4.5;}
+    else calderaCarve(P);
+  }
+  if(G.lava){C.lavaSeen=Math.max(C.lavaSeen,G.lava.size);lavaTick(dt,alive,C);}
+}
+function playgroundTick(P,dt,alive,room){
+  if(P.cinder)cinderTick(P,dt,alive);
+  if(P.bloom)bloomTick(P,dt,alive);
+  if(P.moths)mothTick(P,dt);
+  if(P.shrines)shrineTick(P,dt,alive);
+  if(P.runes)runeTick(P,dt,alive);
+  if(P.ring)cinderRingTick(P,dt,alive);
+  if(P.caldera)calderaTick(P,dt,alive);
 }
 // ================= TERRAIN WAVES (v2) =================
 // Each one rehearses a boss floor with the boss's own primitives, so the
@@ -8838,6 +9371,52 @@ function slotPayout(tier,x,y){
 // world-space pattern visuals, drawn under the enemies
 function renderWavePattern(ctx,W2V,vw,vh){
   const P=G.wavePat;
+  // Playground telegraphs live below enemies so the horde remains readable.
+  // Each opportunity has one unmistakable colour and shape.
+  if(P&&P.cinder)for(const m of P.cinder.marks){
+    const q=W2V(m.x,m.y),k=clamp(m.t/m.dur,0,1),pulse=0.5+0.5*Math.sin(G.time*14);
+    ctx.fillStyle='rgba(255,90,61,'+(0.10+0.10*pulse).toFixed(3)+')';
+    ctx.beginPath();ctx.arc(q[0],q[1],m.r,0,TAU);ctx.fill();
+    ctx.strokeStyle=m.done?'#fff8d0':'#ff9040';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(q[0],q[1],Math.max(2,m.r*k),0,TAU);ctx.stroke();
+    ctx.fillStyle='#ffd23e';ctx.fillRect(Math.round(q[0]-1),Math.round(q[1]-m.r-5),2,4);
+  }
+  if(P&&P.cinder)for(const e of G.enemies){
+    if(e.dead||!e.cinderCore)continue;const q=W2V(e.x,e.y),w=34,k=clamp(e.hp/e.maxhp,0,1),bob=Math.sin(G.time*7)*2;
+    text(ctx,'BREAK!',q[0],q[1]-31+bob,7,'#fff8d0','center');
+    ctx.fillStyle='#17101f';ctx.fillRect(q[0]-w/2-1,q[1]+19,w+2,5);
+    ctx.fillStyle='#ff9f2e';ctx.fillRect(q[0]-w/2,q[1]+20,w*k,3);
+  }
+  if(P&&P.bloom)for(const g of P.bloom.gardens){
+    const q=W2V(g.x,g.y),r=92+5*Math.sin(G.time*4+g.id),e=g.e;
+    ctx.fillStyle=g.awake?'rgba(255,248,208,0.08)':'rgba(192,74,255,0.09)';ctx.beginPath();ctx.arc(q[0],q[1],r,0,TAU);ctx.fill();
+    ctx.strokeStyle=g.awake?'#fff8d0':'#c04aff';ctx.lineWidth=g.awake?3:2;ctx.setLineDash(g.awake?[]:[5,4]);
+    ctx.beginPath();ctx.arc(q[0],q[1],r,0,TAU);ctx.stroke();ctx.setLineDash([]);
+    text(ctx,g.awake?'BREAK!':'ENTER TO OPEN',q[0],q[1]-r-9,7,g.awake?'#fff8d0':'#c9a4ff','center');
+    if(g.awake&&e&&!e.dead){const w=42,k=clamp(e.hp/e.maxhp,0,1);ctx.fillStyle='#17101f';ctx.fillRect(q[0]-w/2-1,q[1]+25,w+2,5);ctx.fillStyle='#c04aff';ctx.fillRect(q[0]-w/2,q[1]+26,w*k,3);}
+  }
+  if(P&&P.shrines&&P.shrines.cur){
+    const s=P.shrines.cur,q=W2V(s.x,s.y),k=clamp(s.charge/s.need,0,1),pulse=0.5+0.5*Math.sin(G.time*6);
+    ctx.fillStyle='rgba(255,210,62,'+(0.08+0.12*k).toFixed(3)+')';ctx.beginPath();ctx.arc(q[0],q[1],s.r,0,TAU);ctx.fill();
+    ctx.strokeStyle='#ffd23e';ctx.lineWidth=2;ctx.beginPath();ctx.arc(q[0],q[1],s.r,0,TAU);ctx.stroke();
+    ctx.strokeStyle='#fff8d0';ctx.lineWidth=5;ctx.beginPath();ctx.arc(q[0],q[1],s.r-5,-Math.PI/2,-Math.PI/2+TAU*k);ctx.stroke();
+    ctx.fillStyle='rgba(255,248,208,'+(0.18+0.18*pulse).toFixed(3)+')';ctx.fillRect(q[0]-5,q[1]-s.r,10,s.r*2);
+    text(ctx,k>0?'HOLD!':'STAND HERE',q[0],q[1]-s.r-10,7,'#fff8d0','center');
+  }
+  if(P&&P.runes&&P.runes.cur){
+    const c=P.runes.cur,q=W2V(c.x,c.y),pulse=2+2*Math.sin(G.time*7);
+    if(c.last){const a=W2V(c.last.x,c.last.y);ctx.strokeStyle='rgba(57,213,255,0.75)';ctx.lineWidth=3;ctx.setLineDash([7,5]);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(q[0],q[1]);ctx.stroke();ctx.setLineDash([]);}
+    ctx.fillStyle='rgba(57,213,255,0.13)';ctx.beginPath();ctx.arc(q[0],q[1],31+pulse,0,TAU);ctx.fill();
+    ctx.strokeStyle='#39d5ff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(q[0],q[1],27+pulse,0,TAU);ctx.stroke();
+    ctx.fillStyle='#fff8d0';ctx.beginPath();ctx.moveTo(q[0],q[1]-12);ctx.lineTo(q[0]+12,q[1]);ctx.lineTo(q[0],q[1]+12);ctx.lineTo(q[0]-12,q[1]);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#39d5ff';ctx.fillRect(q[0]-3,q[1]-7,6,14);ctx.fillRect(q[0]-7,q[1]-3,14,6);
+    text(ctx,'TOUCH!',q[0],q[1]-43,7,'#d8f8ff','center');
+  }
+  if(P&&P.ring&&P.ring.cast){
+    const c=P.ring.cast,q=W2V(c.x,c.y),pulse=1+0.08*Math.sin(G.time*9);
+    ctx.globalAlpha=0.9;drawSpriteC(ctx,slagmawSprite,q[0],q[1]-7,1.45*pulse);ctx.globalAlpha=1;
+    text(ctx,c.seq===1?'RUN HERE':'SAFE NEAR IT',q[0],q[1]-38,7,'#fff8d0','center');
+  }
   // the cave mouth the party walks into (and out of)
   if(G.descent){
     const q=W2V(G.descent.mouth.x,G.descent.mouth.y);
@@ -8962,7 +9541,34 @@ function renderWavePattern(ctx,W2V,vw,vh){
 }
 
 // ---------- wave machine ----------
+const SOFT_WAVE_MIN=1.25,SOFT_WAVE_MAX=8,SOFT_CRUMBLE_AFTER=14;
+function softLiveCount(){
+  let n=0;for(const e of G.enemies)if(!e.dead&&!e.boss&&!e.playAnchor)n++;return n;
+}
+function markSoftStragglers(){
+  for(const e of G.enemies)if(!e.dead&&!e.boss){
+    e.softFrom=G.wave;
+    if(!e.softCrumbAt)e.softCrumbAt=G.time+SOFT_CRUMBLE_AFTER;
+  }
+}
+function crumbleForTakeover(){
+  let n=0;
+  for(const e of G.enemies)if(!e.dead&&!e.boss){
+    e.dead=true;n++;addParticles(e.x,e.y,'#8fa3b8',4,40);
+  }
+  G.softCrumbled+=n;G.ebullets.length=0;
+}
+function closeTimedWave(){
+  const d=G.mobDmgAcc/Math.max(4,G.fightT);
+  if(d>0)G.waveDPS=G.waveDPS?G.waveDPS*0.5+d*0.5:d;
+  if(G.wavePat&&G.wavePat.caldera)calderaClear(G.wavePat);
+  markSoftStragglers();
+  G.waveState='clear';G.waveT=0;G.cleanT=0;G.wavePat=null;G.softTransitions++;
+  sfx('wavecomplete');flash('SPAWNS ENDED');
+  if(G.mode==='classic'&&G.wave===1&&schoolsOn()&&G.players.some(p=>!p.school))grantLevels(1);
+}
 function nextWave(){
+  if(G.wave>0)G.softOverlaps+=G.enemies.filter(e=>!e.dead&&!e.boss&&e.softFrom&&e.softFrom<G.wave+1).length;
   G.wave++;
   G.breakDrafts=0; // per-break draft cap, see the xp gate in update()
   G.objective=null;
@@ -8973,27 +9579,40 @@ function nextWave(){
   if(def.boss!==undefined)G.waveQuota=0;
   else{
     const n=Math.max(1,G.players.length);
-    G.waveQuota=Math.round(def.n*(0.65+0.35*n));
+    // More players cover more angles and erase edge spawns sooner. Scale the
+    // stream harder than hp: solo is authored, then +65% per extra player.
+    G.waveQuota=Math.round(def.n*(1+0.65*(n-1)));
     // a pattern wave thins the base drip and drops the generic SURGE pulses:
     // the pattern IS the choreography
     if(G.mode==='classic'&&def.pattern){
       G.waveQuota=Math.max(6,Math.round(G.waveQuota*PATTERN_QUOTA[def.pattern]));
       G.wavePat=initWavePattern(def.pattern,def);
     }
-    G.waveSpawnGap=(def.dur*0.72)/G.waveQuota;
+    // A timer owns the wave. Quota is the expected number of spawn attempts
+    // across that duration, never a kill requirement.
+    G.waveSpawnGap=def.dur/G.waveQuota;
     G.waveSpawnT=0;
-    G.wavePulses=G.wavePat?[]:[0.35,0.70];
+    // No quota-consuming surge shortcut: spawning continues for the complete
+    // clock, including the calibration wave.
+    G.wavePulses=[];
     // pattern-less waves pay exactly their authored level budget (lv.b):
     // when the mix's natural xp falls short, the surplus rides the drip
     // (dripBonus, gem by gem, the xpPool construction); when the quota is
     // big enough to overshoot it, a share of spawns is xp-less chaff
     // (dripKeep) — bigger, denser waves must not re-inflate the cadence
-    G.dripBonus=0;G.dripAcc=0;G.dripKeep=1;
-    if(G.mode==='classic'&&!def.pattern&&def.lv&&def.lv.b>0){
+    G.dripBonus=0;G.dripAcc=0;G.dripKeep=1;G.dripKeepAcc=0;
+    if(G.mode==='classic'&&def.lv){
       const L0=G.level+bankedLevels().banked;
-      const natural=G.waveQuota*mixAvgXp(def),budget=lvGems(def.lv.b,L0);
+      const natural=G.waveQuota*mixAvgXp(def);
+      // Roster correction measured from complete runs. It looks large at 4p
+      // because it is applied BEFORE division across ~3x as many spawn bodies
+      // and a 2.2x xpNeed: in practice it raises the paid-body share from
+      // roughly one third solo to roughly nine tenths at 4p. Optional event
+      // jackpots are not multiplied.
+      const rosterRealize=n>=4?3.75:n===3?2:n===2?1.12:1;
+      const budget=lvGems(def.lv.b,L0)*rosterRealize;
       if(budget>natural)G.dripBonus=(budget-natural)/Math.max(1,G.waveQuota);
-      else G.dripKeep=Math.max(0.25,budget/Math.max(1,natural));
+      else G.dripKeep=Math.max(0.08,budget/Math.max(1,natural));
     }
   }
   sfx(def.boss!==undefined?'boss':'wavestart');
@@ -9038,6 +9657,10 @@ function startCaveWalk(dir){
   const mouth={x:(A?A.x:c.x)+side*Math.min(c.w*0.42,(A?A.w:c.w)*0.42),y:A?A.y:c.y};
   G.descent={dir,t:0,walkT:3.4,fadeIn:3.4,hold:4.4,fadeOut:5.2,end:6.2,mouth,flipped:false};
   G.waveState='descent';G.waveT=0;
+  // The cave is the one transition that takes over movement. Clear attackers
+  // without XP at that exact handoff, then vacuum while the party visibly
+  // walks toward the mouth.
+  crumbleForTakeover();
   // nothing is left behind: every gem on the floor is vacuumed in during the
   // walk (and whatever is still in flight is banked at the blackout)
   G.vacuumT=Math.max(G.vacuumT,4.4);
@@ -9046,7 +9669,10 @@ function startCaveWalk(dir){
 }
 function interLoot(boss){
   const c=G.cam,alive=Math.max(1,G.players.filter(p=>!p.dead).length);
-  for(let i=0;i<alive;i++)G.pickups.push({x:c.x+(Math.random()*90-45),y:c.y+(Math.random()*60-30),type:'heart',t:0});
+  // Playground sustain is a resource, not a wave-break reset: one heart per
+  // two living players only every third wave (and after bosses).
+  const hearts=(G.wave%3===0||boss)?Math.max(1,Math.ceil(alive/2)):0;
+  for(let i=0;i<hearts;i++)G.pickups.push({x:c.x+(Math.random()*90-45),y:c.y+(Math.random()*60-30),type:'heart',t:0});
   G.crates.push({x:c.x+(Math.random()*70-35),y:c.y+(Math.random()*50-25),r:7,hp:12,dead:false});
   if(G.wave%3===0||boss||G.mode==='rush'){
     const t=['speed','regen','maxhp','damage','magnet'];
@@ -9096,7 +9722,7 @@ function updateClassicWaves(dt){
   const maxAlive=Math.round((26+G.wave*3)*(0.65+0.35*n))+(G.wavePat?G.wavePat.capBonus:0);
   switch(G.waveState){
     case 'pre':
-      if(G.waveT>=2.0){
+      if(G.waveT>=(def.boss!==undefined?2.0:1.25)){
         G.waveT=0;
         if(def.boss!==undefined){openArena();spawnClassicBoss(def.boss);G.waveState='boss';}
         else{
@@ -9111,18 +9737,28 @@ function updateClassicWaves(dt){
     case 'fight':{
       if(G.enemies.length>=8)G.fightT+=dt; // saturated time — see damageEnemy
       if(G.wavePat)tickWavePattern(dt,maxAlive);
-      tickSlotChest(dt);
-      if(G.waveSpawned<G.waveQuota&&G.enemies.length<maxAlive){
+      // The playground's authored opportunities own bonus XP. The inherited
+      // repeatable lucky chest could add several surprise levels and erase the
+      // taper before Slagmaw, so it is intentionally absent here.
+      if(G.waveT<def.dur&&G.waveSpawned<G.waveQuota&&G.enemies.length<maxAlive){
         G.waveSpawnT-=dt;
         if(G.waveSpawnT<=0){
           G.waveSpawnT=G.waveSpawnGap;
           const pt=spawnPoint();
           if(pt){
             const e=spawnEnemy(pickEnemyType(),pt.x,pt.y,Math.random()<def.elite?2.6:1);G.waveSpawned++;
+            if(G.wavePat&&G.wavePat.caldera&&e.type==='smasher')e.calderaSmasher=1;
             // drip-carried patterns (lava mix, pressure) ride their budget on the drip
             if(G.wavePat&&G.wavePat.dripXp)e.xp+=patXp(G.wavePat);
             else if(G.dripBonus){G.dripAcc+=G.dripBonus;const bx=Math.floor(G.dripAcc);if(bx>0){e.xp+=bx;G.dripAcc-=bx;}}
-            else if(G.dripKeep<1&&!e.elite&&!e.eventBounty&&Math.random()>G.dripKeep)e.xp=0; // bounty bodies always pay; other chaff keeps the budget honest
+            else if(G.dripKeep<1&&!e.elite&&!e.eventBounty){
+              // Deterministic thinning: the old random roll changed every
+              // later combat roll when XP was tuned, making progression tests
+              // select entirely different builds. The accumulator pays the
+              // same long-run share without perturbing combat RNG.
+              G.dripKeepAcc+=G.dripKeep;
+              if(G.dripKeepAcc<1)e.xp=0;else G.dripKeepAcc-=1;
+            } // bounty bodies always pay; other chaff keeps the budget honest
           }
         }
       }
@@ -9135,29 +9771,24 @@ function updateClassicWaves(dt){
           if(pt&&G.enemies.length<maxAlive+30){spawnEnemy(Math.random()<0.7?type:pickEnemyType(),pt.x,pt.y,1);G.waveSpawned++;}
         }
       }
-      if(G.waveSpawned>=G.waveQuota){
-        if(G.enemies.length===0){
-          // bank the measured clearing output for next wave's density pricing
-          const d=G.mobDmgAcc/Math.max(4,G.fightT);
-          if(d>0)G.waveDPS=G.waveDPS?G.waveDPS*0.5+d*0.5:d;
-          G.waveState='clear';G.waveT=0;G.cleanT=0;G.wavePat=null;sfx('wavecomplete');
-          // the PATH pick is a free draft at WAVE 1 CLEAR, for every party
-          // size: wave 1's gems never covered xpNeed(1) past solo (19/24/29
-          // vs 24/31/38), so co-op parties fought the first volcano wave
-          // with a lv1 Missile and met the choice after it. The free level
-          // fires next frame (update's freeLevels branch), pauses the sim
-          // inside this 2.5s window, and the descent follows the pick.
-          if(G.mode==='classic'&&G.wave===1&&schoolsOn()&&G.players.some(p=>!p.school))grantLevels(1);
-        }
-        else{G.cleanT+=dt;if(G.cleanT>8){G.cleanT=0;enrageStragglers();}}
-      }
+      if(G.waveT>=def.dur)closeTimedWave();
       break;}
     case 'boss':
       holdArena(dt);
       if(!G.boss||G.boss.dead){G.waveState='clear';G.waveT=0;}
       break;
     case 'clear':
-      if(G.waveT>=2.5){if(G.wave>=waveCount())startOutro();else startIntermission();}
+      if(def.boss!==undefined){if(G.waveT>=2.5)startOutro();break;}
+      if(G.waveT>=SOFT_WAVE_MIN){
+        const floor=4+3*n,ready=softLiveCount()<=floor||G.waveT>=SOFT_WAVE_MAX;
+        if(ready){
+          if(G.wave===1)startIntermission();
+          else{
+            interLoot(false); // loot lands in the live field; movement never stops
+            nextWave();
+          }
+        }
+      }
       break;
     case 'descent':{
       const D=G.descent;
@@ -9173,7 +9804,8 @@ function updateClassicWaves(dt){
         let left=0;for(const gm of G.gems)left+=gm.v;
         if(left>0){G.xp+=left;sfx('gem');}
         G.crates.length=0;G.gems.length=0;
-        for(const p of G.players)if(!p.dead){p.hp=Math.min(p.maxhp,p.hp+p.maxhp*0.25);}
+        // No free cave heal in the playground: damage taken in wave 1 is
+        // still present when the raid begins.
         interLoot(D.dir==='up');
         sfx('crack');
       }
@@ -9190,7 +9822,7 @@ function updateClassicWaves(dt){
       }
       for(const p of G.players){
         if(p.dead)continue;
-        p.hp=Math.min(p.maxhp,p.hp+p.maxhp*0.25/G.interLen*dt);
+        p.hp=Math.min(p.maxhp,p.hp+p.maxhp*0.04/G.interLen*dt);
       }
       if(G.waveT>=G.interLen)nextWave();
       break;
@@ -9455,6 +10087,9 @@ function update(dt){
   // ---- enemies ----
   for(const e of G.enemies){
     if(e.dead)continue;
+    if(e.softCrumbAt&&G.time>=e.softCrumbAt){
+      e.dead=true;G.softCrumbled++;addParticles(e.x,e.y,'#8fa3b8',4,40);continue;
+    }
     if(e.flash>0)e.flash-=dt;
     if(e.life>0){e.life-=dt;if(e.life<=0){e.dead=true;addParticles(e.x,e.y,'#d84343',6,60);continue;}}
     let tgt=null,bd=1e9;
@@ -9492,7 +10127,7 @@ function update(dt){
         G.shake=7;sfx('boss');
         G.ebullets=G.ebullets.filter(b=>!b.boss);
         for(const f of G.fx)if(f.boss&&f.kind!=='pool')f.t=Math.min(f.t,0.2);
-        flash(e.name+'  PHASE '+e.phase);
+        if(!d.silent)flash(e.name+'  PHASE '+e.phase);
       }
       if(a.mode==='transition'){
         a.t-=dt;e.castName=(typeof d.transName==='function'?d.transName(e):d.transName)||'...';e.castP=clamp(1-a.t/2.0,0,1);
@@ -9647,34 +10282,37 @@ function update(dt){
     // SMASHER (and the awakened SLAG BEHEMOTH): rush in, plant, and cast a
     // small Molten Slam with the boss's own telegraph, so the read transfers
     else if(e.sm){
-      const S=e.sm,big=!!e.behemoth;
+      const S=e.sm,big=!!e.behemoth,raid=!!e.calderaSmasher;
       if(S.cd>0)S.cd-=dt;
       if(S.st==='cast'){
         sp=0;S.t-=dt;
         // wind-up: fists up, a hop that peaks as the slam lands
-        if(!big){e.spr=smasherCastSprite;e.hopY=10*Math.sin(Math.PI*clamp(1-S.t/1.2,0,1));}
+        if(!big){e.spr=smasherCastSprite;e.hopY=10*Math.sin(Math.PI*clamp(1-S.t/(S.len||1.2),0,1));}
         if(S.t<=0){
           S.st='hunt';S.cd=big?6:2.6;S.tel=null;G.smCasting=Math.max(0,G.smCasting-1);
           if(!big){e.spr=smasherSprite;e.hopY=0;}
           const R=S.r;
           G.fx.push({kind:'boom',x:e.x,y:e.y,r:R,t:0.3,dur:0.3});
+          if(raid)pushRing(null,e.x,e.y,{rmax:R+60,spd:360,dir:1,gaps:0,gapW:0,pct:0,w:12,dur:(R+60)/360,t:(R+60)/360,col:VOLC.burst});
           G.shake=Math.max(G.shake,big?5:3);sfx('slam');
           // the rehearsal hits AND throws, like the boss's slam (at half the
           // reach): "the orange disc moves you" has to be felt twenty times
           // in wave 2 before P3 uses the shove to put you in the lava
           for(const p of alive){
             const d=Math.hypot(p.x-e.x,p.y-e.y);
-            if(d<R)hurtPlayer(p,e.dmg*1.6);
-            if(d<R+20&&!p.dead&&!(p.shoveT>0))shovePlayer(p,Math.atan2(p.y-e.y,p.x-e.x),d<R?40:24);
+            if(d<R)(raid?bossHit(p,0.22):hurtPlayer(p,e.dmg*1.6));
+            const RR=raid?R+50:R+20;
+            if(d<RR&&!p.dead&&!(p.shoveT>0))shovePlayer(p,Math.atan2(p.y-e.y,p.x-e.x),raid?(d<R?120:72):(d<R?40:24));
           }
+          if(raid){S.done=1;if(G.wavePat&&G.wavePat.caldera)G.wavePat.caldera.slams++;}
           pushPool(null,e.x,e.y,R*0.5,4,0.04,VOLC.slam,'circle');
         }
-      }else if(tgt&&(dd<(big?60:70)||(!big&&S.near>1.5&&dd<120))&&S.cd<=0&&!(e.stunT>0)&&G.smCasting<3){
+      }else if(tgt&&(!raid||!S.done)&&(dd<(big?60:70)||(!big&&S.near>1.5&&dd<120))&&S.cd<=0&&!(e.stunT>0)&&G.smCasting<3){
         // in reach, or it has been on your heels for 1.5s without getting
         // there (a party that never stops): it commits anyway — the disc
         // lands beside you, which is the read, even when the hit misses
-        S.st='cast';S.t=1.2;S.r=big?70:50;S.near=0;G.smCasting++;
-        pushTel(null,e.x,e.y,S.r,1.2,0,VOLC.slam,slamWarnSprite,null);
+        S.st='cast';S.t=raid?1.5:1.2;S.len=S.t;S.r=big?70:raid?78:50;S.near=0;G.smCasting++;
+        pushTel(null,e.x,e.y,S.r,S.t,0,VOLC.slam,slamWarnSprite,null);
         S.tel=G.fx[G.fx.length-1];
         sfx('telegraph');
       }else if(!big){
@@ -10082,13 +10720,56 @@ function fmtTime(t){
   return m+':'+(s<10?'0':'')+s;
 }
 function drawSpriteC(g,spr,x,y,scale){
-  const s=scale||1;
-  g.drawImage(spr,Math.round(x-spr.width*s/2),Math.round(y-spr.height*s/2),Math.round(spr.width*s),Math.round(spr.height*s));
+  const s=scale||1,uw=(spr.uw||spr.width)*s,uh=(spr.uh||spr.height)*s,q=SUBPX?DEN:1;
+  g.drawImage(spr,Math.round((x-uw/2)*q)/q,Math.round((y-uh/2)*q)/q,Math.round(uw),Math.round(uh));
 }
 function hexRgb(h){
   const n=parseInt(h.slice(1),16);
   return ((n>>16)&255)+','+((n>>8)&255)+','+(n&255);
 }
+// ---- light layer ----
+// Emitters stamp soft discs into lightC (LD light px per world unit, same
+// world-unit coordinates as ctx) during the world pass; render() composites
+// it ONCE with LIGHT_OP under the cave fade and before blit(). Everything here
+// is cosmetic and reads existing fields only: alpha <=0.45, gameplay rings
+// <=0.10, boss telegraph kinds emit nothing. ?light=0 turns it off, ?lite
+// halves the light canvas (and turns it off, see step 12).
+const LITE=Q.get('lite')!==null;
+const LD=LITE?0.5:1;                              // light px per world unit
+let LIGHT_ON=Q.get('light')!=='0'&&!LITE,LIGHT_MAX=600,lightN=0;
+const LIGHT_GAIN=0.9,LIGHT_OP='screen';           // 'lighter' clips to white with 4 heroes + lava
+let lavaVisN=0;                                   // lava tiles drawn last frame (picks the glow stride)
+const glowCache=new Map();
+function glowSprite(col,r){ // r bucketed 4,6,8,12,16,24,32; 8 concentric arc fills, quadratic falloff; arc-only so headless/pixcanvas render it
+  const k=col+'|'+r;let c=glowCache.get(k);if(c)return c;
+  const px=Math.max(4,Math.round(r*2*LD));c=document.createElement('canvas');c.width=c.height=px;
+  const g=c.getContext('2d'),rgb=hexRgb(col),N=8;
+  for(let i=0;i<N;i++){const t=i/N;g.fillStyle='rgba('+rgb+','+(0.05+0.35*t*t).toFixed(3)+')';g.beginPath();g.arc(px/2,px/2,px/2*(1-t),0,TAU);g.fill();}
+  glowCache.set(k,c);return c;}
+const GLOW_R=[4,6,8,12,16,24,32];const bucket=r=>GLOW_R.find(b=>b>=r)||32;
+function glow(x,y,r,col,a){ if(!LIGHT_ON||lightN>=LIGHT_MAX)return; if(x<-r||y<-r||x>lightC.width/LD+r||y>lightC.height/LD+r)return;
+  lightN++;const b=bucket(r);lctx.globalAlpha=Math.min(0.45,a);lctx.drawImage(glowSprite(col,b),x-r,y-r,r*2,r*2);}
+function glowLine(x1,y1,x2,y2,r,col,a){const d=Math.hypot(x2-x1,y2-y1),n=Math.max(1,Math.ceil(d/r));for(let i=0;i<=n;i++)glow(x1+(x2-x1)*i/n,y1+(y2-y1)*i/n,r,col,a);}
+// per-kind fx emitters, run at drawFx entry (kinds not listed — every boss telegraph — emit nothing)
+const FX_GLOW={
+  lance:(f,x,y,k,W2V)=>{const a1=W2V(f.x1,f.y1),a2=W2V(f.x2,f.y2),w0=f.w?f.w*(0.55+0.75*k):6;glowLine(a1[0],a1[1],a2[0],a2[1],w0+4,f.col2||f.col,0.4*k);},
+  zap:(f,x,y,k,W2V)=>{if(!f.glow)return;const a1=W2V(f.x1,f.y1),a2=W2V(f.x2,f.y2);glowLine(a1[0],a1[1],a2[0],a2[1],6,f.col,0.35*k);},
+  nerve:(f,x,y,k,W2V)=>{const a1=W2V(f.x1,f.y1),a2=W2V(f.x2,f.y2);glowLine(a1[0],a1[1],a2[0],a2[1],6,'#c04aff',0.3*k);},
+  sbloom:(f,x,y,k)=>glow(x,y,f.r*0.8,'#ffffff',0.4*k),
+  sring:(f,x,y,k)=>glow(x,y,f.r,prismCol(G.time*6+(f.seed||0)),0.06),
+  mzone:(f,x,y,k)=>glow(x,y,f.r,prismCol(G.time*5),0.06),
+  boom:(f,x,y,k)=>glow(x,y,f.r,f.col||'#ffb62e',0.3*k),
+  rburn:(f,x,y,k)=>glow(x,y,f.r*0.8,f.col,f.soft?0.10:0.14),
+  scorch:(f,x,y,k)=>glow(x,y,f.r*0.8,f.col||'#ff5a3d',0.12*k),
+  rot:(f,x,y,k)=>glow(x,y,f.r*0.8,f.col||'#5a7a3a',0.10*k),
+  soulvoid:(f,x,y,k)=>glow(x,y,f.r*0.8,f.col,0.12),
+  rvoid:(f,x,y,k)=>glow(x,y,f.r*0.8,f.col,0.12),
+  rmet:(f,x,y,k)=>glow(x,y,f.r*0.8,f.col,0.12),
+  rchase:(f,x,y,k)=>glow(x,y,f.r*0.8,f.col,0.12),
+  rbeam:(f,x,y,k)=>glowLine(x,y,x+Math.cos(f.a)*f.len,y+Math.sin(f.a)*f.len,8,f.col,0.12),
+  rorbit:(f,x,y,k,W2V)=>{const o=f.own;if(!o)return;const q=W2V(o.x,o.y);for(let i=0;i<f.n;i++){const a=f.ang+i*TAU/f.n;glow(q[0]+Math.cos(a)*f.rad,q[1]+Math.sin(a)*f.rad,6,f.col,0.15);}},
+  phantom:(f,x,y,k)=>{if(Math.floor(G.time*14)%4===0)return;glow(x,y,(f.spr.uh||f.spr.height)*f.scale,prismCol(G.time*9),0.12);}
+};
 function stripes(g,x,y,w,h,col,phase){
   g.save();
   g.beginPath();g.rect(x,y,w,h);g.clip();
@@ -10102,6 +10783,7 @@ function stripes(g,x,y,w,h,col,phase){
 function drawFx(f,W2V,g){
   const pt=W2V(f.x||0,f.y||0),x=pt[0],y=pt[1];
   const k=clamp(f.t/(f.dur||0.3),0,1);
+  if(LIGHT_ON&&g===ctx){const lg=FX_GLOW[f.kind];if(lg)lg(f,x,y,k,W2V);}
   switch(f.kind){
     case 'tel':{
       const rgb=hexRgb(f.col);
@@ -10272,7 +10954,7 @@ function drawFx(f,W2V,g){
         g.beginPath();g.arc(x,y,f.r*0.8,0,TAU);g.stroke();
         break;
       }
-      g.fillStyle='rgba('+rgb+','+(0.20*fade).toFixed(3)+')';
+      g.fillStyle='rgba('+rgb+','+(0.14*fade).toFixed(3)+')';
       g.beginPath();g.arc(x,y,f.r,0,TAU);g.fill();
       g.strokeStyle='rgba('+rgb+','+(0.75*fade).toFixed(3)+')';g.lineWidth=1;
       g.beginPath();g.arc(x,y,f.r,0,TAU);g.stroke();
@@ -10341,7 +11023,7 @@ function drawFx(f,W2V,g){
       break;}
     case 'phantom':{ // the assassin: its victim's silhouette, prismatic and flickering
       if(Math.floor(G.time*14)%4===0)break; // it flickers — it isn't really there
-      const sw=f.spr.width*f.scale,sh=f.spr.height*f.scale;
+      const sw=(f.spr.uw||f.spr.width)*f.scale,sh=(f.spr.uh||f.spr.height)*f.scale;
       // one offset afterimage walking the ramp, then the copy itself
       for(let i=1;i>=1;i--){
         g.globalAlpha=0.13;
@@ -10480,6 +11162,18 @@ function drawFx(f,W2V,g){
       g.strokeStyle=k<0.3?'#fff':'rgba(255,255,255,0.7)';g.lineWidth=1;
       g.strokeRect(Math.round(x-s/2)+0.5,Math.round(y-s/2)+0.5,s-1,s-1);
       break;}
+    case 'crack':{ // fissures from a hammer blow: dark cracks with molten light in them that cools first
+      const n=7,seed=f.seed||0;
+      for(let i=0;i<n;i++){
+        const an=seed*TAU+i*TAU/n+Math.sin(seed*97+i*13)*0.25,len=f.r*(0.55+0.45*Math.abs(Math.sin(seed*31+i*7)));
+        const mx=x+Math.cos(an)*len*0.5+Math.sin(i*5+seed*11)*4,my=y+Math.sin(an)*len*0.35+Math.cos(i*3+seed*7)*3;
+        const ex=x+Math.cos(an)*len,ey=y+Math.sin(an)*len*0.7;
+        g.strokeStyle='rgba(10,6,8,'+(0.85*k).toFixed(3)+')';g.lineWidth=2;
+        g.beginPath();g.moveTo(x,y);g.lineTo(mx,my);g.lineTo(ex,ey);g.stroke();
+        if(k>0.5){g.strokeStyle='rgba(255,122,31,'+((k-0.5)*1.8).toFixed(3)+')';g.lineWidth=1;g.beginPath();g.moveTo(x,y);g.lineTo(mx,my);g.lineTo(ex,ey);g.stroke();}
+      }
+      g.fillStyle='rgba(10,6,8,'+(0.5*k).toFixed(3)+')';g.beginPath();g.ellipse(x,y,f.r*0.28,f.r*0.18,0,0,TAU);g.fill();
+      break;}
     case 'boom':{
       // school bursts ring in their own colour (blue mana, plague green...)
       g.strokeStyle='rgba('+(f.col?hexRgb(f.col):'255,182,46')+','+k.toFixed(3)+')';g.lineWidth=2;
@@ -10492,7 +11186,7 @@ function drawFx(f,W2V,g){
       const e=1-k;                        // 0 -> 1 over the life
       const grow=f.r*(0.28+0.72*Math.sqrt(e));
       g.globalAlpha=k;
-      g.fillStyle='rgba(255,255,255,'+(0.45*k*k).toFixed(3)+')';
+      g.fillStyle='rgba(255,255,255,'+(0.30*k*k).toFixed(3)+')';
       g.beginPath();g.arc(x,y,Math.max(1,f.r*0.55*k),0,TAU);g.fill();
       for(let i=0;i<3;i++){
         const rr=grow*(1-i*0.17);
@@ -10625,7 +11319,7 @@ function drawFx(f,W2V,g){
       // slow prismatic shimmer crawling across it so the ground looks unreal
       const fade=f.t<0.5?f.t/0.5:1;
       g.globalAlpha=fade;
-      g.fillStyle='rgba(255,255,255,0.10)';
+      g.fillStyle='rgba(255,255,255,0.06)';
       g.beginPath();g.arc(x,y,f.r,0,TAU);g.fill();
       for(let i=0;i<3;i++){
         const rr=f.r*(0.35+0.3*i)+Math.sin(G.time*1.8+i*2.1)*3;
@@ -10681,13 +11375,20 @@ function render(){
   // reallocates occasionally (re-rasterizing every frame shimmers); the blit
   // below crops the exact fractional window out of it, making the step invisible
   const vw=Math.ceil((w+8)/16)*16,vh=Math.ceil((h+8)/16)*16;
-  if(view.width!==vw||view.height!==vh){view.width=vw;view.height=vh;}
-  ctx.imageSmoothingEnabled=false;
+  const bw=vw*DEN,bh=vh*DEN;
+  if(view.width!==bw||view.height!==bh){view.width=bw;view.height=bh;}
+  ctx.setTransform(DEN,0,0,DEN,0,0);ctx.imageSmoothingEnabled=false; // re-applied every frame: a resize resets context state
+  if(LIGHT_ON){
+    if(lightC.width!==vw*LD||lightC.height!==vh*LD){lightC.width=vw*LD;lightC.height=vh*LD;}
+    lctx.setTransform(LD,0,0,LD,0,0);lctx.imageSmoothingEnabled=true;lctx.clearRect(0,0,vw,vh);
+  }
+  lightN=0;
+  if(PERF_HUD)perfS.calls={};
 
   let shx=0,shy=0;
   if(G.shake>0.2){shx=(Math.random()-0.5)*G.shake;shy=(Math.random()-0.5)*G.shake;}
   const ox=Math.round(c.x+shx-vw/2),oy=Math.round(c.y+shy-vh/2);
-  const W2V=(x,y)=>[Math.round(x-ox),Math.round(y-oy)];
+  const W2V=SUBPX?(x,y)=>[Math.round((x-ox)*DEN)/DEN,Math.round((y-oy)*DEN)/DEN]:(x,y)=>[Math.round(x-ox),Math.round(y-oy)];
   const sx=c.x+shx-w/2-ox,sy=c.y+shy-h/2-oy;          // fractional window origin inside the buffer
   const W2U=(x,y)=>[x-(c.x+shx-w/2),y-(c.y+shy-h/2)]; // world -> UI window coords (native res pass)
 
@@ -10695,7 +11396,7 @@ function render(){
   const c0x=Math.floor(ox/CHPX),c1x=Math.floor((ox+vw)/CHPX);
   const c0y=Math.floor(oy/CHPX),c1y=Math.floor((oy+vh)/CHPX);
   for(let cy=c0y;cy<=c1y;cy++)for(let cx=c0x;cx<=c1x;cx++){
-    ctx.drawImage(chunkCanvas(cx,cy),cx*CHPX-ox,cy*CHPX-oy);
+    ctx.drawImage(chunkCanvas(cx,cy),cx*CHPX-ox,cy*CHPX-oy,CHPX,CHPX);
     if(G.state!=='title'&&G.state!=='modesel')ensureChunkEntities(cx,cy);
   }
   // embers drift up through the volcano interior
@@ -10715,36 +11416,25 @@ function render(){
     return;
   }
 
+  // hazard overlays (ground): walk the visible tile rect (one tile of margin),
+  // one baked frame per tile the set holds — no split, no per-tile stripes()
+  const drawOverlay=(set,frames,phase,lit)=>{
+    const fr=frames[Math.floor(phase*8)%6];
+    const tx0=Math.floor(ox/TILE)-1,tx1=Math.ceil((ox+vw)/TILE)+1,ty0=Math.floor(oy/TILE)-1,ty1=Math.ceil((oy+vh)/TILE)+1;
+    const gm=lavaVisN>200?3:1;let n=0; // lava glow stride: (tx+ty)&1 normally, &3 when the river fills the screen
+    for(let ty=ty0;ty<=ty1;ty++)for(let tx=tx0;tx<=tx1;tx++){
+      if(!set.has(tx+','+ty))continue;
+      ctx.drawImage(fr,tx*TILE-ox,ty*TILE-oy,TILE,TILE);
+      if(lit){n++;if(((tx+ty)&gm)===0)glow(tx*TILE-ox+8,ty*TILE-oy+8,12,VOLC.lava,0.18);}
+    }
+    if(lit)lavaVisN=n;
+  };
   // green creep (ground)
-  if(G.creep){
-    for(const k of G.creep){
-      const pr=k.split(','),tx=+pr[0],ty=+pr[1];
-      const px=tx*TILE-ox,py=ty*TILE-oy;
-      if(px<-20||py<-20||px>vw+20||py>vh+20)continue;
-      ctx.drawImage(creepTileSprite,px,py,TILE,TILE);
-      stripes(ctx,px,py,TILE,TILE,'rgba(63,224,90,0.35)',G.time);
-    }
-  }
+  if(G.creep)drawOverlay(G.creep,creepFrames,G.time);
   // devoured floor (ground) — the Worldeater's permanent void band
-  if(G.voidTiles){
-    for(const k of G.voidTiles){
-      const pr=k.split(','),tx=+pr[0],ty=+pr[1];
-      const px=tx*TILE-ox,py=ty*TILE-oy;
-      if(px<-20||py<-20||px>vw+20||py>vh+20)continue;
-      ctx.drawImage(voidTileSprite,px,py,TILE,TILE);
-      stripes(ctx,px,py,TILE,TILE,'rgba(138,92,255,0.30)',G.time);
-    }
-  }
+  if(G.voidTiles)drawOverlay(G.voidTiles,voidFrames,G.time);
   // lava rivers (ground) — VOLCANIC PRESSURE and Slagmaw's cracked cauldron
-  if(G.lava){
-    for(const k of G.lava){
-      const pr=k.split(','),tx=+pr[0],ty=+pr[1];
-      const px=tx*TILE-ox,py=ty*TILE-oy;
-      if(px<-20||py<-20||px>vw+20||py>vh+20)continue;
-      ctx.drawImage(lavaTileSprite,px,py,TILE,TILE);
-      stripes(ctx,px,py,TILE,TILE,'rgba(255,210,62,0.30)',G.time*1.5);
-    }
-  }
+  if(G.lava)drawOverlay(G.lava,lavaFrames,G.time*1.5,true);
   // arena floor + border
   if(G.arena){
     const a=G.arena,p0=W2V(a.x-a.w/2,a.y-a.h/2);
@@ -10752,7 +11442,7 @@ function render(){
     ctx.globalAlpha=0.5+0.2*Math.sin(G.time*3);
     ctx.strokeRect(p0[0],p0[1],a.w,a.h);
     ctx.globalAlpha=1;
-    for(const q of a.pillars){const t=W2V(q.x,q.y);drawSpriteC(ctx,arenaTorchSprite,t[0],t[1]-16,1);}
+    for(const q of a.pillars){const t=W2V(q.x,q.y);drawSpriteC(ctx,arenaTorchSprite,t[0],t[1]-16,1);glow(t[0],t[1]-20,12,'#ffb62e',0.3);}
   }
   // ground telegraphs must be UNDER everything the player looks at — and
   // the player's own ground spells (lava rivers, rot, dream zones) go under
@@ -10760,19 +11450,19 @@ function render(){
   for(const f of G.fx)if(f.ground&&f.own)drawFx(f,W2V,ctx);
   for(const f of G.fx)if(f.ground&&!f.own)drawFx(f,W2V,ctx);
 
-  for(const g of G.gems){
-    const q=W2V(g.x,g.y);
+  for(let gi=0;gi<G.gems.length;gi++){
+    const g=G.gems[gi],q=W2V(g.x,g.y);
     if(q[0]<-8||q[1]<-8||q[0]>vw+8||q[1]>vh+8)continue;
     drawSpriteC(ctx,g.v>=4?bigGemSprite:gemSprite,q[0],q[1]+Math.sin(g.t*4)*1.5);
+    if(g.v>=4||G.gems.length<=150||(gi&1)===0)glow(q[0],q[1],g.v>=4?8:5,g.v>=4?'#ffd23e':'#39d5ff',g.v>=4?0.35:0.22);
   }
   for(const pk of G.pickups){
     const q=W2V(pk.x,pk.y);
     if(q[0]<-12||q[1]<-12||q[0]>vw+12||q[1]>vh+12)continue;
     const bob=Math.sin(pk.t*3)*2;
-    if(pk.type==='heart')drawSpriteC(ctx,heartSprite,q[0],q[1]+bob);
+    if(pk.type==='heart'){drawSpriteC(ctx,heartSprite,q[0],q[1]+bob);glow(q[0],q[1]+bob,8,'#ff4d6d',0.2);}
     else{
-      ctx.fillStyle=pk.type==='pod'?'rgba(87,232,107,0.18)':'rgba(255,255,255,0.12)';
-      ctx.beginPath();ctx.arc(q[0],q[1]+bob,pk.type==='pod'?10:7,0,TAU);ctx.fill();
+      glow(q[0],q[1]+bob,pk.type==='pod'?12:9,pk.type==='pod'?'#57e86b':'#ffffff',0.22);
       drawSpriteC(ctx,buffIcons[pk.type]||buffIcons.speed,q[0],q[1]+bob);
     }
   }
@@ -10795,11 +11485,12 @@ function render(){
   }
   renderWavePattern(ctx,W2V,vw,vh);
   for(const e of G.enemies){
+    if(e.playAnchor)continue;
     const q=W2V(e.x,e.y),x=q[0],y=q[1];
     if(x<-60||y<-60||x>vw+60||y>vh+60)continue;
     const s=e.scale||1;
     const hopY=e.hopY||0;
-    const yy=y-((e.spr.height*s)/2-e.r)-hopY;
+    const yy=y-(((e.spr.uh||e.spr.height)*s)/2-e.r)-hopY;
     if(e.polCol){
       ctx.globalAlpha=0.35;ctx.fillStyle=e.polCol;
       ctx.beginPath();ctx.arc(x,y,e.r+3,0,TAU);ctx.fill();
@@ -10827,7 +11518,7 @@ function render(){
     // A bounty must be legible BEFORE it pays. Four pulsing pixels preserve
     // the sprite and floor underneath while advertising a profitable route.
     if(e.eventBounty){
-      const bc=e.type==='burster'?VOLC.burst:VOLC.lava,br=e.r+5+(Math.floor(G.time*8)%2);
+      const bc=e.bountyCol||(e.type==='burster'?VOLC.burst:VOLC.lava),br=e.r+5+(Math.floor(G.time*8)%2);
       ctx.fillStyle=bc;
       ctx.fillRect(Math.round(x-br),Math.round(y-1),2,2);ctx.fillRect(Math.round(x+br-2),Math.round(y-1),2,2);
       ctx.fillRect(Math.round(x-1),Math.round(y-br),2,2);ctx.fillRect(Math.round(x-1),Math.round(y+br-2),2,2);
@@ -10838,8 +11529,7 @@ function render(){
     // a swelling burster glows: a gold halo that grows with the fuse
     if(e.type==='burster'&&e.fuse>=0){
       const k=clamp(1-e.fuse/0.45,0,1);
-      ctx.fillStyle='rgba(255,210,62,'+(0.15+0.25*k).toFixed(3)+')';
-      ctx.beginPath();ctx.arc(x,y-4,10+22*k,0,TAU);ctx.fill();
+      glow(x,y-4,10+22*k,VOLC.burst,0.15+0.25*k);
     }
     if(e.def&&e.def.draw)e.def.draw(ctx,x,y,e);
   }
@@ -10850,10 +11540,12 @@ function render(){
     const bobY=(p.anim%1)<0.5?0:-1;
     if(p.flash>0){ctx.fillStyle='rgba(255,80,80,0.6)';ctx.fillRect(x-6,y-8+bobY,12,14);}
     drawSpriteC(ctx,playerSprites[p.col],x,y-2+bobY);
+    glow(x,y,14,PCOLORS[p.col],0.20);
     const fw=p.weapons.flame;
     if(fw){
       ctx.strokeStyle=(fw.evo?'rgba(255,210,62,':'rgba(255,90,61,')+(0.25+0.1*Math.sin(G.time*6))+')';ctx.lineWidth=1;
       ctx.beginPath();ctx.arc(x,y,flameRad(fw),0,TAU);ctx.stroke();
+      glow(x,y,flameRad(fw),'#ff5a3d',0.08);
     }
     const ow=p.weapons.orbit;
     if(ow){
@@ -10878,6 +11570,11 @@ function render(){
       if(!aw&&!dt)continue;
       const rad=aw?auraRad(aid,Math.min(aw.lv,6)+(aw.evo?2:0)):dtRad(p);
       const rot=aid==='decay';
+      glow(x,y,rad,aw?(rot?'#9fe84a':'#ffb62e'):'#c04aff',0.08);
+      if(dt){ // violet rim: glowLine between 8 rim points (turning with the motes)
+        const rp=[];for(let i=0;i<8;i++){const a=(rot?-G.time*1.1:G.time*1.6)+i*TAU/8;rp.push(x+Math.cos(a)*rad,y+Math.sin(a)*rad);}
+        for(let i=0;i<8;i++){const j=(i+1)%8;glowLine(rp[i*2],rp[i*2+1],rp[j*2],rp[j*2+1],8,'#c04aff',0.10);}
+      }
       if(!aw){ // passive only: a thin violet rim, no rot fill
         ctx.strokeStyle='rgba(192,74,255,'+(0.30+0.14*Math.sin(G.time*5))+')';
         ctx.lineWidth=1;
@@ -10928,6 +11625,7 @@ function render(){
       ctx.beginPath();ctx.arc(x,y,KA_RADIUS-3,G.time*0.7,G.time*0.7+TAU);ctx.stroke();
       ctx.globalAlpha=1;
       ctx.setLineDash([]);
+      glow(x,y,KA_RADIUS,prismCol(G.time*4),0.05);
       for(let i=0;i<4;i++){
         const a=G.time*0.5+i*TAU/4;
         const gx=Math.round(x+Math.cos(a)*KA_RADIUS),gy=Math.round(y+Math.sin(a)*KA_RADIUS);
@@ -10951,6 +11649,7 @@ function render(){
         // in an already crowded school
         ctx.globalAlpha=(i?0.22:0.35)+0.09*Math.sin(G.time*3+i*2);
         drawSpriteC(ctx,playerSprites[p.col],mx,my);
+        glow(mx,my,10,prismCol(G.time*7+i*3),0.12);
         ctx.globalAlpha=0.12;
         ctx.fillStyle=prismCol(G.time*7+i*3);
         ctx.fillRect(mx-4,my-7,8,14);
@@ -10967,12 +11666,28 @@ function render(){
     // the same halo/body/core idiom the `zap` glow uses (there is no additive
     // blending in this renderer, so overlap is what sells brightness)
     const n=w.length/2;
+    // the faint tail (samples 1..n-7) is ONE stroked path per pass at the alpha
+    // of its midpoint sample (and, for prism bolts, the colour at n/2) — the
+    // tail alpha is flat, not f² — and only the last 6 segments keep the exact
+    // per-segment ramp: 33 strokes per full bolt become at most 21
+    const tail=n-7,im=(1+tail)/2;
     for(let pass=0;pass<3;pass++){
       ctx.lineWidth=[2,1,1][pass];
       ctx.lineCap='round';
-      for(let i=1;i<n;i++){
+      if(tail>=1){
+        const f=im/n,a=f*f*[0.10,0.25,0.7][pass];
+        if(a>=0.02){
+          ctx.strokeStyle=pass===2?'rgba(255,255,255,'+a.toFixed(3)+')'
+            :'rgba('+hexRgb(b.prism?prismCol(b.prism+(n/2)*0.7+G.time*11):(b.trailCol||b.col))+','+a.toFixed(3)+')';
+          const p0=W2V(w[0],w[1]);
+          ctx.beginPath();ctx.moveTo(p0[0],p0[1]);
+          for(let i=1;i<=tail;i++){const p1=W2V(w[i*2],w[i*2+1]);ctx.lineTo(p1[0],p1[1]);}
+          ctx.stroke();
+        }
+      }
+      for(let i=Math.max(1,tail+1);i<n;i++){
         const f=i/n; // 0 at the oldest sample, 1 at the bolt
-        const a=f*f*[0.16,0.34,0.7][pass];
+        const a=f*f*[0.10,0.25,0.7][pass];
         if(a<0.02)continue;
         ctx.strokeStyle=pass===2?'rgba(255,255,255,'+a.toFixed(3)+')'
           :'rgba('+hexRgb(b.prism?prismCol(b.prism+i*0.7+G.time*11):(b.trailCol||b.col))+','+a.toFixed(3)+')';
@@ -10984,6 +11699,7 @@ function render(){
   }
   for(const b of G.bullets){
     const q=W2V(b.x,b.y);
+    if(b.glow||b.star||b.met||b.rocket)glow(q[0],q[1],b.r+5,b.prism?prismCol(b.prism+G.time*15):b.col,0.35);
     if(b.met){
       // a hurled stone: dark rock core in a bleed of fire. Deliberately NOT
       // the ground-ring + falling-cinder language — that telegraph now
@@ -10997,14 +11713,12 @@ function render(){
       ctx.fillStyle='#fff2c0';
       ctx.fillRect(Math.round(q[0]),Math.round(q[1]),1,1);
     }else if(b.star){
-      // a seeking star, not a pellet: prismatic arms that breathe, a faint
-      // halo ring, diagonals a frame apart so the whole volley shimmers.
+      // a seeking star, not a pellet: prismatic arms that breathe (the halo is
+      // the light layer's now), diagonals a frame apart so the volley shimmers.
       // Kept TIGHT on purpose — at r*2+2 arms and a 3x3 core these read as
       // fireballs rather than starlight, and a full volley swallowed the
       // screen. The arms are the silhouette; the glow is the wake behind them.
       const r=b.r,arm=r+1,col=prismCol((b.prism||1)+G.time*15);
-      ctx.strokeStyle='rgba('+hexRgb(col)+',0.22)';
-      ctx.beginPath();ctx.arc(q[0],q[1],r+1,0,TAU);ctx.stroke();
       ctx.fillStyle=col;
       ctx.fillRect(q[0]-arm,q[1],arm*2+1,1);
       ctx.fillRect(q[0],q[1]-arm,1,arm*2+1);
@@ -11035,9 +11749,10 @@ function render(){
     ctx.beginPath();ctx.arc(q[0],q[1],b.r,0,TAU);ctx.fill();
   }
   for(const f of G.fx)if(!f.ground)drawFx(f,W2V,ctx);
-  for(const pt of G.particles){
-    const q=W2V(pt.x,pt.y);
+  for(let pi=0;pi<G.particles.length;pi++){
+    const pt=G.particles[pi],q=W2V(pt.x,pt.y);
     ctx.fillStyle=pt.prism?prismCol(pt.prism+G.time*13):pt.col;
+    if((pt.star||pt.spark)&&(G.particles.length<500||(pi&1)===0))glow(q[0],q[1],4,ctx.fillStyle,0.25);
     if(pt.star){
       // a real twinkle: the arms breathe with the mote's life, and the eight-
       // point stars add diagonals a frame apart so the whole field shimmers
@@ -11070,8 +11785,7 @@ function render(){
   if(G.slotChest){
     const s=G.slotChest,q=W2V(s.x,s.y);
     const bob=Math.round(Math.sin(s.t*4)*1.5),pl=0.6+0.4*Math.sin(s.t*6);
-    ctx.fillStyle='rgba(255,210,62,'+(0.25*pl).toFixed(3)+')';
-    ctx.beginPath();ctx.arc(q[0],q[1]-2+bob,10+2*pl,0,TAU);ctx.fill();
+    glow(q[0],q[1]-2+bob,12,'#ffd23e',0.25*pl);
     drawSpriteC(ctx,crateSprite,q[0],q[1]+bob);
     ctx.fillStyle='#ffd23e';
     ctx.fillRect(q[0]-1,q[1]-12+bob,3,3);ctx.fillRect(q[0]+1,q[1]-9+bob,1,2);ctx.fillRect(q[0],q[1]-6+bob,1,1);
@@ -11084,6 +11798,9 @@ function render(){
       ctx.restore();
     }
   }
+  // light layer: every glow of this frame in one composite (under the fade,
+  // so the cave blackout wins; before blit, so the HUD is untouched)
+  if(LIGHT_ON){ctx.globalCompositeOperation=LIGHT_OP;ctx.imageSmoothingEnabled=true;ctx.globalAlpha=LIGHT_GAIN;ctx.drawImage(lightC,0,0,vw,vh);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.imageSmoothingEnabled=false;}
   // the cave walk's blackout sits over the world, under the HUD
   if(G.fade>0){ctx.fillStyle='rgba(0,0,0,'+Math.min(1,G.fade).toFixed(3)+')';ctx.fillRect(0,0,vw,vh);}
   blit(sx,sy,w,h);
@@ -11128,10 +11845,11 @@ function render(){
 }
 // crop the exact (fractional) camera window out of the stepped buffer and
 // stretch it to the screen — this is what makes the zoom continuous
+const BLIT_SMOOTH_BELOW=1.0; // screen px per buffer px under which nearest would drop columns
 function blit(sx,sy,sw,sh){
   sctx.setTransform(1,0,0,1,0,0);
-  sctx.imageSmoothingEnabled=false;
-  sctx.drawImage(view,sx,sy,sw,sh,0,0,screenC.width,screenC.height);
+  sctx.imageSmoothingEnabled=!/[?&]crisp/.test(location.search)&&(screenC.width/sw)/DEN<BLIT_SMOOTH_BELOW;
+  sctx.drawImage(view,sx*DEN,sy*DEN,sw*DEN,sh*DEN,0,0,screenC.width,screenC.height);
 }
 // Scale the screen context so view-space coordinates land in the same place
 // the blitted world does; anything vector (text, bars, boxes) then rasterizes
@@ -11248,13 +11966,14 @@ function renderHUD(vw,vh){
     text(ctx,label,vw/2-48*k,5*k,F(9),isBossWave(G.wave)?'#e33':'#ffe94a');
     text(ctx,fmtTime(G.time),vw/2+48*k,5*k,F(9),'#fff','right');
     if(G.waveState==='fight'){
-      const left=((G.waveQuota-G.waveSpawned)+G.enemies.length)+' LEFT';
+      const left=Math.max(0,Math.ceil(waveDef(G.wave).dur-G.waveT))+'s';
       if(G.objective){
         // the wave's standing lesson, in its colour, for the whole fight
         text(ctx,G.objective,vw/2,17*k,F(7),G.objectiveCol||'#57e86b','center');
         text(ctx,left,vw/2+48*k,17*k,F(6),'#b3a184','right');
       }else text(ctx,left,vw/2,17*k,F(6),'#b3a184','center');
     }
+    else if(G.waveState==='clear')text(ctx,'SPAWNS STOPPED — '+softLiveCount()+' REMAIN',vw/2,17*k,F(7),'#57e86b','center');
     else if(G.waveState==='descent')text(ctx,G.descent&&G.descent.dir==='up'?'ASCENDING...':'DESCENDING...',vw/2,17*k,F(7),'#ff7a1f','center');
     else if(G.waveState==='inter'){
       // announce the coming wave's pattern: the break is the anticipation beat
@@ -11287,7 +12006,7 @@ function renderHUD(vw,vh){
     ctx.globalAlpha=1;
     // the break dealt its share and there is still xp banked: say so, or the
     // badge reads as a draft the game forgot to give
-    if(G.mode==='classic'&&(G.waveState==='inter'||G.waveState==='descent')&&(G.breakDrafts||0)>=breakDraftCap())
+    if(G.mode==='classic'&&(G.waveState==='clear'||G.waveState==='inter'||G.waveState==='descent')&&(G.breakDrafts||0)>=breakDraftCap())
       text(ctx,'MORE NEXT BREAK',bx,byy+F(fs)+k,F(5),'#b3a184','right');
     if(fl>0){ // sparkle burst radiating from the badge
       const r=(0.8-fl)*22*k+4;
@@ -11311,7 +12030,7 @@ function renderHUD(vw,vh){
       if(boss)text(ctx,bossRoster()[waveDef(G.wave).boss].name+' AWAKENS',vw/2,y+20*k,F(10),'#e33','center');
       else {const wk=waveDef(G.wave).pattern||waveDef(G.wave).event;if(wk)text(ctx,PATTERN_NAMES[wk],vw/2,y+20*k,F(10),'#39d5ff','center');}
     }else{
-      text(ctx,(G.mode==='rush'?'BOSS '+G.wave+' DOWN':'WAVE '+G.wave+' CLEAR'),vw/2,y,F(18),'#ffd23e','center');
+      text(ctx,(G.mode==='rush'?'BOSS '+G.wave+' DOWN':'WAVE '+G.wave+' SURVIVED'),vw/2,y,F(18),'#ffd23e','center');
     }
   }
 
@@ -11326,7 +12045,7 @@ function renderHUD(vw,vh){
       ctx.fillStyle=i<b.phase?(b.barCol||'#e33'):'#3a2028';
       ctx.fillRect(x0+bbw+6*k+i*6*k,vh-16*k,4*k,5*k);
     }
-    if(b.castName){
+    if(b.castName&&!(b.def&&b.def.silent)){ // a silent boss tells its casts with its body (see slagPose)
       const cw=90*k,cx=vw/2-cw/2;
       ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(cx-1,vh-44*k,cw+2,9*k);
       ctx.fillStyle='#2a1d3a';ctx.fillRect(cx,vh-43*k,cw,7*k);
@@ -11520,7 +12239,7 @@ function runGrade(){
 // banked and what they add up to per player, so the post-game math is visible.
 const BUFF_SUMMARY=[
   ['speed','+SPEED',n=>{const v=Math.round(n*9);return v>=90?'+90% MAX':'+'+v+'%';},'#ffe94a'],
-  ['regen','+REGEN',n=>'+'+(n*0.6).toFixed(1)+'/s','#57e86b'],
+  ['regen','+REGEN',n=>'+'+(n*0.2).toFixed(1)+'/s','#57e86b'],
   ['maxhp','+MAX HP',n=>'+'+(n*20),'#ff4d6d'],
   ['damage','+DAMAGE',n=>'+'+Math.round(n*10)+'%','#ff8b3d'],
   ['magnet','+MAGNET',n=>'+'+(n*16),'#b06bff']
@@ -11661,10 +12380,10 @@ function renderTitle(vw,vh,dim){
   ctx.fillRect(0,0,vw,vh);
   const t=performance.now()/1000;
   const ty=dim?vh*0.03:vh*0.10;
-  text(ctx,'PIXEL HORDE',vw/2+2,ty+2,F(dim?24:34),'#1a1e26','center');
-  text(ctx,'PIXEL HORDE',vw/2,ty,F(dim?24:34),'#ffe94a','center');
+  text(ctx,'EVENT PLAYGROUND',vw/2+2,ty+2,F(dim?22:30),'#1a1e26','center');
+  text(ctx,'EVENT PLAYGROUND',vw/2,ty,F(dim?22:30),'#ffe94a','center');
   if(dim)return;
-  text(ctx,'a co-op fantasy crusade for 1-4 gamepads (or keyboard)',vw/2,vh*0.10+40*k,F(9),'#b3a184','center');
+  text(ctx,'survivor waves · Slagmaw rehearsals · raid finale',vw/2,vh*0.10+40*k,F(9),'#b3a184','center');
   for(let i=0;i<4;i++){
     const x=vw/2-60*k+i*40*k,y=vh*0.42+Math.sin(t*2+i)*3;
     drawSpriteC(ctx,playerSprites[i],x,y,2*k);
@@ -11688,10 +12407,10 @@ function renderModeSelect(vw,vh){
   const ctx=sctx; // UI draws on the native-res screen canvas (see uiBegin)
   const k=vw/680,F=s=>Math.max(5,Math.round(s*k));
   ctx.fillStyle='rgba(12,7,18,0.72)';ctx.fillRect(0,0,vw,vh);
-  text(ctx,'CHOOSE YOUR QUEST',vw/2,vh*0.16,F(16),'#ffe94a','center');
+  text(ctx,'CHOOSE YOUR TEST',vw/2,vh*0.16,F(16),'#ffe94a','center');
   const defs=[
-    {icon:classicIcon,name:'CLASSIC',sub:'20 WAVES / 3 BOSSES',col:'#ffd23e',
-     lines:['a finite raid','bosses at 10 / 15 / 20','breathers between waves','clear wave 20 to WIN']},
+    {icon:classicIcon,name:'PLAYGROUND',sub:'10 WAVES / SLAGMAW',col:'#ffd23e',
+     lines:['survivor-style timed waves','two Slagmaw rehearsals','tuned for 1-4 players','clear wave 10 to WIN']},
     {icon:endlessIcon,name:'ENDLESS',sub:'SURVIVE FOREVER',col:'#39d5ff',
      lines:['the original horde','ramps with the clock','bosses every ~3 min','no win, only time']},
     {icon:rushIcon,name:'BOSS RUSH',sub:'24 BOSSES, BACK TO BACK',col:'#ff4d6d',
@@ -11735,7 +12454,17 @@ function setSlow(t){slowT=Math.max(slowT,t);}
 // dev frame-pacing overlay, open the game with ?perf — real jank (GC pauses,
 // raster, vsync misses) only exists in-browser; headless probes can't see it
 const PERF_HUD=/[?&]perf/.test(location.search);
-const perfS={hist:new Float32Array(120),i:0,longs:[]};
+const perfS={hist:new Float32Array(120),i:0,longs:[],calls:{}};
+// ?perf only: count Canvas2D calls per frame on a context (reset at the top of render());
+// nothing is wrapped without ?perf, so the plain build pays nothing
+function perfWrap(g){
+  for(const m of ['fillRect','drawImage','stroke','fill','arc','clip','clearRect']){
+    const f=g[m];if(typeof f!=='function')continue;
+    g[m]=function(){perfS.calls[m]=(perfS.calls[m]||0)+1;return f.apply(this,arguments);};
+  }
+}
+if(PERF_HUD)perfWrap(ctx);
+if(PERF_HUD)perfWrap(lctx);
 function drawPerfHud(raw,up,rd){
   const s=perfS;
   s.hist[s.i%120]=raw;s.i++;
@@ -11747,7 +12476,7 @@ function drawPerfHud(raw,up,rd){
   for(let i=0;i<n;i++){sum+=s.hist[i];if(s.hist[i]>worst)worst=s.hist[i];}
   const g=screenC.getContext('2d');
   g.save();g.setTransform(1,0,0,1,0,0);
-  g.fillStyle='rgba(0,0,0,0.55)';g.fillRect(4,4,196,66);
+  g.fillStyle='rgba(0,0,0,0.55)';g.fillRect(4,4,196,90);
   g.font='10px monospace';
   g.fillStyle='#8f8';
   g.fillText((1000/(sum/n)).toFixed(0)+' fps   avg '+(sum/n).toFixed(1)+'ms',10,16);
@@ -11756,12 +12485,17 @@ function drawPerfHud(raw,up,rd){
   g.fillStyle='#8cf';
   g.fillText('sim '+up.toFixed(1)+'ms  draw '+rd.toFixed(1)+'ms',10,40);
   g.fillText('e:'+G.enemies.length+' b:'+G.bullets.length+' pt:'+G.particles.length+' fx:'+G.fx.length,10,52);
+  // Canvas2D calls this frame (ctx, plus lctx once the light layer exists) and light stamps
+  const cc=s.calls,cn=m=>cc[m]||0;let ct=0;for(const m in cc)ct+=cc[m];
+  g.fillStyle='#fc8';
+  g.fillText('calls '+ct+'  dI '+cn('drawImage')+'  st '+cn('stroke'),10,64);
+  g.fillText('arc '+cn('arc')+'  clip '+cn('clip')+'  light '+(typeof lightN==='number'?lightN:0),10,76);
   // 2-second sparkline, 1px per frame, 20ms = full bar
   g.fillStyle='#6d6';
   for(let i=0;i<n;i++){
     const v=s.hist[(s.i-n+i+120)%120],h=Math.min(12,v*0.6);
     if(v>20)g.fillStyle='#f66';
-    g.fillRect(10+i,64-h,1,h);
+    g.fillRect(10+i,88-h,1,h);
     if(v>20)g.fillStyle='#6d6';
   }
   g.restore();

@@ -5,7 +5,7 @@ Single self-contained HTML file — no build, no assets, no dependencies.
 
 **Play:** https://dsusviela.github.io/pixel-horde/ — or open `index.html` locally in Chrome/Edge.
 
-- **CLASSIC** — 20 waves, 4 phased raid bosses. Clear wave 20 to win.
+- **CLASSIC** — 20 waves, 3 phased raid bosses. Clear wave 20 to win.
 - **ENDLESS** — survive as the clock ramps the horde.
 - **BOSS RUSH** — 24 raid bosses back to back, no trash. The four tier
   capstones (Slagmaw, Geminox, Pyraxis, the Worldeater) drop their signature
@@ -21,6 +21,8 @@ supported.
 ## Repo layout
 
 - `index.html` — the whole game.
+- `playground.html` — isolated 10-wave event lab with timed soft transitions,
+  survivor carryover, six movement-only opportunities, and a Slagmaw finale.
 - `net.js` — online multiplayer client layer (inert unless activated by URL).
 - `server/` — Cloudflare Worker relay for online multiplayer.
 - `tools/` — local dev relay + headless protocol/net/game tests.
@@ -75,22 +77,17 @@ assembled out of the shared mechanic helpers in `index.html` (`pushSweep`,
 `pushLine`, `pushCone`, `pushWander`, `pushEdge`, `pushPole`, `prisonPlayer`,
 `shieldBoss`). All text is English/Spanish.
 
-CLASSIC's first ten waves are THE RAID — a WoW dungeon's grammar over the
-survivor loop. WAVE 1 CLEAR is the PATH pick (the one permanent choice of
-the run: destruction / illusion / necromancy, a free draft for every party
-size). Waves 2-4 are the surface block: pure mowing plus marked stat elites,
-no curriculum. Wave 5 is the mini-boss check SLAUGHTERHULK (beam-pinned
-Hateful Strike, the cleaver line, a soft enrage), and the break after it
-walks the party down into the volcano (`G.biome` flips). Waves 6-9 rehearse
-Slagmaw one primitive at a time, in its colours (`VOLC`), taught by
-repetition and a standing objective line in the HUD rather than mid-fight
-text: red fire-slug trails, bursters whose gold swell THROWS you (their
-knockback is an attack with a wind-up, not a death rattle), THE OFFERING
-(slugs crawl to a killable forge and HEAL it — intercept, then break it,
-while smashers plant their orange slam discs), and THE SLAG AUGUR — a caster
-mini-boss running the boss's own P2 rites (cinder ring / ember brand /
-inward ring). Counts in waves 1-10 are authored, not dps-scaled, and sized
-so a decent party clears late in the timer. Wave 10 is SLAGMAW: three
+CLASSIC's first ten waves are one Slagmaw raid built on the survivor loop.
+WAVE 1 CLEAR grants the PATH pick (destruction / illusion / necromancy) and
+immediately walks the party down into the volcano. Waves 2-9 are an escalating
+run of Survivors-style opportunities: THE RED HARVEST, THE GOLD RUSH, THE
+SMASHERS, THE BAND, THE OFFERING, THE CINDER VENTS, THE SLAGSTORM, and THE
+SLAG AUGUR. They progress from one volcanic threat at a time to combinations,
+while changing which targets and routes pay the most XP. Movement is also
+target selection: getting close focuses auto-fire, so choosing a farm route is
+the combat input. Slaughterhulk remains in BOSS RUSH instead of interrupting
+this arc. Counts in waves 1-10 are authored, not dps-scaled, and sized so an
+active party clears late while an idle one is buried. Wave 10 is SLAGMAW: three
 phases, the cracked cauldron, and the kill walks everyone back up. Waves
 11-19 keep the full terrain-wave roster (band, stonefall, wards, dance,
 swarm, creep, collapse) ahead of PYRAXIS at 15 and the WORLDEATER at 20;
@@ -101,6 +98,6 @@ Tests: `node tools/test-protocol.mjs` (relay protocol), `node tools/test-net.mjs
 [seed]` (a full headless BOSS RUSH clear), `node tools/test-modes.mjs`
 (CLASSIC/ENDLESS smoke + every screen in both languages), `node
 tools/test-terrain.mjs` (every wave pattern, 1 and 3 players) and `node
-tools/test-slagmaw.mjs` (the whole Slagmaw arc, descent to ascent). The game itself runs
+tools/test-slagmaw.mjs` (the whole Slagmaw arc at 1/2/3/4 players, descent to ascent). The game itself runs
 headless via `tools/headless.mjs`, which boots `index.html` in a vm with stub
 canvas/audio and a seeded RNG.

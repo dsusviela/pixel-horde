@@ -1,7 +1,7 @@
 // On-camera object counts per wave (median / p90): enemies, bullets, particles,
-// gems, damage numbers, ground fx — the legibility budget, 1p vs 4p.
+// gems, damage numbers, ground fx — the legibility budget at any party size.
 //   node tools/probe-density.mjs [seed] [players] [dmgMul]
-// On-screen object counts per wave, 1p vs 4p, immortal kiting bots
+// On-screen object counts through the full Slagmaw arc, immortal kiting bots
 import {boot} from './headless.mjs';
 const seed=+(process.argv[2]||7), NP=+(process.argv[3]||1), DMG=+(process.argv[4]||1);
 const g=boot(seed);
@@ -33,7 +33,7 @@ for(let f=0;f<60*700;f++){
       cw:Math.round(G.cam.w),ch:Math.round(G.cam.h)});
     dpsAtWave[w]=G.waveDPS;lvAtWave[w]=G.level;
   }
-  if(G.wave>=6)break;
+  if(G.wave>=11)break;
 }
 const q=(arr,k,p)=>{const v=arr.map(s=>s[k]).sort((a,b)=>a-b);return v[Math.min(v.length-1,Math.floor(v.length*p))]||0;};
 console.log(`NP=${NP} dmg x${DMG}  (median / p90 per wave; on-camera counts)`);

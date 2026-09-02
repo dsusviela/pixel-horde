@@ -102,14 +102,19 @@ for(const school of ['destro','illusion','necro']){
     e.stunT=1;g.ev('damageEnemy')(e,10,me);
     say(Math.abs((hp0-e.hp)-13)<0.01,'mirage: dazed foe took 13 from a 10 hit');
   }
-  // Plague: the infected burst and pass it on
+  // Plague: the infected burst passes on, but one lineage can hit each body
+  // only once (two infected deaths in the same knot must not deal N² damage).
   {
-    const a=mk(200,200),b=mk(210,200);
+    const a=mk(200,200),b=mk(210,200),c=mk(220,200);
+    b.hp=b.maxhp=1e6;c.hp=c.maxhp=1e6;
     g.ev('rebuildGrid')();
-    a.plagued={dmg:20,r:50,owner:me};
-    const hpb=b.hp;
+    const lineage={dmg:20,r:50,owner:me,id:77,depth:0};
+    a.plagued={...lineage};b.plagued={...lineage};
     g.ev('damageEnemy')(a,9999,me);
-    say(b.hp<hpb&&(b.dead||b.plagued),'plague: death burst hit and infected the neighbor');
+    const hpAfterFirst=c.hp;
+    g.ev('damageEnemy')(b,9999999,me);
+    say(hpAfterFirst===1e6-20&&c.hp===hpAfterFirst&&c.plagued,
+      'plague: death chain spread, but its lineage hit the neighbor only once');
   }
   // Cinder Rush: a kill zeroes the longest-waiting spell
   {

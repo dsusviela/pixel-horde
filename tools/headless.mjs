@@ -32,8 +32,9 @@ function stubCanvas(){
 // swaps in a seeded generator and reruns are reproducible
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 
-export function boot(seed){
-  const html=fs.readFileSync(ROOT+'/index.html','utf8');
+export function boot(seed,file='index.html'){
+  if(path.basename(file)!==file)throw new Error('headless boot file must be a workspace-root basename');
+  const html=fs.readFileSync(ROOT+'/'+file,'utf8');
   const src=html.match(/<script>([\s\S]*?)<\/script>/)[1];
   const pads=[];
   const rng=mulberry32(seed===undefined?1:seed);
@@ -52,7 +53,7 @@ export function boot(seed){
       createBufferSource:()=>({connect:()=>{},start:()=>{},stop:()=>{},buffer:null}),
       createBiquadFilter:()=>({connect:()=>{},frequency:{setValueAtTime:()=>{}},type:'',Q:{value:0}}),
       resume:()=>Promise.resolve()};},
-    location:{search:'',protocol:'file:',href:'file:///index.html'},
+    location:{search:'',protocol:'file:',href:'file:///'+file},
   };
   sandbox.addEventListener=()=>{};
   sandbox.removeEventListener=()=>{};
@@ -65,7 +66,7 @@ export function boot(seed){
     addEventListener:()=>{},body:{appendChild:()=>{},style:{}},documentElement:{style:{}}
   };
   const ctx=vm.createContext(sandbox);
-  vm.runInContext(src,ctx,{filename:'index.html'});
+  vm.runInContext(src,ctx,{filename:file});
   const ev=expr=>vm.runInContext(expr,ctx);
   return {
     ctx,ev,pads,

@@ -127,6 +127,7 @@ function encEnemy(e){
   if(e.scale&&e.scale!==1)o.scale=e.scale;
   if(e.elite)o.elite=1;
   if(e.hunted)o.hunted=1;
+  if(e.eventBounty)o.eventBounty=1;
   if(e.fuse!==undefined&&e.fuse>=0)o.fuse=r2(e.fuse);
   var sk=SPRREV.get(e.spr);
   if(sk)o.spr=sk;
@@ -322,7 +323,7 @@ function applySnapshot(snap){
     if(!e){e={nid:se.nid};gEnemies.set(se.nid,e);}
     lerpTrack(e,se.x,se.y);
     e.type=se.type;e.r=se.r;e.hp=se.hp;e.maxhp=se.maxhp;e.flash=se.flash||0;
-    e.scale=se.scale||1;e.elite=!!se.elite;e.hunted=!!se.hunted;
+    e.scale=se.scale||1;e.elite=!!se.elite;e.hunted=!!se.hunted;e.eventBounty=!!se.eventBounty;
     e.fuse=(se.fuse!==undefined)?se.fuse:-1;e.dead=false;
     e.spr=(se.spr&&SPR[se.spr])
       ||(typeof ETYPES!=='undefined'&&ETYPES[se.type]&&ETYPES[se.type].spr)

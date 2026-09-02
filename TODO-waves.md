@@ -1,5 +1,49 @@
 # Wave variety — requirements & status
 
+## Done (v5 — one Slagmaw raid, 2026-08-31)
+- [x] Removed SLAUGHTERHULK from CLASSIC wave 5 and kept the encounter intact in
+      BOSS RUSH. CLASSIC now has three bosses at waves 10/15/20.
+- [x] Rebuilt waves 1-10 as one continuous arc: surface onboarding at 1; descent;
+      RED HARVEST at 2; GOLD RUSH at 3; SMASHERS at 4; BAND farm at 5; OFFERING
+      at 6; CINDER VENTS at 7; combined SLAGSTORM at 8; SLAG AUGUR at 9; SLAGMAW
+      at 10. The early events isolate threats and the last two combine them.
+- [x] Raised survival pressure through denser authored quotas, earlier fire trails,
+      ranged enemies from wave 3 onward, the wave-5 lane torrent, live vents, and
+      the mixed wave-8 eruption. XP remains on the authored nine-level schedule.
+- [x] Bounded Necromancer PLAGUE: impact now infects/damages one target instead of
+      dealing a full AoE; each death-chain lineage can damage a body only once,
+      travels two generations, and loses 32% damage / 14% radius per generation.
+      The chain-reaction identity remains without N² dense-pack deletion.
+- [x] Repriced Slagmaw after the new arrival curve: the prior pool produced
+      24s/32s/66s kills at 1p/2p/4p. `hpClassic=100000` plus a flatter
+      1/1.4/1.8/2.2 party multiplier now measures 133s/125s/126s in the same
+      seeded acceptance run, inside the 96–144s target band at every table.
+- [ ] Human playtest: tune active-player clear timing and real wipe rate. Headless
+      pilots verify systems and relative pressure, but cannot decide whether the
+      new curve is tense, exhausting, or fun.
+
+## Done (v4 — opportunities, not objectives, 2026-08-31)
+- [x] Restated the core: this is a Survivors game first. Movement is the only
+      combat input, and therefore does four jobs at once — dodge, proximity aim,
+      farm routing, and pickup. WoW-like bosses are eventful punctuation.
+- [x] Volcano waves 6-9 are farm events that stand on their own: THE RED HARVEST
+      makes fire-slug kills visibly spill XP; THE GOLD RUSH pays bursters only
+      when focused before their self-pop; THE OFFERING puts the base payout on
+      interceptable runners and the bonus in a forge jackpot; THE SLAG AUGUR is
+      a timed bounty. Their Slagmaw foreshadowing is secondary.
+- [x] Forge and Augur now use Slagmaw's exact 0.36 squared-distance auto-aim bias,
+      so moving close enough to peel weapons onto offerings transfers from event
+      to boss. The forge starts wounded so its first feeds visibly refill the bar.
+- [x] 2p/4p event pass: Offering generic drip 0.60 → 0.50, runner scaling
+      1/1.35/1.70/2.05 → 1/1.25/1.50/1.75, and runner base rate 1.2 → 0.8.
+      The authored XP pool is divided over fewer, richer runners. This targets
+      the 4p legibility spike (58 on-camera enemies and 322 loose gems at p90)
+      without shrinking the harvest or changing the forge/Augur lifetime curves.
+- [x] Loose-gem visual budget now scales 350/310/270/230 for 1/2/3/4 players;
+      overflow XP merges into existing gems instead of disappearing. Forge feeds
+      emit 4 particles instead of 8 because the moving health bar and `FED!`
+      already carry the consequence at a crowded table.
+
 ## Done (v3 — THE RAID, 2026-08-31)
 - [x] Waves 1-10 restructured as a WoW dungeon: surface trash + stat elites (1-4),
       mini-boss check SLAUGHTERHULK at 5 (now in CLASSIC_BOSSES; GEMINOX is rush-only,
@@ -43,9 +87,10 @@
 - [ ] Surface elites are plain stat champions; consider a named surface elite pack
 
 
-Design rule (the fix for v1): a wave's intended play must be the ONLY
-HP-safe play AND the fastest XP. Never a suggestion the farm can overrule.
-Every trash pattern rehearses a boss floor with the boss's own primitives.
+Design rule: special waves are opportunities, not chores. The interesting
+movement route should preserve HP AND expose the richest harvest, but an event
+must be fun even if its later boss did not exist. Reused boss primitives make
+recognition satisfying; they are not a mandatory curriculum.
 
 Tests: `cd tools && node test-terrain.mjs` (every pattern, 1 and 3 players,
 fired / cleared / rendered / floor cleaned), plus `test-modes`, `test-schools`,
@@ -119,9 +164,31 @@ fired / cleared / rendered / floor cleaned), plus `test-modes`, `test-schools`,
 - [ ] Slagmaw arc v2 playtest: does the standing objective line get read; do players
       step out of the smasher disc by the end of wave 2; do they intercept slugs once the
       forge bar visibly refills; 4p readability of the vent's white disc
+- [ ] EXPERIMENT (playground.html only, 2026-09-01): Slagmaw with a HAMMER — no cast bar,
+      no phase flash, no subFlash/flash/addText for the boss (`silent:1` on the def gates the
+      HUD widget and the phase flash). Every cast is one gesture, a pure function of castP
+      (`slagPose`): slam = hammer over the head, held white-hot, then down; cinder ring =
+      held flat then one sweep of the rim; inward ring = pulled to the chest, the maw
+      inhales; vent = two pounds at its feet; brand = hammer set down, eyes and core flare
+      red, embers spat at the marked. Feed = chomp frame, fuse = clench + the body reddens
+      with fury. Ground tells kept. Body redrawn 26x22 with arms. Playtest question: without
+      the bar, do players leave the disc before the hammer falls, tell out from in by the
+      gesture alone, and see the brand land on them? If yes, port to index.html.
+      Art pass (2026-09-02): body redrawn 36x29 with top-left shading, chimney bands, molten
+      seam and feet; the right arm is its own rotated sprite from the shoulder, the hammer
+      (rune band, white-hot core, wrapped haft) pivots at the fist; squash/stretch and lean on
+      the body, swing ghost trails, ground shadows under body and head, chimney embers, a
+      crack decal where blows land. Preview renderer lives in the session scratchpad only.
 - [ ] Slagmaw hpClassic (9500) re-check with `balance-model solve` once real parties'
       arrival level settles — the probe bot is a weak interceptor in P2
 - [ ] Slagmaw P2: EMBER BRAND and the inward ring are unrehearsed — if P2 keeps wiping
       couch parties the fix is in the boss (rehearse or drop brand), not the waves
 - [ ] Boss-fight visual diet (not done, owner call 2026-08-31): damage numbers, gem
       sprites and bullet trails still sit on top of the ground telegraphs in 4p
+- [ ] Party-scaling audit (2026-08-28): behemoth hp, the slug flood, dance lane count (by field
+      width), Geminox/Worldeater spitters, Worldeater meteors+bombers, Pyraxis smash marks and
+      the endless SURGE now carry a party term (they were solo-sized at every table). Still flat vs party size, by choice —
+      revisit after a 4p playtest: smasher cast cap (3 screen-wide), pressure ring cadence
+      (1 cinder + 1 inward per 4s whatever the party), Ember Brand marks 2 of 4, P1 pups
+      2/2/3/3. Wave 2 (lava mix) runs ~20s longer for any party than solo in the bot
+      (kill throughput, not the drip) — check whether real parties feel it.

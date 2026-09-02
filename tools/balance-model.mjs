@@ -17,7 +17,7 @@
 // TARGETS — the only judgment numbers in the model. Argue with these, not
 // with the derived constants.
 export const TARGETS={
-  classicTTK:[70,120,135,150],        // boss fight seconds (v3): Slaughterhulk check, Slagmaw..Worldeater
+  classicTTK:[120,135,150],           // boss fight seconds (v5): Slagmaw, Pyraxis, Worldeater
   ttkBand:0.20,                       // report acceptance: ±20%
   // mob pressure P = incoming mob dmg per minute / party total max hp
   // ("party health bars per minute if nobody healed") — diagnostic only:
@@ -32,6 +32,7 @@ export const TARGETS={
 };
 
 import fs from 'node:fs';
+import {fileURLToPath} from 'node:url';
 import {boot} from './headless.mjs';
 
 const DT=1/60;
@@ -48,8 +49,8 @@ function args(){
   o.players=o.players||[1,2,3,4];
   o.seeds=o.seeds||[1,3,7];
   o.mode=o.mode||'classic';
-  o.json=o.json||new URL(o.mode==='endless'?'./.balance-endless.json':'./.balance-run.json',
-    import.meta.url).pathname;
+  o.json=o.json||fileURLToPath(new URL(o.mode==='endless'?'./.balance-endless.json':'./.balance-run.json',
+    import.meta.url));
   return o;
 }
 const pad=(v,n)=>String(v).padStart(n);
@@ -434,7 +435,7 @@ function solve(o){
   let best=null;
   for(let slope=0;slope<=0.12+1e-9;slope+=0.01){
     const dhp=[],res=[];
-    for(let b=0;b<4;b++){
+    for(let b=0;b<TARGETS.classicTTK.length;b++){
       const xs=rows.filter(x=>x.boss===b);
       if(!xs.length){dhp.push(null);continue;}
       const est=xs.map(x=>x.dps*TARGETS.classicTTK[b]/(partyMul(x.n)*(1+slope*OL(x))));
@@ -446,7 +447,7 @@ function solve(o){
   }
   console.log('\n== recommended constants ==');
   console.log('CLASSIC_TTK targets:',TARGETS.classicTTK.join('/'));
-  console.log('d.hp (Slagmaw/Geminox/Pyraxis/Worldeater):',
+  console.log('d.hp (Slagmaw/Pyraxis/Worldeater):',
     best.dhp.map(x=>x?Math.round(x/100)*100:'?').join(' / '));
   console.log('over-level slope:',best.slope,' (formula 1+slope*max(0,level-(2+wave)); current 0.06)');
   // residuals by n at the chosen slope — does (4n-1)/3 still fit?
@@ -460,7 +461,7 @@ function solve(o){
   // CLASSIC_GROWTH: dps ratio between consecutive bosses, per gap — the
   // boss1→2 jump (five farm waves + the boss-kill level burst + the ult
   // unlock) is far larger than boss3→4 and one scalar would misprice both
-  for(let gap=1;gap<4;gap++){
+  for(let gap=1;gap<TARGETS.classicTTK.length;gap++){
     const ratios=[];
     for(const r of runs)if(r.bosses.length>gap)
       ratios.push(r.bosses[gap].dps/r.bosses[gap-1].dps);
@@ -475,7 +476,7 @@ function solve(o){
   for(const r of runs)for(const w of r.waves){
     // boss contact and boss bullets land through hurtPlayer too — a boss
     // wave's "mob" channel is really the boss and must not steer the mob fit
-    if(w.w%5===0)continue;
+    if([10,15,20].includes(w.w))continue;
     if(!byWave.has(w.w))byWave.set(w.w,[]);
     byWave.get(w.w).push(w);
   }
@@ -549,7 +550,7 @@ function report(o){
   console.log('\nn  boss  wave  TTK(s)  target  band        verdict');
   let fail=0;
   for(const r of data.runs)r.bosses.forEach((f,bi)=>{
-    const tgt=TARGETS.classicTTK[Math.min(bi,3)];
+    const tgt=TARGETS.classicTTK[Math.min(bi,TARGETS.classicTTK.length-1)];
     const lo=tgt*(1-TARGETS.ttkBand),hi=tgt*(1+TARGETS.ttkBand);
     const ok=f.ttk>=lo&&f.ttk<=hi;
     if(!ok)fail++;

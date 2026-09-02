@@ -1,0 +1,75 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>pixel-horde fill-rate bench</title>
+<style>body{background:#111;color:#ddd;font:13px monospace;margin:12px}pre{white-space:pre-wrap}button{font:inherit;margin:4px}</style>
+<p>Open this on the target laptop. Each config draws the measured worst-case call mix of playground.html
+(300 enemies / 4 players / ~450 lava tiles: from scratchpad/perf/stress.mjs) into an offscreen buffer, then
+nearest-blits it to a 1920x1080 screen canvas. Reports ms per frame (median of 90 frames).</p>
+<button onclick="run()">run</button>
+<pre id="out"></pre>
+<canvas id="screen" width="1920" height="1080" style="width:480px;height:270px;image-rendering:pixelated"></canvas>
+<script>
+const out=document.getElementById('out');
+const screen=document.getElementById('screen'),sctx=screen.getContext('2d');
+function mkSprite(w,h,col){const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.fillStyle=col;for(let y=0;y<h;y++)for(let x=0;x<w;x++)if((x*7+y*13)%5)g.fillRect(x,y,1,1);return c;}
+function mkGlow(r){const c=document.createElement('canvas');c.width=c.height=r*2;const g=c.getContext('2d');for(let i=r;i>0;i--){g.fillStyle='rgba(255,140,40,'+(0.10*(1-i/r)+0.02).toFixed(3)+')';g.beginPath();g.arc(r,r,i,0,Math.PI*2);g.fill();}return c;}
+function mkChunk(px){const c=document.createElement('canvas');c.width=c.height=px;const g=c.getContext('2d');for(let y=0;y<px;y+=8)for(let x=0;x<px;x+=8){g.fillStyle=((x+y)/8)%3?'#232026':'#2a2529';g.fillRect(x,y,8,8);}return c;}
+const CFG=[
+ {name:'1x buffer (today)          ',D:1,light:false,stripes:true, wakes:'per-seg'},
+ {name:'2x buffer, same calls      ',D:2,light:false,stripes:true, wakes:'per-seg'},
+ {name:'2x + baked lava tiles      ',D:2,light:false,stripes:false,wakes:'per-seg'},
+ {name:'2x + baked lava + batched wakes',D:2,light:false,stripes:false,wakes:'batched'},
+ {name:'2x + baked + batched + light',D:2,light:true, stripes:false,wakes:'batched'},
+];
+function bench(cfg){
+  const VW=1168,VH=688,D=cfg.D; // max zoom camera window, snapped to 16
+  const view=document.createElement('canvas');view.width=VW*D;view.height=VH*D;const ctx=view.getContext('2d');
+  const light=document.createElement('canvas');light.width=VW>>1;light.height=VH>>1;const lctx=light.getContext('2d');
+  const chunk=mkChunk(256*D),spr=mkSprite(10*D,10*D,'#5cae3e'),lava=mkSprite(16*D,16*D,'#ff3c3c'),glow=mkGlow(12);
+  const rnd=(function(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};})(9);
+  const N_EN=300,N_LAVA=450,N_PT=1300,N_ARC=190,N_FX_STROKE=600,N_WAKE_BOLTS=100,N_LIGHT=600;
+  const pts=[];for(let i=0;i<4000;i++)pts.push(rnd()*VW,rnd()*VH);
+  const times=[];
+  function frame(t){
+    const t0=performance.now();
+    ctx.setTransform(D,0,0,D,0,0);ctx.imageSmoothingEnabled=false;
+    ctx.fillStyle='#141216';ctx.fillRect(0,0,VW,VH);
+    for(let cy=0;cy<3;cy++)for(let cx=0;cx<5;cx++)ctx.drawImage(chunk,cx*256-40,cy*256-40,256,256);
+    // lava tiles
+    for(let i=0;i<N_LAVA;i++){const x=(pts[i*2]|0)&~15,y=(pts[i*2+1]|0)&~15;ctx.drawImage(lava,x,y,16,16);
+      if(cfg.stripes){ctx.save();ctx.beginPath();ctx.rect(x,y,16,16);ctx.clip();ctx.strokeStyle='rgba(255,210,62,0.3)';ctx.lineWidth=1;for(let s=-16;s<32;s+=6){ctx.beginPath();ctx.moveTo(x+s,y);ctx.lineTo(x+s-16,y+16);ctx.stroke();}ctx.restore();}}
+    // ground fx: arcs fill + stroke
+    for(let i=0;i<N_ARC;i++){const x=pts[i*2+400],y=pts[i*2+401];ctx.fillStyle='rgba(255,90,61,0.2)';ctx.beginPath();ctx.arc(x,y,20+(i%30),0,6.283);ctx.fill();ctx.strokeStyle='rgba(255,182,46,0.5)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,20+(i%30),0,6.283);ctx.stroke();}
+    // enemies: sprite + occasional shadow/flash
+    for(let i=0;i<N_EN;i++){const x=pts[i*2+800]|0,y=pts[i*2+801]|0;ctx.drawImage(spr,x,y,10,10);if(i%7===0){ctx.globalAlpha=0.3;ctx.fillStyle='#000';ctx.beginPath();ctx.ellipse(x+5,y+10,5,2.5,0,0,6.283);ctx.fill();ctx.globalAlpha=1;}if(i%11===0){ctx.fillStyle='rgba(255,255,255,0.7)';ctx.fillRect(x,y,10,10);}}
+    // wakes
+    ctx.lineCap='round';
+    for(let b=0;b<N_WAKE_BOLTS;b++){const bx=pts[b*2+1400],by=pts[b*2+1401];
+      if(cfg.wakes==='per-seg'){for(let pass=0;pass<3;pass++){ctx.lineWidth=[2,1,1][pass];for(let i=1;i<11;i++){ctx.strokeStyle='rgba(200,160,255,'+(i/11*0.5).toFixed(2)+')';ctx.beginPath();ctx.moveTo(bx+i*3,by+Math.sin(i+t)*4);ctx.lineTo(bx+i*3+3,by+Math.sin(i+1+t)*4);ctx.stroke();}}}
+      else{for(let pass=0;pass<3;pass++){ctx.lineWidth=[2,1,1][pass];ctx.strokeStyle='rgba(200,160,255,'+[0.16,0.34,0.7][pass]+')';ctx.beginPath();ctx.moveTo(bx,by);for(let i=1;i<11;i++)ctx.lineTo(bx+i*3,by+Math.sin(i+t)*4);ctx.stroke();}}}
+    // misc fx strokes (rings, nerve filaments)
+    for(let i=0;i<N_FX_STROKE;i++){ctx.strokeStyle='rgba(159,232,74,0.4)';ctx.lineWidth=1+(i%3);ctx.beginPath();ctx.moveTo(pts[i*2+1600],pts[i*2+1601]);ctx.lineTo(pts[i*2+1602],pts[i*2+1603]);ctx.stroke();}
+    // particles
+    for(let i=0;i<N_PT;i++){ctx.fillStyle=i&1?'#ffd23e':'#ffffff';const x=pts[(i*2)%8000]|0,y=pts[(i*2+1)%8000]|0;ctx.fillRect(x,y,1+(i%2),1+(i%2));if(i%3===0){ctx.fillRect(x-2,y,5,1);ctx.fillRect(x,y-2,1,5);}}
+    if(cfg.light){
+      lctx.setTransform(1,0,0,1,0,0);lctx.clearRect(0,0,light.width,light.height);
+      for(let i=0;i<N_LIGHT;i++){lctx.globalAlpha=0.6;lctx.drawImage(glow,(pts[i*2]/2|0)-12,(pts[i*2+1]/2|0)-12);}
+      lctx.globalAlpha=1;
+      ctx.globalCompositeOperation='lighter';ctx.imageSmoothingEnabled=true;
+      ctx.drawImage(light,0,0,VW,VH);
+      ctx.globalCompositeOperation='source-over';ctx.imageSmoothingEnabled=false;
+    }
+    sctx.setTransform(1,0,0,1,0,0);sctx.imageSmoothingEnabled=false;
+    sctx.drawImage(view,4*D,4*D,(VW-8)*D,(VH-8)*D,0,0,1920,1080);
+    // force the GPU to finish this frame so the timing is honest
+    sctx.getImageData(0,0,1,1);
+    times.push(performance.now()-t0);
+  }
+  return new Promise(res=>{let n=0;(function loop(){frame(n*0.016);if(++n<90)requestAnimationFrame(loop);else{times.sort((a,b)=>a-b);res({med:times[45],p90:times[81],max:times[89]});}})();});
+}
+async function run(){
+  out.textContent='running...\n';
+  for(const cfg of CFG){const r=await bench(cfg);out.textContent+=cfg.name+'  med '+r.med.toFixed(1)+'ms  p90 '+r.p90.toFixed(1)+'ms  max '+r.max.toFixed(1)+'ms\n';}
+  out.textContent+='\nbudget: draw <= 8ms med, <= 12ms p90 on the target laptop (sim needs the rest of 16.7ms)';
+}
+</script>

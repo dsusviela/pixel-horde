@@ -52,8 +52,15 @@ const ctx=view.getContext('2d');
 // its den-1 predecessor did.
 const Q=typeof URLSearchParams==='function'?new URLSearchParams(location.search)
   :{get:k=>{const m=location.search.match(new RegExp('[?&]'+k+'(?:=([^&]*))?(?:&|$)'));return m?decodeURIComponent(m[1]||''):null;}}; // headless sandboxes have no URLSearchParams
-let DEN=Q.get('density')==='1'?1:2;   // buffer px per world unit (runtime-mutable, see step 12)
-let SUBPX=false;                       // step 11 flips to true
+let DEN=Q.get('density')==='1'?1:2;   // buffer px per world unit; ?density=1 forces the old raster
+// Safety valve: frame() keeps an EMA of the draw time and drops DEN to 1 when
+// it sits above AUTO_DEN_MS for AUTO_DEN_S seconds (?auto=0 disables, ?density=1
+// starts there). Transform-driven: den-2 art keeps drawing, nearest at 1x.
+// Never fires headless: the harnesses stub requestAnimationFrame, so frame()
+// never runs there.
+const AUTO_DEN=Q.get('auto')!=='0',AUTO_DEN_MS=14,AUTO_DEN_S=3;
+let drawEma=0,drawHotT=0,autoDropped=false;
+let SUBPX=Q.get('lite')===null;        // sub-unit motion: W2V/drawSpriteC round to 1/DEN (off under ?lite)
 const DEV=/[?&]dev/.test(location.search);
 const lightC=document.createElement('canvas'),lctx=lightC.getContext('2d'); // step 4
 function resize(){
@@ -12706,7 +12713,7 @@ function drawPerfHud(raw,up,rd){
   const cc=s.calls,cn=m=>cc[m]||0;let ct=0;for(const m in cc)ct+=cc[m];
   g.fillStyle='#fc8';
   g.fillText('calls '+ct+'  dI '+cn('drawImage')+'  st '+cn('stroke'),10,64);
-  g.fillText('arc '+cn('arc')+'  clip '+cn('clip')+'  light '+(typeof lightN==='number'?lightN:0),10,76);
+  g.fillText('arc '+cn('arc')+'  clip '+cn('clip')+'  light '+(typeof lightN==='number'?lightN:0)+'  den '+DEN+(autoDropped?' auto':'')+(LIGHT_ON?'':' nolight'),10,76);
   // 2-second sparkline, 1px per frame, 20ms = full bar
   g.fillStyle='#6d6';
   for(let i=0;i<n;i++){
@@ -12728,8 +12735,17 @@ function frame(now){
   update(dt);
   if(G.state!=='title'&&G.state!=='modesel')updateCamera(dt);
   const t1=PERF_HUD?performance.now():0;
+  const t2=(PERF_HUD||AUTO_DEN)?performance.now():0;
   render();
-  if(PERF_HUD)drawPerfHud(rawMs,t1-t0,performance.now()-t1);
+  if(AUTO_DEN||PERF_HUD){
+    const drawMs=performance.now()-t2;
+    drawEma+=(drawMs-drawEma)*0.1;
+    if(AUTO_DEN&&DEN===2){
+      drawHotT=drawEma>AUTO_DEN_MS?drawHotT+rawMs/1000:0;
+      if(drawHotT>=AUTO_DEN_S){DEN=1;autoDropped=true;chunkCanvases.clear();}
+    }
+  }
+  if(PERF_HUD)drawPerfHud(rawMs,t1-t0,performance.now()-t2);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

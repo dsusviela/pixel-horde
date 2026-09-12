@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import {pathToFileURL,fileURLToPath} from 'node:url';
-import {PixCanvas} from './pixcanvas.mjs';
+import {PixCanvas,readPng} from './pixcanvas.mjs';
 
 export const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 export const CRLF=s=>s.split('\r\n').join('\n').split('\n').join('\r\n');
@@ -41,7 +41,7 @@ export function rep(src,a,b){a=CRLF(a);b=CRLF(b);if(!src.includes(a))throw new E
 //   name:{literal:'const name=...;'}  -> the exact statement, same placement rule
 //   __patches:[[find,replace],...]     -> extra exact-string edits (CRLF-normalised)
 // Returns {src,literals} — literals are the pasted-ready statements.
-const STMT=name=>new RegExp('const '+name+'=[\\s\\S]*?;(?=\\r?\\n|$)');
+const STMT=name=>new RegExp('const '+name+'=[\\s\\S]*?;(?=[ \\t]*(?://[^\\r\\n]*)?(?:\\r?\\n|$))'); // a trailing // note after the ; ends the statement too
 export function injectSpecs(src,specs,tag){
   const literals=[];
   const after=specs.__after||'lavaTileSprite';
@@ -105,6 +105,12 @@ export function bootPix(opts={}){
       resume:()=>Promise.resolve()};},
     location:{search:opts.search||'',protocol:'file:',href:'file:///'+path.basename(file)+(opts.search||'')},
   };
+  // Image: decodes a data: PNG synchronously through readPng so atlas-backed
+  // sprites (tools/art/*.mjs) fill in at boot exactly like makeSprite art
+  sandbox.Image=class{constructor(){this.onload=null;this._src='';}
+    set src(v){this._src=v;const m=/^data:image\/png;base64,(.*)$/.exec(v);if(!m)throw new Error('sandbox Image: data:image/png;base64 only');
+      const im=readPng(Buffer.from(m[1],'base64'));this.width=im.width;this.height=im.height;this.get=(x,y)=>im.get(x,y);if(this.onload)this.onload();}
+    get src(){return this._src;}};
   sandbox.addEventListener=()=>{};sandbox.removeEventListener=()=>{};
   sandbox.innerWidth=screen.width;sandbox.innerHeight=screen.height;sandbox.devicePixelRatio=1;
   sandbox.window=sandbox;sandbox.globalThis=sandbox;

@@ -20,16 +20,22 @@ supported.
 
 ## Repo layout
 
-- `index.html` — the whole game.
+- `index.html` — the whole game. Since 2026-09-12 it carries the same renderer
+  and art as the playground (density 2, light layer, ground v2, hand-drawn
+  horde/fauna/Slagmaw, Ninja Adventure hero and pickups); only the lab-only
+  gameplay (event patterns, soft transitions, the 10-wave table, the silent
+  heart/regen tuning) stays in the playground.
 - `playground.html` — isolated 10-wave event lab with timed soft transitions,
   survivor carryover, six movement-only opportunities, and a Slagmaw finale.
+  Sprite work lands here first (`tools/art/land.mjs`), then is ported to
+  `index.html` as a hunk-filtered diff of the two files.
 - `net.js` — online multiplayer client layer (inert unless activated by URL).
 - `server/` — Cloudflare Worker relay for online multiplayer.
 - `tools/` — local dev relay + headless protocol/net/game tests.
 
-## Playground rendering (visual revamp)
+## Rendering (visual revamp)
 
-`playground.html` renders at density 2 (two buffer pixels per world unit) with a
+`index.html` and `playground.html` render at density 2 (two buffer pixels per world unit) with a
 light layer composited once per frame. Nothing gameplay-facing changed: a world
 unit is what a buffer pixel used to be, sprites carry a `den` tag, and
 `makeSprite(rows,pal,2)` art fills the same world box its 1x predecessor did.
@@ -46,10 +52,33 @@ Budget on a modest laptop (Intel UHD-class, 1080p): draw <= 8 ms median /
 Headless gates (`cd tools && npm run gates`): `test-playground.mjs` reaches
 victory at 1/2/4 players; `perf-stress.mjs` p95 <= 15,000 Canvas2D calls per
 frame (300 enemies, lava river, 4 kits); `perf-calls.mjs` p95 <= 4,000.
+The game itself is covered by the headless suite (`node tools/test-modes.mjs`,
+`test-rush`, `test-schools`, `test-terrain`, `test-slagmaw`, `test-draft-timeout`,
+`test-protocol`, `test-net`), which boots `index.html` through `tools/headless.mjs`;
+`tools/frame.mjs --file index.html --wave N` renders a live game frame.
 Art tooling: `tools/sheet.mjs` (sprite sheets, chunk bakes, light canvas),
 `tools/frame.mjs` (a live frame through the real `render()`),
 `tools/fillrate.html` (in-browser blit/composite cost). The per-family art
 checklist is the comment block above `MAT` in `playground.html`.
+Sprite craft (`cd tools && npm run art:<tool> -- ...`, all zero-dep):
+`art/preview.mjs` (grid preview on both grounds + the 1x read + legend + frame
+strip, rows printed beside it), `art/lint.mjs` (ragged rows, palette letters,
+colour budget, orphans, banding, outline, ground contrast, frame IoU/drift),
+`art/ramp.mjs` (hue-shifted OKLCH ramps as MAT objects, Lospec fetch, MAT
+swatches) and `art/trace.mjs` (reference PNG to rows against a palette, texel
+scale auto-detected). The drawing workflow and the 63 craft rules live in
+`.claude/skills/pixel-art/` (loaded by Claude Code before sprite work).
+
+Ninja Adventure port: the surface ground, props, horde, volcano fauna, pickups
+and the eight hero characters come from the CC0 Ninja Adventure pack
+(Pixel-boy) through the art module `tools/art/ninja.mjs`, inlined into
+`playground.html` as one base64 atlas (`tools/art/ninja-atlas.png`, built by
+`tools/art/build-ninja-atlas.mjs` from the Superpowers GitHub mirror). Atlas
+sprites are den-2 canvases like `makeSprite` art; walk sheets carry
+`.frames[dir][frame]` and `mobFrame`/`sheetFrame` pick the facing. Preview a
+module without landing it with `tools/frame.mjs --inject`, land it with
+`node tools/art/land.mjs tools/art/ninja.mjs`. Bosses, pups, overlays, VFX and
+the volcano ground stay hand-drawn.
 
 ## Online multiplayer
 

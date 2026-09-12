@@ -1,6 +1,6 @@
 // A tiny software Canvas2D: enough of the API for the game's sprite and boss
 // draw code (fillRect, arc/ellipse fill+stroke, drawImage with transforms,
-// globalAlpha, globalCompositeOperation 'source-over' | 'lighter' | 'screen',
+// globalAlpha, globalCompositeOperation 'source-over' | 'lighter' | 'screen' | 'destination-out',
 // nearest or bilinear drawImage per imageSmoothingEnabled — default false,
 // matching the game's explicit settings) to rasterise into an RGBA buffer,
 // plus a PNG writer (canvas.png()) and reader (readPng(buffer) -> PixCanvas).
@@ -28,6 +28,7 @@ export class PixCanvas{
     if(x<0||y<0||x>=this.width||y>=this.height||a<=0)return;
     const i=(y*this.width+x)*4,d=this.data;
     if(op==='lighter'){d[i]=Math.min(255,d[i]+r*a);d[i+1]=Math.min(255,d[i+1]+g*a);d[i+2]=Math.min(255,d[i+2]+b*a);d[i+3]=Math.min(1,d[i+3]+a);return;}
+    if(op==='destination-out'){d[i+3]=d[i+3]*(1-a);return;}
     if(op==='screen'){d[i]=255-(255-d[i])*(255-r*a)/255;d[i+1]=255-(255-d[i+1])*(255-g*a)/255;d[i+2]=255-(255-d[i+2])*(255-b*a)/255;d[i+3]=Math.min(1,d[i+3]+a);return;}
     const oa=d[i+3],na=a+oa*(1-a);
     if(na<=0)return;

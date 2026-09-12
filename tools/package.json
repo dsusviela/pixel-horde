@@ -8,6 +8,10 @@
   "scripts": {
     "test": "node gates.mjs test",
     "perf": "node gates.mjs perf",
-    "gates": "node gates.mjs"
+    "gates": "node gates.mjs",
+    "art:preview": "node art/preview.mjs",
+    "art:lint": "node art/lint.mjs",
+    "art:ramp": "node art/ramp.mjs",
+    "art:trace": "node art/trace.mjs"
   }
 }

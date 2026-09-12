@@ -1299,6 +1299,7 @@ const ES={
   // boss rush
   'ARM YOURSELVES':'ARMAOS','EVERY BOSS PUT DOWN':'TODOS LOS JEFES ABATIDOS',
   'LB/RB OR Q/E: START DEEPER IN THE ROSTER':'LB/RB O Q/E: EMPIEZA MÁS ADENTRO DE LA LISTA',
+  'LB/RB OR Q/E: START AT A LATER WAVE':'LB/RB O Q/E: EMPIEZA EN UNA OLA POSTERIOR','THE HORDE':'LA HORDA',
   'FORGEHEART':'CORAZÓN DE FORJA','TWIN LANCE':'LANZA GEMELA',
   'CINDER CROWN':'CORONA DE BRASAS','VOID MAW':'FAUCE DEL VACÍO',
   'a molten slam that leaves burning ground':'un golpe fundido que deja suelo ardiendo',
@@ -1452,6 +1453,8 @@ const ES_RX=[
   [/^(.+) FADES$/,m=>tr(m[1])+' SE DESVANECE'],
   [/^START AT BOSS  < (\d+)\/(\d+) — (.+) >$/,m=>'EMPEZAR EN EL JEFE  < '+m[1]+'/'+m[2]+' — '+tr(m[3])+' >'],
   [/^GEARED AS IF THE FIRST (\d+) WERE ALREADY DOWN$/,m=>'EQUIPADOS COMO SI LOS '+m[1]+' PRIMEROS YA HUBIERAN CAÍDO'],
+  [/^START AT WAVE  < (\d+)\/(\d+) — (.+) >$/,m=>'EMPEZAR EN LA OLA  < '+m[1]+'/'+m[2]+' — '+tr(m[3])+' >'],
+  [/^LEVELLED AS IF WAVES 1-(\d+) WERE CLEARED$/,m=>'CON EL NIVEL DE HABER SUPERADO LAS OLAS 1-'+m[1]],
   [/^BOSS (\d+) \/ (\d+)$/,m=>'JEFE '+m[1]+' / '+m[2]],
   [/^BOSS (\d+)\/(\d+)$/,m=>'JEFE '+m[1]+'/'+m[2]],
   [/^BOSS (\d+) DOWN$/,m=>'JEFE '+m[1]+' ABATIDO'],
@@ -2150,6 +2153,10 @@ const G={
 // the starting-boss pick survives sessions, like controller colours do
 // (clamped against the roster at use time — RUSH_WAVES fills in later)
 try{const v=Math.floor(+localStorage.getItem('ph_rushstart'));if(v>=1)G.rushStart=v;}catch(e){}
+// the playground's starting wave: the mode-screen picker (LB/RB, Q/E) persists it, ?wave=N overrides it
+G.playStart=1;
+try{const v=Math.floor(+localStorage.getItem('ph_playstart'));if(v>=1)G.playStart=v;}catch(e){}
+try{const v=Math.floor(+Q.get('wave'));if(v>=1)G.playStart=v;}catch(e){}
 function xpNeed(L){
   if(L==null)L=G.level;
   // 0.6+0.4n runs slightly ahead of the wave-quota slope (0.65+0.35n): big
@@ -2296,9 +2303,11 @@ function startRun(mode){
   G.flashMsg=null;G.flashT=0;G.subFlash=null;G.subFlashT=0;G.subQueue=[];G.objective=null;
   G.tileOverride.clear();chunkCanvases.clear();G.shards=null;G.shardFade=null;
   pads.forEach((pi,i)=>{G.players.push(makePlayer(i,pi,(i%2)*30-15,Math.floor(i/2)*30-15));});
-  G.startWave=mode==='rush'?clamp(G.rushStart||1,1,RUSH_WAVES.length):1;
+  G.startWave=mode==='rush'?clamp(G.rushStart||1,1,RUSH_WAVES.length):mode==='classic'?clamp(G.playStart||1,1,CLASSIC_WAVES.length):1;
   if(isCampaign()){G.wave=G.startWave-1;nextWave();}
   else{G.wave=0;G.waveState='fight';}
+  // a playground skip start: the base level budgets of waves 1..S-1 plus the wave-1 school level, paid as free drafts
+  if(mode==='classic'&&G.startWave>1)grantLevels(playSkipLevels(G.startWave));
   G.state='play';
   // BOSS RUSH has no trash to farm, so the run opens with the loadout draft
   // that classic waves 1-4 would have paid for — party level 5, what
@@ -3642,6 +3651,7 @@ function grantRelic(id){
   }
 }
 function grantLevels(n){G.freeLevels+=n;}
+function playSkipLevels(S){let b=0;for(let w=1;w<S;w++){const d=CLASSIC_WAVES[w-1];if(d&&d.lv)b+=d.lv.b;}return Math.round(b)+(schoolsOn()?1:0);}
 // Twenty-four signature spells share nine casting primitives. A relic is data
 // — which primitive, how hard, what colour — so a new boss costs one table
 // entry, and every spell reads consistently on screen.
@@ -10291,6 +10301,15 @@ function update(dt){
       // BOSS RUSH only: LB/RB (Q/E on the keyboard) picks the starting boss.
       // startRun back-pays the skipped fights' levels, charms, rallies and
       // signature spells so the party arrives as if it had cleared them.
+      // PLAYGROUND: the same buttons pick the starting wave (startRun grants the skipped waves' levels)
+      if(G.modeSel===0){
+        const db=(pressed(pad,5)?1:0)-(pressed(pad,4)?1:0);
+        if(db){
+          G.playStart=clamp((G.playStart||1)+db,1,CLASSIC_WAVES.length);
+          try{localStorage.setItem('ph_playstart',G.playStart);}catch(err){}
+          sfx('select');
+        }
+      }
       if(G.modeSel===2){
         const db=(pressed(pad,5)?1:0)-(pressed(pad,4)?1:0);
         if(db){
@@ -12919,6 +12938,13 @@ function renderModeSelect(vw,vh){
     d.lines.forEach((l,j)=>text(ctx,'- '+l,x+8*k,y+54*k+j*8*k,F(6),'#d8c9a3'));
     if(sel&&Math.floor(performance.now()/300)%2===0)text(ctx,'>',x-9*k,y+ch/2-6*k,F(12),d.col,'center');
   });
+  // PLAYGROUND: the starting-wave picker sits under the cards
+  if(G.modeSel===0){
+    const S=clamp(G.playStart||1,1,CLASSIC_WAVES.length),d=CLASSIC_WAVES[S-1],yb=y+ch+10*k;
+    const nm=d.boss!==undefined?'SLAGMAW':(d.pattern?PATTERN_NAMES[d.pattern]:'THE HORDE');
+    text(ctx,'START AT WAVE  < '+S+'/'+CLASSIC_WAVES.length+' — '+nm+' >',vw/2,yb,F(8),S>1?'#ffd23e':'#d8c9a3','center');
+    text(ctx,S>1?'LEVELLED AS IF WAVES 1-'+(S-1)+' WERE CLEARED':'LB/RB OR Q/E: START AT A LATER WAVE',vw/2,yb+11*k,F(6),'#b3a184','center');
+  }
   // BOSS RUSH: the starting-boss picker sits under the cards
   if(G.modeSel===2){
     const S=clamp(G.rushStart||1,1,RUSH_WAVES.length),bd=RUSH_ROSTER[S-1],yb=y+ch+10*k;

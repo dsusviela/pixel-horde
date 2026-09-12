@@ -32,6 +32,9 @@ reload the page with a cache-busting query and pick up a fresh deploy.
   breakable crystal shards with thin noise-carved corridors, every shot is spent
   on the shard it hits, a broken shard pays a gem, and the wave's ghosts drift
   through crystal and rock (`tools/art/ghost.mjs`, `tools/art/crystal.mjs`).
+  Starting wave: LB/RB (Q/E) on the PLAYGROUND card of the mode screen, or
+  open `playground.html?wave=7`; a skip start grants the levels the skipped
+  waves would have paid (their base budgets plus the wave-1 school level).
   Sprite work lands here first (`tools/art/land.mjs`), then is ported to
   `index.html` as a hunk-filtered diff of the two files.
 - `net.js` — online multiplayer client layer (inert unless activated by URL).

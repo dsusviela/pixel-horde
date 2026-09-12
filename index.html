@@ -64,7 +64,7 @@ let SUBPX=Q.get('lite')===null;        // sub-unit motion: W2V/drawSpriteC round
 // Camera zoom (2026-09-12, owner: everything on the TV feels small): the free camera's window is
 // 1/ZOOM of the old framing, so sprites, tiles and hazards all grow together and hitboxes keep
 // matching the art. ?zoom=1 restores the old framing; boss arenas keep their own window.
-const ZOOM=Math.max(0.7,Math.min(2,parseFloat(Q.get('zoom'))||1.5));
+const ZOOM=Math.max(0.7,Math.min(2,parseFloat(Q.get('zoom'))||1.8));
 const DEV=/[?&]dev/.test(location.search);
 const lightC=document.createElement('canvas'),lctx=lightC.getContext('2d'); // step 4
 function resize(){

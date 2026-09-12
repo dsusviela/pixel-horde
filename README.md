@@ -16,7 +16,8 @@ Single self-contained HTML file — no build, no assets, no dependencies.
 
 Keyboard: WASD/arrows move, SPACE = (A), ESC = START. Gamepads: press any
 button so the browser detects the pad, then (A) to join. Drop-in mid-run is
-supported.
+supported. Hold BACK+START (keyboard: Backspace+Escape) for one second to
+reload the page with a cache-busting query and pick up a fresh deploy.
 
 ## Repo layout
 

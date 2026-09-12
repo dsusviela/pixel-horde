@@ -32,7 +32,7 @@ const BOOL=new Set(['emit','help','lava','gems','arena','screen','d2','hero2','l
 
 // name -> [r (hitbox, 0 = none), scale, dy (draw offset the game uses), note]
 export const FAMILIES={
-  hero:{playerSprites:[6,1,-2,'8 tints, body 12x12, drawn at y-2'],corpseSprite:[6,1,0,'']},
+  hero:{playerSprites:[6,1,-2,'8 tints, body 12x12, drawn at y-2'],playerSpritesDestro:[6,1,-2,'destro'],playerSpritesIllusion:[6,1,-2,'illusion'],playerSpritesNecro:[6,1,-2,'necro'],corpseSprite:[6,1,0,'']},
   horde:{chaserSprite:[5],swarmSprite:[3.5],spitSprite:[5],tankSprite:[9],bombSprite:[4.5],huntMarkSprite:[0,1,0,'at y-r-12'],eliteMarkSprite:[0,1,0,'at y-r-8']},
   fauna:{smasherSprite:[6.5],smasherCastSprite:[6.5],bursterSprite:[5],bursterSwellSprite:[5],fireslugSprite:[6],forgeSprites:[16,3,0,'forge, scale 3']},
   pups:{slagPupSprite:[4],emberlingSprite:[4],cinderSprite:[10,1.65,0,'cinder core r10 x1.65']},

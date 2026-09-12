@@ -387,7 +387,56 @@ export function wretch(o={}){
   };
 }
 
-export const RIGS={chaser:()=>ghoul({w:20,h:20}),swarm:()=>skitter({w:16,h:12}),spitter:()=>biletoad({w:20,h:20}),tank:()=>hulk({w:36,h:36}),bomber:()=>wretch({w:18,h:18}),bombFuse:()=>wretch({w:18,h:18,fuse:true})};
+// Ghost = wraith (2026-09-12, THE CRYSTAL MAZE): a hooded shade with no legs, the
+// robe tapering into wisps that trail behind it; the face is a hollow under the
+// hood with the violet soul-glow eyes as the only bright cluster. It floats: the
+// four frames are a 1 px hover and the wisps swaying, never a step (rule 50). The
+// game draws it translucent over the crystals it passes through. 20x22 for r=5.
+export function wraith(o={}){
+  const w=o.w||20,h=o.h||22,sx=w/20,sy=h/22;
+  const X=v=>v*sx,Y=v=>v*sy;
+  const cx=w/2;
+  const bobOf=f=>[0,-1,-1,0][f%4];
+  const sway=f=>[1,0,-1,0][f%4];
+  return {
+    w,h,frames:4,K:'K',ramp:'DMLH',rim:true,
+    mats:{body:{D:'D',M:'M',L:'L',H:'H'},hollow:'K'},
+    parts(facing,f){
+      const bob=bobOf(f),s=sway(f);
+      const P=[];
+      if(facing==='down'||facing==='up'){
+        const up=facing==='up';
+        // the robe: a tapered column from the shoulders into a point, wisps flicking off the tail
+        P.push({kind:'limb',tag:'robe',x0:cx-0.5,y0:Y(10)+bob,x1:cx-0.5+s*X(0.5),y1:Y(19)+bob,w0:X(9),w1:X(3),mat:'body',z:2,fade:0.45,lit:up?0.15:0.05});
+        P.push({kind:'rect',tag:'wisp',x:Math.round(cx-2+s*2),y:Math.round(Y(19))+bob,w:2,h:2,mat:'body',z:1.5,sep:false,lit:-0.6});
+        P.push({kind:'rect',tag:'wisp',x:Math.round(cx+1-s*2),y:Math.round(Y(20))+bob,w:1,h:2,mat:'body',z:1.5,sep:false,lit:-0.6});
+        // sleeves hang from the shoulders, hands lost in them; they swing with the sway
+        P.push({kind:'limb',tag:'arm',x0:cx-X(4.5),y0:Y(11)+bob,x1:cx-X(6.5),y1:Y(16)+bob+s,w0:X(2),w1:X(2),mat:'body',z:3,fade:0.5,lit:0.15,sep:false});
+        P.push({kind:'limb',tag:'arm',x0:cx+X(4.5),y0:Y(11)+bob,x1:cx+X(6.5),y1:Y(16)+bob-s,w0:X(2),w1:X(2),mat:'body',z:3,fade:0.5,lit:-0.1,sep:false});
+        // the hood: a rounded cowl with a small peak; from behind it is all hood
+        P.push({kind:'limb',tag:'hood',x0:cx-0.5,y0:Y(1)+bob,x1:cx-0.5,y1:Y(4)+bob,w0:1,w1:X(5),mat:'body',z:4,fade:-0.1,lit:0.2,sep:false});
+        P.push({kind:'ellipse',tag:'hood',cx,cy:Y(7)+bob,rx:X(4.8),ry:Y(4.2),mat:'body',z:4,lit:up?0.2:0.05,ky:0.9});
+        if(!up){ // the hollow: no face, just dark under the cowl and two soul-glow eyes
+          P.push({kind:'ellipse',tag:'hollow',cx,cy:Y(8)+bob,rx:X(3.2),ry:Y(2.6),mat:'hollow',z:5,outline:false});
+          const ey=Math.round(Y(7.5))+bob,l=Math.round(cx-X(3)),r=Math.round(cx+X(1));
+          P.push({kind:'px',z:10,pts:[[l,ey,'W'],[l+1,ey,'V'],[l,ey+1,'V'],[l+1,ey+1,'V'],[r,ey,'W'],[r+1,ey,'V'],[r,ey+1,'V'],[r+1,ey+1,'V']]});
+        }
+      }else{ // left: leaning into its drift, the hood forward, wisps trailing behind (right)
+        P.push({kind:'limb',tag:'robe',x0:cx+X(0.5),y0:Y(10)+bob,x1:cx+X(3),y1:Y(19)+bob,w0:X(8),w1:X(3),mat:'body',z:2,fade:0.45,lit:0.05});
+        P.push({kind:'rect',tag:'wisp',x:Math.round(cx+X(4)+s),y:Math.round(Y(18))+bob,w:2,h:2,mat:'body',z:1.5,sep:false,lit:-0.6});
+        P.push({kind:'rect',tag:'wisp',x:Math.round(cx+X(6)-s),y:Math.round(Y(16))+bob,w:2,h:1,mat:'body',z:1.5,sep:false,lit:-0.6});
+        P.push({kind:'limb',tag:'arm',x0:cx-X(1.5),y0:Y(11)+bob,x1:cx-X(4),y1:Y(16)+bob+s,w0:X(2),w1:X(2),mat:'body',z:3,fade:0.5,lit:0.15,sep:false});
+        P.push({kind:'limb',tag:'hood',x0:cx-X(1.5),y0:Y(1)+bob,x1:cx-X(0.5),y1:Y(4)+bob,w0:1,w1:X(5),mat:'body',z:4,fade:-0.1,lit:0.2,sep:false});
+        P.push({kind:'ellipse',tag:'hood',cx:cx-X(1),cy:Y(7)+bob,rx:X(4.6),ry:Y(4.2),mat:'body',z:4,lit:0.05,kx:0.6,ky:0.9});
+        P.push({kind:'ellipse',tag:'hollow',cx:cx-X(2.5),cy:Y(8)+bob,rx:X(2.6),ry:Y(2.6),mat:'hollow',z:5,outline:false});
+        const ey=Math.round(Y(7.5))+bob,l=Math.round(cx-X(4.5));
+        P.push({kind:'px',z:10,pts:[[l,ey,'W'],[l+1,ey,'V'],[l,ey+1,'V'],[l+1,ey+1,'V']]});
+      }
+      return P;
+    }
+  };
+}
+export const RIGS={chaser:()=>ghoul({w:20,h:20}),swarm:()=>skitter({w:16,h:12}),spitter:()=>biletoad({w:20,h:20}),tank:()=>hulk({w:36,h:36}),bomber:()=>wretch({w:18,h:18}),bombFuse:()=>wretch({w:18,h:18,fuse:true}),ghost:()=>wraith({w:20,h:22})};
 export function sheet(name){return rigToSheet(RIGS[name]());}
 
 if(process.argv[1]&&process.argv[1].replace(/\\/g,'/').endsWith('horde-gen.mjs')){

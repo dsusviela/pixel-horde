@@ -15,7 +15,7 @@ for(const NP of parties){
   g.ev('startRun')('classic');
   const G=g.G,seen=new Set();
   let cinderCore=0,bloomAwake=0,moth=0,shrineCharged=0,runesTouched=0;
-  let ringCasts=0,ringVolleys=0,calderaLava=0,calderaCycles=0,calderaSlams=0,bossArrivalLevel=0;
+  let crystalRaised=0,crystalBroken=0,ghostSeen=0,calderaLava=0,calderaCycles=0,calderaSlams=0,bossArrivalLevel=0;
   let bossP2=0,bossP3=0,maxEnemies=0,maxGems=0,maxFx=0,heartDrops=0,maxCores=0,maxBlooms=0;
   let stoppedWithEnemies=0,normalIntermission=0,takeoverVacuum=0;
   // Slagmaw body language: the boss must stay silent (no flash/subFlash of
@@ -75,7 +75,7 @@ for(const NP of parties){
     if(P&&P.bloom&&P.bloom.gardens.some(x=>x.awake))bloomAwake=1;
     if(P&&P.shrines&&P.shrines.completed>0)shrineCharged=1;
     if(P&&P.runes)runesTouched=Math.max(runesTouched,P.runes.touched);
-    if(P&&P.ring){ringCasts=Math.max(ringCasts,P.ring.casts);ringVolleys=Math.max(ringVolleys,P.ring.volleys);}
+    if(P&&P.crystal){crystalRaised=Math.max(crystalRaised,P.crystal.raised);crystalBroken=Math.max(crystalBroken,P.crystal.broken);if(G.enemies.some(e=>e.ghost&&!e.dead))ghostSeen=1;}
     if(P&&P.caldera){calderaLava=Math.max(calderaLava,P.caldera.lavaSeen);calderaCycles=Math.max(calderaCycles,P.caldera.cycles);calderaSlams=Math.max(calderaSlams,P.caldera.slams);}
     if(G.wave<10)for(const pk of G.pickups)if(pk.type==='heart'&&!heartSeen.has(pk)){heartSeen.add(pk);heartDrops++;}
     if(G.boss&&G.boss.def&&G.boss.def.id==='slagmaw'){
@@ -96,7 +96,7 @@ for(const NP of parties){
   }
 
   const tag=' ['+NP+'p]';
-  for(const id of ['cinderfall','obsidianbloom','embermoths','sunshrines','runerun','cinderring','treasurestorm','caldera'])
+  for(const id of ['cinderfall','obsidianbloom','embermoths','sunshrines','runerun','crystalmaze','treasurestorm','caldera'])
     say(seen.has(id),id+' activated'+tag);
   say(cinderCore,'Cinderfall produced breakable XP cores'+tag);
   say(maxCores<=1+Math.ceil(NP/2),'Cinderfall showed only one readable core batch (peak '+maxCores+')'+tag);
@@ -105,7 +105,8 @@ for(const NP of parties){
   say(moth,'Ember Moths crossed the arena'+tag);
   say(shrineCharged,'Sun Shrine charged through player presence'+tag);
   say(runesTouched>=4,'Rune Run paid a visible movement chain ('+runesTouched+' touches)'+tag);
-  say(ringCasts>=4&&ringVolleys>=8,'Cinder Ring repeated Slagmaw\'s two outward volleys ('+ringCasts+' casts / '+ringVolleys+' volleys)'+tag);
+  say(crystalRaised>=300&&crystalBroken>=8,'Crystal Maze raised a shard field and the party broke through it ('+crystalRaised+' raised / '+crystalBroken+' broken)'+tag);
+  say(ghostSeen,'Crystal Maze spawned ghosts'+tag);
   say(calderaLava>0&&calderaCycles>=2,'Caldera cycled short-lived Slagmaw lava rivers ('+calderaCycles+' cycles / '+calderaLava+' tiles)'+tag);
   say(calderaSlams>0,'Caldera Smashers resolved the orange knockback slam ('+calderaSlams+' slams)'+tag);
   say(bossArrivalLevel>=10&&bossArrivalLevel<=11,'boss arrival hit target level 10-11 (L'+bossArrivalLevel+')'+tag);

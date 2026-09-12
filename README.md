@@ -28,6 +28,10 @@ reload the page with a cache-busting query and pick up a fresh deploy.
   heart/regen tuning) stays in the playground.
 - `playground.html` — isolated 10-wave event lab with timed soft transitions,
   survivor carryover, six movement-only opportunities, and a Slagmaw finale.
+  Wave 7 is THE CRYSTAL MAZE (2026-09-12): the floor around the party rises as
+  breakable crystal shards with thin noise-carved corridors, every shot is spent
+  on the shard it hits, a broken shard pays a gem, and the wave's ghosts drift
+  through crystal and rock (`tools/art/ghost.mjs`, `tools/art/crystal.mjs`).
   Sprite work lands here first (`tools/art/land.mjs`), then is ported to
   `index.html` as a hunk-filtered diff of the two files.
 - `net.js` — online multiplayer client layer (inert unless activated by URL).

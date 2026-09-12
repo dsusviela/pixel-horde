@@ -61,6 +61,10 @@ let DEN=Q.get('density')==='1'?1:2;   // buffer px per world unit; ?density=1 fo
 const AUTO_DEN=Q.get('auto')!=='0',AUTO_DEN_MS=14,AUTO_DEN_S=3;
 let drawEma=0,drawHotT=0,autoDropped=false;
 let SUBPX=Q.get('lite')===null;        // sub-unit motion: W2V/drawSpriteC round to 1/DEN (off under ?lite)
+// Camera zoom (2026-09-12, owner: everything on the TV feels small): the free camera's window is
+// 1/ZOOM of the old framing, so sprites, tiles and hazards all grow together and hitboxes keep
+// matching the art. ?zoom=1 restores the old framing; boss arenas keep their own window.
+const ZOOM=Math.max(0.7,Math.min(2,parseFloat(Q.get('zoom'))||1.5));
 const DEV=/[?&]dev/.test(location.search);
 const lightC=document.createElement('canvas'),lctx=lightC.getContext('2d'); // step 4
 function resize(){
@@ -10666,8 +10670,8 @@ function updateCamera(dt){
     if(p.y>maxy)maxy=p.y;
   }
   const cx=(minx+maxx)/2,cy=(miny+maxy)/2;
-  const needW=Math.max((maxx-minx)+260,((maxy-miny)+200)*aspect,640);
-  G.cam.tw=clamp(needW,640,1150);
+  const Z=1/ZOOM,needW=Math.max((maxx-minx)+260*Z,((maxy-miny)+200*Z)*aspect,640*Z);
+  G.cam.tw=clamp(needW,640*Z,1150*Z);
   G.cam.w=lerp(G.cam.w,G.cam.tw,Math.min(1,dt*3));
   G.cam.h=G.cam.w/aspect;
   G.cam.x=lerp(G.cam.x,cx,Math.min(1,dt*4));

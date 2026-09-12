@@ -41,7 +41,8 @@ light layer composited once per frame. Nothing gameplay-facing changed: a world
 unit is what a buffer pixel used to be, sprites carry a `den` tag, and
 `makeSprite(rows,pal,2)` art fills the same world box its 1x predecessor did.
 
-URL flags: `?density=1` (old raster, new art), `?light=0` (no light layer),
+URL flags: `?zoom=1.5` (free-camera zoom, default 1.5; `?zoom=1` is the
+pre-2026-09-12 framing, boss arenas keep their own window), `?density=1` (old raster, new art), `?light=0` (no light layer),
 `?lite` (light off, half-res light canvas, no sub-unit motion), `?crisp`
 (nearest blit even when downsampling), `?auto=0` (disable the safety valve),
 `?perf` (HUD with Canvas2D call counters, light stamps and the current density).

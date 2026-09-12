@@ -1252,9 +1252,9 @@ const ES={
   'CHASE THE GOLDEN FLOCKS':'PERSIGUE LOS ENJAMBRES DORADOS',
   'STAND IN THE LIGHT — CHARGE THE BLAST':'QUÉDATE EN LA LUZ — CARGA LA EXPLOSIÓN',
   'TOUCH THE RUNE — FOLLOW THE LINE':'TOCA LA RUNA — SIGUE LA LÍNEA',
-  'BREAK THE CRYSTALS — GHOSTS DRIFT THROUGH THEM':'ROMPE LOS CRISTALES — LOS FANTASMAS LOS ATRAVIESAN',
+  'PUSH INTO CRYSTAL TO SHOOT IT — GHOSTS DRIFT THROUGH':'EMPUJA EL CRISTAL PARA DISPARARLE — LOS FANTASMAS LO ATRAVIESAN',
   'THE CRYSTAL MAZE':'EL LABERINTO DE CRISTAL','THE CRYSTAL MAZE!':'¡EL LABERINTO DE CRISTAL!',
-  'THE FLOOR RISES AS CRYSTAL — SHOOT YOUR WAY OUT':'EL SUELO SE ALZA EN CRISTAL — ÁBRETE PASO A DISPAROS',
+  'THE FLOOR RISES AS CRYSTAL — PUSH A WALL TO SHOOT IT':'EL SUELO SE ALZA EN CRISTAL — EMPUJA UN MURO PARA DISPARARLE',
   'FALLING CORES AND GOLDEN FLOCKS':'NÚCLEOS CAÍDOS Y ENJAMBRES DORADOS',
   'RED FLOOR BURNS — ORANGE SLAMS THROW YOU':'EL SUELO ROJO QUEMA — LOS GOLPES NARANJAS TE LANZAN',
   // benched arc v1 strings kept for the benched code paths
@@ -2589,6 +2589,9 @@ function queryEnemies(x,y,r,cb){
     const a=grid.get(gridKey(cx,cy));
     if(a)for(const e of a){if(!e.dead)cb(e);}
   }
+  // THE CRYSTAL MAZE: while a player's weapons fire at a shard they push (nearestEnemy), area spells that
+  // sweep the grid around their mark also reach the stand-in target, so blasts and chains break crystal too
+  if(G.aimP&&G.aimP.wallT&&G.aimP.wallT.t>0){const t=G.aimP.wallT.tgt;if(G.shards&&G.shards.has(t.wall)&&dist2(x,y,t.x,t.y)<(R+t.r)*(R+t.r))cb(t);}
 }
 // Auto-aim reach grows with the party's level: half the authored spell range
 // at L1, full range from ~L15 — and never past the screen, so a player is
@@ -2597,6 +2600,9 @@ function queryEnemies(x,y,r,cb){
 // their own reach.
 const rangeMul=()=>clamp(0.5+0.035*(G.level-1),0.5,1);
 function nearestEnemy(x,y,maxR){
+  // THE CRYSTAL MAZE: a player pushing into a shard is aiming at it — every weapon they fire takes the shard
+  // (a stand-in target whose damage routes to damageShard; projectiles physically hit the tile anyway)
+  if(G.aimP&&G.aimP.wallT&&G.aimP.wallT.t>0)return G.aimP.wallT.tgt;
   if(G.aimScale){maxR=Math.min(maxR*G.aimScale,G.cam.h*0.55);}
   let best=null,bd=maxR*maxR;
   for(const e of G.enemies){
@@ -2739,6 +2745,7 @@ function dropLoot(e){
 }
 function damageEnemy(e,dmg,owner){
   if(e.dead)return;
+  if(e.wall){if(G.shards)damageShard(e.wall,dmg);return;} // the crystal stand-in target (see nearestEnemy)
   dmg*=(e.vulnMul??1); // ?? not ||: vulnMul 0 means shielded/airborne/burrowed, not "default to 1"
   // Bizarre Mirage: a dazed foe takes +30% from the WHOLE party — the
   // Illusion school's collaboration window
@@ -8513,7 +8520,7 @@ function playgroundStart(P){
     embermoths:['CHASE THE GOLDEN FLOCKS','#ffd23e'],
     sunshrines:['STAND IN THE LIGHT — CHARGE THE BLAST','#ffd23e'],
     runerun:['TOUCH THE RUNE — FOLLOW THE LINE','#39d5ff'],
-    crystalmaze:['BREAK THE CRYSTALS — GHOSTS DRIFT THROUGH THEM','#c04aff'],
+    crystalmaze:['PUSH INTO CRYSTAL TO SHOOT IT — GHOSTS DRIFT THROUGH','#c04aff'],
     treasurestorm:['FALLING CORES AND GOLDEN FLOCKS','#ffd23e'],
     caldera:['RED FLOOR BURNS — ORANGE SLAMS THROW YOU','#ff7a1f']
   }[P.id];
@@ -8649,13 +8656,14 @@ function runeTick(P,dt,alive){
 // damages every shard in its radius; a broken shard pays one gem. Ghosts
 // (ETYPES.ghost, e.ghost) drift through everything. What still stands when
 // the wave's timer ends dissolves over a second, unpaid.
-const CRYSTAL_HP=30,CRYSTAL_R=26,CRYSTAL_GEM=1;
+const CRYSTAL_HP=28,CRYSTAL_R=26,CRYSTAL_GEM=1;
+const crystalHp=()=>Math.round(CRYSTAL_HP*(1+0.15*(G.level-1))); // two to three basic shots at any level: the party's output grows with level, not with the enemy hp curve
 const shardKey=(x,y)=>Math.floor(x/TILE)+','+Math.floor(y/TILE);
 function crystalPath(tx,ty,seed){ // two families of iso-bands, about one tile wide
   return Math.abs(vnoise(tx*0.11,ty*0.11,seed)-0.5)<0.03||Math.abs(vnoise(tx*0.07,ty*0.07,seed+7)-0.5)<0.025;
 }
 function crystalRaise(P){
-  const C=P.crystal,c=G.cam,cx=Math.floor(c.x/TILE),cy=Math.floor(c.y/TILE),R=CRYSTAL_R,hp=CRYSTAL_HP*hpScale();
+  const C=P.crystal,c=G.cam,cx=Math.floor(c.x/TILE),cy=Math.floor(c.y/TILE),R=CRYSTAL_R,hp=crystalHp();
   G.shards=G.shards||new Map();
   const keep=[];
   for(const p of G.players)if(!p.dead)keep.push({x:p.x,y:p.y,d:28});
@@ -8699,13 +8707,13 @@ function crystalClear(){ // the field dissolves: passable at once, drawn fading 
 }
 function crystalTick(P,dt,alive){
   const C=P.crystal;if(!C)return;
-  if(!C.up){C.t-=dt;if(C.t<=0){C.up=1;crystalRaise(P);subFlash('THE FLOOR RISES AS CRYSTAL — SHOOT YOUR WAY OUT',3);}}
+  if(!C.up){C.t-=dt;if(C.t<=0){C.up=1;crystalRaise(P);subFlash('THE FLOOR RISES AS CRYSTAL — PUSH A WALL TO SHOOT IT',3);}}
 }
 function drawShards(ox,oy,vw,vh){
   const fi=Math.floor(G.time*6)%6,frA=crystalFrames[fi],frB=crystalFramesB[fi];
   const tx0=Math.floor(ox/TILE)-1,tx1=Math.ceil((ox+vw)/TILE)+1,ty0=Math.floor(oy/TILE)-1,ty1=Math.ceil((oy+vh)/TILE)+1;
   if(G.shards){
-    const half=CRYSTAL_HP*hpScale()*0.5;
+    const half=crystalHp()*0.5;
     for(let ty=ty0;ty<=ty1;ty++)for(let tx=tx0;tx<=tx1;tx++){
       const hp=G.shards.get(tx+','+ty);if(hp===undefined)continue;
       const X=tx*TILE-ox,Y=ty*TILE-oy;
@@ -8713,6 +8721,10 @@ function drawShards(ox,oy,vw,vh){
       ctx.drawImage(B?frB:frA,X,Y,TILE,TILE);
       if(hp<half)ctx.drawImage(B?crystalCrackFrameB:crystalCrackFrame,X,Y,TILE,TILE);
       if(((tx*3+ty)&3)===0)glow(X+8,Y+8,10,'#a06ee8',0.10);
+    }
+    for(const p of G.players)if(p.wallT&&p.wallT.t>0&&G.shards.has(p.wallT.k)){
+      const i=p.wallT.k.indexOf(','),tx=+p.wallT.k.slice(0,i),ty=+p.wallT.k.slice(i+1);
+      ctx.strokeStyle='#f0e4ff';ctx.lineWidth=1;ctx.strokeRect(tx*TILE-ox+1.5,ty*TILE-oy+1.5,TILE-3,TILE-3);
     }
   }
   if(G.shardFade){
@@ -10451,6 +10463,13 @@ function update(dt){
     }else p.lavaT=0;
     if(p.dead)continue;
     moveCollide(p,mx*sp*dt,my*sp*dt);
+    // THE CRYSTAL MAZE: pushing into a shard marks it as this player's target for 0.3 s (nearestEnemy)
+    if(G.shards&&(mx||my)){
+      const k1=mx?shardKey(p.x+Math.sign(mx)*(p.r+2),p.y):null,k2=my?shardKey(p.x,p.y+Math.sign(my)*(p.r+2)):null;
+      const k=(k1&&G.shards.has(k1))?k1:((k2&&G.shards.has(k2))?k2:null);
+      if(k){const i=k.indexOf(',');p.wallT={k,t:0.3,tgt:{x:(+k.slice(0,i))*TILE+8,y:(+k.slice(i+1))*TILE+8,r:8,wall:k,hp:1e9,maxhp:1e9,dead:false,vulnMul:1}};}
+    }
+    if(p.wallT&&(p.wallT.t-=dt)<=0)p.wallT=null;
     // a shove in flight: decaying slide, on top of the stick
     if(p.kbT>0){
       p.kbT-=dt;
@@ -10467,7 +10486,7 @@ function update(dt){
 
     if(p.regen>0)p.hp=Math.min(p.maxhp,p.hp+p.regen*dt);
     G.aimScale=rangeMul();
-    for(const id in p.weapons)fireWeapon(p,id,p.weapons[id],dt);
+    G.aimP=p;for(const id in p.weapons)fireWeapon(p,id,p.weapons[id],dt);G.aimP=null;
     for(const id in p.relics)fireRelic(p,id,p.relics[id],dt);
     G.aimScale=0;
 

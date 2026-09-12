@@ -29,9 +29,10 @@ reload the page with a cache-busting query and pick up a fresh deploy.
 - `playground.html` — isolated 10-wave event lab with timed soft transitions,
   survivor carryover, six movement-only opportunities, and a Slagmaw finale.
   Wave 7 is THE CRYSTAL MAZE (2026-09-12): the floor around the party rises as
-  breakable crystal shards with thin noise-carved corridors, every shot is spent
-  on the shard it hits, a broken shard pays a gem, and the wave's ghosts drift
-  through crystal and rock (`tools/art/ghost.mjs`, `tools/art/crystal.mjs`).
+  breakable crystal shards with thin noise-carved corridors; pushing into a
+  shard aims that player's fire at it (movement is the input), every shot is
+  spent on the shard it hits, a broken shard pays a gem, and the wave's ghosts
+  drift through crystal and rock (`tools/art/ghost.mjs`, `tools/art/crystal.mjs`).
   Starting wave: LB/RB (Q/E) on the PLAYGROUND card of the mode screen, or
   open `playground.html?wave=7`; a skip start grants the levels the skipped
   waves would have paid (their base budgets plus the wave-1 school level).

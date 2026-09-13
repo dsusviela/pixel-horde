@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#050507">
+<title>Pixel Horde — Crawl Tiles POC</title>
+<style>
+  :root{--acc:#b488ff;--cream:#e7d5a7}
+  html,body{margin:0;height:100%;background:#050507;overflow:hidden;font-family:"Courier New",ui-monospace,monospace;color:#b8afa9}
+  canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+  #stage{position:fixed;inset:0;display:grid;place-items:center}
+  #hud{position:fixed;left:14px;top:12px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#7f7884;pointer-events:none;line-height:1.7;text-shadow:1px 1px #000}
+  #hud b{color:var(--cream);font-weight:400}
+  #hud i{color:var(--acc);font-style:normal}
+  #keys{position:fixed;right:14px;bottom:12px;font-size:10px;letter-spacing:.08em;color:#5f5964;pointer-events:none;text-align:right;line-height:1.7;text-shadow:1px 1px #000}
+  #keys b{color:#8f8894;font-weight:400}
+  #banner{position:fixed;left:0;right:0;top:38%;text-align:center;font-size:22px;letter-spacing:.3em;color:#fffdf4;text-shadow:0 0 14px var(--acc),2px 2px #000;pointer-events:none;opacity:0;transition:opacity .3s}
+  #banner small{display:block;font-size:10px;letter-spacing:.2em;color:#a99fb0;margin-top:8px}
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="c"></canvas></div>
+<div id="hud"></div>
+<div id="keys"><b>WASD / arrows / pad</b> move · auto-cast<br><b>T</b> theme · <b>L</b> light · <b>G</b> glow · <b>M</b> muted horde · <b>R</b> restart</div>
+<div id="banner"></div>
+<script>
+'use strict';
+const ATLAS_B64="@@ATLAS@@";
+const MAP=@@MAP@@;
+
+// ---------- canvas + layers ----------
+const W=512,H=288,T=32;
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+cv.width=W;cv.height=H;ctx.imageSmoothingEnabled=false;
+function fit(){const s=Math.max(1,Math.floor(Math.min(innerWidth/W,innerHeight/H)));cv.style.width=W*s+'px';cv.style.height=H*s+'px';}
+addEventListener('resize',fit);fit();
+function layer(){const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');x.imageSmoothingEnabled=false;return [c,x];}
+const [world,wc]=layer(),[dark,dc]=layer(),[glow,gc]=layer();
+
+// ---------- colours ----------
+const ORANGE='rgba(255,120,40,1)',VIOLET='rgba(180,136,255,1)',GREEN='rgba(120,230,120,1)',CREAM='rgba(255,220,170,1)',
+      GOLD='rgba(255,214,120,1)',AZURE='rgba(110,170,255,1)',TEAL='rgba(120,230,230,1)',MOON='rgba(150,180,255,1)';
+
+// ---------- themes ----------
+const THEMES={
+  dark:{
+    label:'crawl tiles poc · dark',acc:'#b488ff',cream:'#e7d5a7',
+    ambient:'rgba(3,2,7,0.88)',moon:null,
+    floor:(x,y,near)=>near?'cobble'+(1+ri(3)):rnd()<0.12?'dirt'+ri(8):'volc'+ri(7),
+    wall:(x,y)=>(x+y)%5===0?'swall'+ri(2):'vwall'+ri(4),wallShade:0.35,crystal:false,
+    river:'lava',lake1:'lava',lake2:'lava',
+    props:[[10,6,'column'],[30,5,'pillar'],[44,12,'stump'],[6,15,'column'],[20,26,'pillar'],[36,28,'stump'],[24,16,'altar'],[14,29,'column'],[42,20,'column']],
+    runeCircle:false,motes:'ember',
+    hero:'elf_none',heroS:'necro',heroLight:[CREAM,0.10,VIOLET,0.14],
+    magic:VIOLET,gem:['#3f8a3c','#d2ffb8'],gemLight:GREEN,
+    mute:[0.45,0.78,0.74,0.86],
+    waves:[['skel','skel','skel_dog','bat'],['skel','ghoul','skull','skel_dog'],['necrophage','ghoul','bat','hound','shadow'],['wight','wraith','skel','lsnake','spec_dog'],['hulk','skel_war','skull','hound','lworm'],['mummy','wraith','lsnake','skel_war','ghoul','shadow']],
+    names:['','the cold dead','ghouls and skulls','fauna of the vent','wights and wraiths','the forge stirs','the long night'],
+    boss:{s:'balrug',name:'SLAGMAW',sub:'forge incarnate · stand-in: balrug 2x',orbit:'fvortex',shot:'orbfire',puddle:['cfire0','cfire1','cfire2'],light:ORANGE,fall:'SLAGMAW FALLS'},
+    ally:'skel_war',allyFx:'sp_animate',allyLight:VIOLET,
+    fx:{shot:['ctrail0','ctrail1','ctrail2','ctrail3'],hit:['ctrail0','ctrail1','ctrail2','ctrail3'],ring:'cmiasma',puff:'cgloom',burst:['cfire0','cfire1','cfire2'],level:'halo'},
+  },
+  high:{
+    label:'crawl tiles poc · high fantasy',acc:'#8fc3ff',cream:'#ffe9b8',
+    ambient:'rgba(8,12,32,0.68)',moon:[MOON,0.045],
+    floor:(x,y,near)=>near?'cfloor'+ri(4):rnd()<0.14?'vines'+ri(4):'marble'+(1+ri(6)),
+    wall:(x,y)=>((x*7+y*3)%11===0)?'cwall'+ri(4):((x+y)%9===0?'relief'+ri(2):'mwall'+(1+ri(4))),wallShade:0.22,crystal:true,
+    river:'water',lake1:'water',lake2:'lava',
+    props:[[10,6,'fount'],[30,5,'silver'],[44,12,'arch'],[6,15,'guard'],[20,26,'icestatue'],[36,28,'fount'],[24,16,'portal'],[14,29,'gstatue'],[42,20,'guard'],[24,4,'zotgate'],[3,29,'bfount']],
+    runeCircle:true,motes:'mote',
+    heroS:'elf_priest',heroLight:[GOLD,0.20,AZURE,0.08],
+    magic:AZURE,gem:['#8a6a1a','#fff3c0'],gemLight:GOLD,
+    mute:[0.7,0.92,0.92,0.98],
+    waves:[['skel','sprig','wolf','bat'],['sprig','sprig_r','harpy','skel_dog','skel'],['draco_g','draco_p','centaur','harpy','icebeast'],['elf_knight','elf_mage','wraith','griffon','aelem'],['sgolem','minotaur','draco_y','blight','wyvern'],['elf_sorc','hydra','cgolem','draco_w','titan','shadow']],
+    names:['','the restless dead','fey of the glade','the drakes descend','court of the deep elves','the wyrm wakes','the long dawn'],
+    boss:{s:'gdragon',name:'THE GOLDEN WYRM',sub:'stand-in: golden dragon 2x',orbit:'blight',shot:'blight',puddle:['ccold0','ccold1','ccold2'],light:GOLD,fall:'THE WYRM FALLS'},
+    ally:'cherub',allyFx:'sp_corona',allyLight:GOLD,
+    fx:{shot:['ccold0','ccold1','ccold2','ccold1'],hit:['cblue','ccold0','cblue','ccold1'],ring:'halo',puff:'cblue',burst:['ccold0','ccold1','ccold2'],level:'halo'},
+  },
+};
+const Q=new URLSearchParams(location.search);
+let themeName=Q.get('theme')==='high'?'high':'dark',TH=THEMES[themeName];
+let showLight=Q.get('light')!=='0',showGlow=Q.get('glow')!=='0',muted=Q.get('muted')!=='0';
+const FF=+Q.get('ff')||0,GOD=Q.get('god')==='1';
+
+// ---------- atlas ----------
+const atlas=new Image();atlas.src='data:image/png;base64,'+ATLAS_B64;
+let atlasMuted=null;
+function buildMuted(){
+  const [sat,kr,kg,kb]=TH.mute;
+  const c=document.createElement('canvas');c.width=atlas.width;c.height=atlas.height;
+  const x=c.getContext('2d');x.drawImage(atlas,0,0);
+  const id=x.getImageData(0,0,c.width,c.height),d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    const r=d[i],g=d[i+1],b=d[i+2];const l=0.3*r+0.59*g+0.11*b;
+    d[i]=(l+(r-l)*sat)*kr;d[i+1]=(l+(g-l)*sat)*kg;d[i+2]=(l+(b-l)*sat)*kb;
+  }
+  x.putImageData(id,0,0);return c;
+}
+function tile(c,name,x,y,w=T,h=T,src=atlas){const p=MAP[name];c.drawImage(src,p[0],p[1],T,T,x,y,w,h);}
+function sprite(c,name,x,y,flip,scale=1,src=atlas,alpha=1){
+  const p=MAP[name],s=T*scale;
+  c.save();c.globalAlpha=alpha;c.translate(Math.round(x),Math.round(y));if(flip)c.scale(-1,1);
+  c.drawImage(src,p[0],p[1],T,T,-s/2,-s+4*scale,s,s);c.restore();
+}
+
+// ---------- light sprites ----------
+const lightCache={};
+function lightSprite(r,color){
+  const k=r+color;if(lightCache[k])return lightCache[k];
+  const c=document.createElement('canvas');c.width=c.height=r*2;const x=c.getContext('2d');
+  const g=x.createRadialGradient(r,r,0,r,r,r);g.addColorStop(0,color);g.addColorStop(0.45,color.replace(/[\d.]+\)$/,'0.45)'));g.addColorStop(1,color.replace(/[\d.]+\)$/,'0)'));
+  x.fillStyle=g;x.fillRect(0,0,r*2,r*2);return lightCache[k]=c;
+}
+function punch(x,y,r,a=1){dc.globalAlpha=a;dc.drawImage(lightSprite(r,'rgba(255,255,255,1)'),Math.round(x-r),Math.round(y-r));dc.globalAlpha=1;}
+function tint(x,y,r,color,a){gc.globalAlpha=a;gc.drawImage(lightSprite(r,color),Math.round(x-r),Math.round(y-r));gc.globalAlpha=1;}
+
+// ---------- rng ----------
+let seed=1337;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+const ri=n=>Math.floor(rnd()*n);
+
+// ---------- map ----------
+const MW=48,MH=32,FLOOR=0,LAVA=1,WALL=2,WATER=3;
+let grid,phase,props,motes,ground,gx,crystals;
+const HZ={lava:LAVA,water:WATER};
+function genMap(){
+  seed=1337;grid=[];phase=[];props=[];motes=[];crystals=[];
+  const river=HZ[TH.river],lake1=HZ[TH.lake1],lake2=HZ[TH.lake2];
+  const floorName=[];
+  for(let y=0;y<MH;y++){grid[y]=[];phase[y]=[];floorName[y]=[];for(let x=0;x<MW;x++){
+    let t=FLOOR;
+    if(x<1||y<1||x>=MW-1||y>=MH-1)t=WALL;
+    const cy=MH*0.56+Math.sin(x*0.33)*2.6+Math.sin(x*0.09+1)*4.2;
+    const wdt=1.4+Math.sin(x*0.5)*0.5;
+    if(t===FLOOR&&Math.abs(y-cy)<wdt)t=river;
+    if(t===FLOOR&&Math.hypot(x-38,y-7)<3.6)t=lake1;
+    if(t===FLOOR&&Math.hypot(x-8,y-24)<2.4)t=lake2;
+    if(t===FLOOR&&((x>3&&x<7&&y>4&&y<7)||(x>40&&x<45&&y>25&&y<28)))t=WALL;
+    grid[y][x]=t;
+    const near=Math.hypot(x-MW/2,y-MH/2)<3.2;
+    floorName[y][x]=TH.floor(x,y,near);
+    phase[y][x]=ri(4);
+  }}
+  for(const [x,y,n] of TH.props)if(grid[y][x]===FLOOR)props.push({x,y,n});
+  for(let i=0;i<900;i++){const x=ri(MW*T),y=ri(MH*T);if(grid[(y/T)|0][(x/T)|0]===FLOOR)motes.push({x,y,p:rnd()*6.28,s:0.6+rnd()});}
+  ground=document.createElement('canvas');ground.width=MW*T;ground.height=MH*T;gx=ground.getContext('2d');gx.imageSmoothingEnabled=false;
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){
+    const t=grid[y][x];
+    if(t===WALL){const w=TH.wall(x,y);tile(gx,w,x*T,y*T);if(TH.crystal&&w.startsWith('cwall'))crystals.push({x:x*T+16,y:y*T+16});}
+    else tile(gx,floorName[y][x],x*T,y*T);
+  }
+  gx.fillStyle=`rgba(0,0,0,${TH.wallShade})`;
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(grid[y][x]===WALL){gx.fillRect(x*T,y*T,T,T);}
+  for(const p of props)if(!ANIM[p.n])tile(gx,p.n,p.x*T,p.y*T);
+}
+const ANIM={fount:['fount1','fount2'],guard:['guard1','guard2','guard3','guard4']};
+function solid(x,y){const tx=(x/T)|0,ty=(y/T)|0;if(tx<0||ty<0||tx>=MW||ty>=MH)return true;const t=grid[ty][tx];if(t===WALL)return true;return props.some(p=>p.x===tx&&p.y===ty);}
+function at(x,y){const tx=(x/T)|0,ty=(y/T)|0;return tx>=0&&ty>=0&&tx<MW&&ty<MH?grid[ty][tx]:WALL;}
+function inLava(x,y){return at(x,y)===LAVA;}
+function inWater(x,y){return at(x,y)===WATER;}
+
+// ---------- entities ----------
+const TYPES={
+  skel:{s:'skel',hp:12,spd:34,dmg:6,r:9},
+  ghoul:{s:'ghoul',hp:20,spd:30,dmg:8,r:10},
+  necrophage:{s:'necrophage',hp:16,spd:40,dmg:7,r:10},
+  skel_dog:{s:'skel_dog',hp:8,spd:72,dmg:5,r:8},
+  skull:{s:'skull',hp:6,spd:62,dmg:4,r:7,fly:true},
+  wight:{s:'wight',hp:28,spd:32,dmg:10,r:10},
+  wraith:{s:'wraith',hp:22,spd:46,dmg:9,r:10,fly:true,ghost:true},
+  shadow:{s:'shadow',hp:14,spd:52,dmg:8,r:9,fly:true,ghost:true},
+  hulk:{s:'hulk',hp:90,spd:22,dmg:16,r:13,scale:1.3},
+  hound:{s:'hound',hp:14,spd:84,dmg:7,r:9,ember:true},
+  lsnake:{s:'lsnake',hp:18,spd:42,dmg:8,r:9,ember:true,lavaborn:true},
+  lworm:{s:'lworm',hp:30,spd:26,dmg:11,r:11,ember:true,lavaborn:true},
+  bat:{s:'bat',hp:5,spd:92,dmg:3,r:7,fly:true},
+  skel_war:{s:'skel_war',hp:42,spd:36,dmg:12,r:11},
+  mummy:{s:'mummy',hp:55,spd:20,dmg:14,r:11},
+  spec_dog:{s:'spec_dog',hp:12,spd:78,dmg:6,r:8,fly:true,ghost:true},
+  // high fantasy roster
+  sprig:{s:'sprig',hp:9,spd:80,dmg:5,r:8,fey:true},
+  sprig_r:{s:'sprig_r',hp:16,spd:96,dmg:7,r:9,fey:true},
+  wolf:{s:'wolf',hp:14,spd:76,dmg:7,r:9},
+  harpy:{s:'harpy',hp:14,spd:70,dmg:6,r:9,fly:true},
+  draco_g:{s:'draco_g',hp:30,spd:38,dmg:10,r:11},
+  draco_p:{s:'draco_p',hp:30,spd:38,dmg:10,r:11,arcane:true},
+  draco_y:{s:'draco_y',hp:36,spd:40,dmg:12,r:11,ember:true},
+  draco_w:{s:'draco_w',hp:40,spd:40,dmg:12,r:11,frost:true},
+  centaur:{s:'centaur',hp:26,spd:88,dmg:9,r:11},
+  icebeast:{s:'icebeast',hp:34,spd:30,dmg:11,r:11,frost:true},
+  elf_knight:{s:'elf_knight',hp:44,spd:44,dmg:12,r:10},
+  elf_mage:{s:'elf_mage',hp:20,spd:36,dmg:9,r:10,arcane:true},
+  elf_sorc:{s:'elf_sorc',hp:36,spd:38,dmg:13,r:10,arcane:true},
+  griffon:{s:'griffon',hp:40,spd:72,dmg:11,r:12,fly:true},
+  aelem:{s:'aelem',hp:24,spd:90,dmg:8,r:10,fly:true,ghost:true},
+  sgolem:{s:'sgolem',hp:120,spd:20,dmg:18,r:13,scale:1.25},
+  minotaur:{s:'minotaur',hp:80,spd:48,dmg:16,r:12},
+  blight:{s:'blight',hp:10,spd:110,dmg:9,r:8,fly:true,arcane:true},
+  wyvern:{s:'wyvern',hp:60,spd:58,dmg:14,r:12,fly:true},
+  hydra:{s:'hydra',hp:140,spd:26,dmg:18,r:14,scale:1.3},
+  cgolem:{s:'cgolem',hp:110,spd:24,dmg:16,r:13,arcane:true,scale:1.2},
+  titan:{s:'titan',hp:160,spd:30,dmg:20,r:14,scale:1.4,arcane:true},
+};
+const WAVE_LEN=28,BOSS_WAVE=5;
+
+let hero,enemies,allies,gems,shots,fx,puddles,boss,wave,waveT,spawnT,kills,raised,time,dead,won,cam,shake;
+function applyTheme(){
+  document.documentElement.style.setProperty('--acc',TH.acc);document.documentElement.style.setProperty('--cream',TH.cream);
+  atlasMuted=buildMuted();
+}
+function reset(){
+  applyTheme();genMap();
+  hero={x:MW*T/2,y:MH*T/2+40,r:9,hp:100,maxhp:100,xp:0,lvl:1,next:8,cast:0,castCd:0.55,ring:0,ringCd:4.5,face:false,vx:0,vy:0,hurt:0,regen:1.2};
+  enemies=[];allies=[];gems=[];shots=[];fx=[];puddles=[];boss=null;
+  wave=1;waveT=0;spawnT=0;kills=0;raised=0;time=0;dead=false;won=false;shake=0;
+  cam={x:hero.x-W/2,y:hero.y-H/2};banner('WAVE 1',TH.names[1]);
+}
+function banner(t,s){const b=document.getElementById('banner');b.innerHTML=t+(s?'<small>'+s+'</small>':'');b.style.opacity=1;clearTimeout(banner.t);banner.t=setTimeout(()=>b.style.opacity=0,1800);}
+
+function spawn(type){
+  const d=TYPES[type];let x,y,tries=0;
+  do{
+    if(d.lavaborn){x=ri(MW)*T+16;y=ri(MH)*T+16;if(!inLava(x,y)){tries++;continue;}}
+    else{
+      const side=ri(4);
+      x=side===0?cam.x-30:side===1?cam.x+W+30:cam.x+rnd()*W;
+      y=side===2?cam.y-30:side===3?cam.y+H+30:cam.y+rnd()*H;
+      x=Math.max(T+8,Math.min(MW*T-T-8,x));y=Math.max(T+8,Math.min(MH*T-T-8,y));
+      if(solid(x,y)||(!d.fly&&!d.ember&&inLava(x,y))){tries++;continue;}
+    }
+    break;
+  }while(tries<20);
+  if(tries>=20)return;
+  enemies.push({t:type,d,x,y,hp:d.hp,max:d.hp,flip:x>hero.x,bob:rnd()*6.28,hit:0,vx:0,vy:0});
+}
+function spawnBoss(){
+  boss={x:MW*T/2,y:T*4,r:22,hp:1100,max:1100,flip:false,bob:0,hit:0,trail:0,shot:0,phase:0,spd:24};
+  banner(TH.boss.name,TH.boss.sub);
+}
+
+// ---------- input ----------
+const keys={};
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;
+  if(k==='l')showLight=!showLight;if(k==='g')showGlow=!showGlow;if(k==='m')muted=!muted;
+  if(k==='r')reset();if(k==='t'){themeName=themeName==='dark'?'high':'dark';TH=THEMES[themeName];reset();}
+  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();});
+addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
+function readInput(){
+  let ax=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),ay=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
+  const pads=navigator.getGamepads?navigator.getGamepads():[];
+  for(const p of pads){if(!p)continue;const px=p.axes[0]||0,py=p.axes[1]||0;if(Math.hypot(px,py)>0.25){ax=px;ay=py;}
+    if(p.buttons[14]?.pressed)ax=-1;if(p.buttons[15]?.pressed)ax=1;if(p.buttons[12]?.pressed)ay=-1;if(p.buttons[13]?.pressed)ay=1;}
+  const l=Math.hypot(ax,ay);if(l>1){ax/=l;ay/=l;}return [ax,ay];
+}
+
+// ---------- update ----------
+function moveEntity(e,dx,dy){const nx=e.x+dx,ny=e.y+dy;if(!solid(nx,e.y))e.x=nx;if(!solid(e.x,ny))e.y=ny;}
+function nearest(list,x,y,maxd){let b=null,bd=maxd*maxd;for(const e of list){const d=(e.x-x)**2+(e.y-y)**2;if(d<bd){bd=d;b=e;}}return b;}
+function hurtEnemy(e,dmg,kx,ky){
+  e.hp-=dmg;e.hit=0.12;e.vx+=kx;e.vy+=ky;
+  if(e.hp<=0&&!e.deadFlag){e.deadFlag=true;kills++;
+    gx.globalAlpha=0.5;tile(gx,'blood'+(1+ri(3)),e.x-16,e.y-18);gx.globalAlpha=1;
+    gems.push({x:e.x+ri(9)-4,y:e.y+ri(9)-4,t:0,v:e.d.hp>=40?3:1});
+    fx.push({k:'puff',x:e.x,y:e.y-8,t:0,life:0.35});
+    if(e.d.ember||e.d.arcane||e.d.frost)fx.push({k:'burst',x:e.x,y:e.y-8,t:0,life:0.4});
+    if(kills%7===0&&allies.length<4){allies.push({x:e.x,y:e.y,hp:34,max:34,flip:false,bob:rnd()*6,hit:0,vx:0,vy:0});raised++;fx.push({k:'raise',x:e.x,y:e.y,t:0,life:0.8});}
+  }
+}
+function update(dt){
+  time+=dt;
+  if(dead)return;
+  const [ax,ay]=readInput();
+  const wading=inWater(hero.x,hero.y);
+  const spd=wading?46:78;hero.vx=ax*spd;hero.vy=ay*spd;
+  if(ax)hero.face=ax<0;
+  moveEntity(hero,hero.vx*dt,hero.vy*dt);
+  hero.x=Math.max(T+8,Math.min(MW*T-T-8,hero.x));hero.y=Math.max(T+8,Math.min(MH*T-T-8,hero.y));
+  if(inLava(hero.x,hero.y)){hero.hp-=28*dt;hero.hurt=0.1;}
+  if(GOD)hero.hp=hero.maxhp;
+  hero.hp=Math.min(hero.maxhp,hero.hp+hero.regen*dt);hero.hurt=Math.max(0,hero.hurt-dt);
+  cam.x+=((hero.x-W/2)-cam.x)*Math.min(1,dt*6);cam.y+=((hero.y-H/2)-cam.y)*Math.min(1,dt*6);
+  cam.x=Math.max(0,Math.min(MW*T-W,cam.x));cam.y=Math.max(0,Math.min(MH*T-H,cam.y));
+  waveT+=dt;
+  if(waveT>WAVE_LEN){wave++;waveT=0;banner('WAVE '+wave,TH.names[Math.min(wave,6)]);if(wave===BOSS_WAVE&&!boss)spawnBoss();}
+  spawnT-=dt;
+  if(spawnT<=0){spawnT=Math.max(0.18,0.8-wave*0.09);const pool=TH.waves[Math.min(wave-1,TH.waves.length-1)];const n=1+(rnd()<0.4+wave*0.08?1:0)+(wave>2&&rnd()<0.3?1:0);for(let i=0;i<n;i++)if(enemies.length<220)spawn(pool[ri(pool.length)]);}
+  const targets=[hero,...allies];
+  for(const e of enemies){
+    const tg=allies.length&&rnd()<0.15?nearest(targets,e.x,e.y,400)||hero:hero;
+    let dx=tg.x-e.x,dy=tg.y-e.y;const d=Math.hypot(dx,dy)||1;dx/=d;dy/=d;
+    e.vx*=0.82;e.vy*=0.82;
+    let sp=e.d.spd;if(!e.d.fly&&inWater(e.x,e.y))sp*=0.55;
+    let mx=dx*sp+e.vx,my=dy*sp+e.vy;
+    if(!e.d.fly&&!e.d.ember&&inLava(e.x+dx*12,e.y+dy*12)){mx=-dy*sp*0.8;my=dx*sp*0.8;}
+    if(e.d.fly)e.x+=mx*dt,e.y+=my*dt;else moveEntity(e,mx*dt,my*dt);
+    if(Math.abs(mx)>4)e.flip=mx<0;
+    e.bob+=dt*(e.d.fly?5:9);e.hit=Math.max(0,e.hit-dt);
+    if(!e.d.fly&&!e.d.ember&&inLava(e.x,e.y)){hurtEnemy(e,24*dt,0,0);}
+    const dh=Math.hypot(hero.x-e.x,hero.y-e.y);
+    if(dh<e.d.r+hero.r+2){hero.hp-=e.d.dmg*dt*1.6;hero.hurt=0.12;shake=Math.max(shake,1.5);}
+  }
+  for(let i=0;i<enemies.length;i++){const a=enemies[i];for(let j=i+1;j<enemies.length;j++){const b=enemies[j];const dx=b.x-a.x,dy=b.y-a.y;const rr=a.d.r+b.d.r;const d2=dx*dx+dy*dy;if(d2<rr*rr&&d2>0.01){const d=Math.sqrt(d2),p=(rr-d)/d*0.5;a.x-=dx*p;a.y-=dy*p;b.x+=dx*p;b.y+=dy*p;}}}
+  for(const a of allies){
+    const tg=nearest(enemies,a.x,a.y,260);a.vx*=0.85;a.vy*=0.85;
+    if(tg){let dx=tg.x-a.x,dy=tg.y-a.y;const d=Math.hypot(dx,dy)||1;if(d>tg.d.r+8){moveEntity(a,dx/d*52*dt,dy/d*52*dt);}else{hurtEnemy(tg,14*dt,0,0);}a.flip=dx<0;}
+    else{const dx=hero.x-a.x,dy=hero.y-a.y;const d=Math.hypot(dx,dy)||1;if(d>40)moveEntity(a,dx/d*50*dt,dy/d*50*dt);}
+    a.bob+=dt*8;
+    for(const e of enemies){if(Math.hypot(e.x-a.x,e.y-a.y)<e.d.r+9)a.hp-=e.d.dmg*dt*0.6;}
+    if(inLava(a.x,a.y))a.hp-=24*dt;
+  }
+  allies=allies.filter(a=>a.hp>0);
+  hero.cast-=dt;
+  if(hero.cast<=0){const tg=nearest(enemies.concat(boss?[boss]:[]),hero.x,hero.y,230);
+    if(tg){hero.cast=hero.castCd;let dx=tg.x-hero.x,dy=(tg.y-8)-(hero.y-8);
+      const n=hero.lvl>=4?2:1;for(let i=0;i<n;i++){const a=Math.atan2(dy,dx)+(i?(i%2?0.18:-0.18):0);shots.push({x:hero.x,y:hero.y-10,vx:Math.cos(a)*230,vy:Math.sin(a)*230,life:1.1,dmg:11+hero.lvl*1.5,pierce:hero.lvl>=6?1:0,t:0});}}}
+  hero.ring-=dt;
+  if(hero.ring<=0&&(enemies.length||boss)){hero.ring=hero.ringCd;fx.push({k:'ring',x:hero.x,y:hero.y-6,t:0,life:0.7});
+    for(const e of enemies)if(Math.hypot(e.x-hero.x,e.y-hero.y)<78){const dx=e.x-hero.x,dy=e.y-hero.y,d=Math.hypot(dx,dy)||1;hurtEnemy(e,16+hero.lvl*2,dx/d*90,dy/d*90);}
+    if(boss&&Math.hypot(boss.x-hero.x,boss.y-hero.y)<90){boss.hp-=20+hero.lvl*2;boss.hit=0.12;}}
+  for(const s of shots){s.t+=dt;s.life-=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;
+    if(solid(s.x,s.y+8)){s.life=0;fx.push({k:'puff',x:s.x,y:s.y,t:0,life:0.25});continue;}
+    if(s.boss)continue;
+    for(const e of enemies){if(e.deadFlag)continue;if(Math.hypot(e.x-s.x,(e.y-8)-s.y)<e.d.r+5){hurtEnemy(e,s.dmg,s.vx*0.12,s.vy*0.12);fx.push({k:'hit',x:s.x,y:s.y,t:0,life:0.22});if(s.pierce>0)s.pierce--;else{s.life=0;break;}}}
+    if(boss&&s.life>0&&Math.hypot(boss.x-s.x,(boss.y-16)-s.y)<boss.r){boss.hp-=s.dmg;boss.hit=0.12;fx.push({k:'hit',x:s.x,y:s.y,t:0,life:0.22});s.life=0;}
+  }
+  shots=shots.filter(s=>s.life>0);
+  enemies=enemies.filter(e=>!e.deadFlag);
+  if(boss){
+    boss.phase+=dt;boss.hit=Math.max(0,boss.hit-dt);boss.bob+=dt*4;
+    let dx=hero.x-boss.x,dy=hero.y-boss.y;const d=Math.hypot(dx,dy)||1;dx/=d;dy/=d;
+    boss.x+=dx*boss.spd*dt;boss.y+=dy*boss.spd*dt;boss.flip=dx<0;
+    boss.trail-=dt;if(boss.trail<=0){boss.trail=0.55;puddles.push({x:boss.x+ri(21)-10,y:boss.y+ri(11)-5,t:0,life:7});}
+    boss.shot-=dt;if(boss.shot<=0){boss.shot=boss.hp<boss.max*0.5?1.1:1.9;const n=boss.hp<boss.max*0.5?3:1;for(let i=0;i<n;i++){const a=Math.atan2(dy,dx)+(i-(n-1)/2)*0.35;shots.push({x:boss.x,y:boss.y-14,vx:Math.cos(a)*120,vy:Math.sin(a)*120,life:2.2,dmg:0,boss:true,t:0});}}
+    if(d<boss.r+hero.r){hero.hp-=22*dt;hero.hurt=0.12;shake=3;}
+    if(boss.hp<=0){boss=null;won=true;kills+=10;banner(TH.boss.fall,'the horde does not stop');for(let i=0;i<12;i++)fx.push({k:'burst',x:hero.x+ri(120)-60,y:hero.y+ri(80)-40,t:-i*0.05,life:0.5});for(let i=0;i<5;i++)gems.push({x:hero.x+ri(60)-30,y:hero.y+ri(40)-20,t:0,v:3});}
+  }
+  for(const s of shots)if(s.boss&&Math.hypot(hero.x-s.x,(hero.y-8)-s.y)<hero.r+6){hero.hp-=14;hero.hurt=0.15;s.life=0;shake=2;fx.push({k:'burst',x:s.x,y:s.y,t:0,life:0.3});}
+  shots=shots.filter(s=>s.life>0);
+  for(const p of puddles){p.t+=dt;if(Math.hypot(hero.x-p.x,hero.y-p.y)<14){hero.hp-=18*dt;hero.hurt=0.1;}}
+  puddles=puddles.filter(p=>p.t<p.life);
+  for(const g of gems){g.t+=dt;const dx=hero.x-g.x,dy=hero.y-g.y,d=Math.hypot(dx,dy);
+    if(d<46){g.x+=dx/d*Math.min(d,190*dt);g.y+=dy/d*Math.min(d,190*dt);}
+    if(d<8){g.got=true;hero.xp+=g.v;if(hero.xp>=hero.next){hero.xp-=hero.next;hero.lvl++;hero.next=Math.round(hero.next*1.45);hero.maxhp+=8;hero.hp=Math.min(hero.maxhp,hero.hp+20);hero.castCd*=0.9;hero.ringCd*=0.92;fx.push({k:'levelup',x:hero.x,y:hero.y,t:0,life:0.8});banner('LEVEL '+hero.lvl,'');}}}
+  gems=gems.filter(g=>!g.got&&g.t<24);if(gems.length>300)gems.splice(0,gems.length-300);
+  for(const f of fx)f.t+=dt;fx=fx.filter(f=>f.t<f.life);
+  shake=Math.max(0,shake-dt*8);
+  if(hero.hp<=0){dead=true;banner('FALLEN','R to rise again');}
+}
+
+// ---------- draw ----------
+function enemyLight(e){return e.d.ember?ORANGE:e.d.ghost?'rgba(140,200,255,1)':e.d.arcane?AZURE:e.d.frost?TEAL:e.d.fey?GREEN:null;}
+function drawEnemy(e,cx,cy){const src=muted?atlasMuted:atlas;const bob=Math.sin(e.bob)*(e.d.fly?2.5:1.2);
+  sprite(wc,e.d.s,e.x-cx,e.y-cy+bob,e.flip,e.d.scale||1,src,e.d.ghost?0.7:1);
+  if(e.hit>0){wc.globalCompositeOperation='lighter';sprite(wc,e.d.s,e.x-cx,e.y-cy+bob,e.flip,e.d.scale||1,src,0.6);wc.globalCompositeOperation='source-over';}}
+function runeCircle(x,y,r,a){
+  wc.save();wc.translate(x,y);wc.globalAlpha=a;wc.strokeStyle='#d9b45a';wc.lineWidth=1;
+  wc.beginPath();wc.arc(0,0,r,0,6.2832);wc.stroke();wc.beginPath();wc.arc(0,0,r*0.72,0,6.2832);wc.stroke();
+  wc.rotate(time*0.25);wc.beginPath();for(let i=0;i<7;i++){const a1=i/7*6.2832,a2=((i+3)%7)/7*6.2832;wc.moveTo(Math.cos(a1)*r*0.72,Math.sin(a1)*r*0.72);wc.lineTo(Math.cos(a2)*r*0.72,Math.sin(a2)*r*0.72);}wc.stroke();
+  wc.rotate(-time*0.6);wc.fillStyle='#ffe9a8';for(let i=0;i<12;i++){const a1=i/12*6.2832;wc.fillRect(Math.round(Math.cos(a1)*r*0.86)-1,Math.round(Math.sin(a1)*r*0.86)-1,2,2);}
+  wc.restore();
+}
+function draw(){
+  const sx=shake?Math.round((rnd()-0.5)*shake*2):0,sy=shake?Math.round((rnd()-0.5)*shake*2):0;
+  const cx=Math.round(cam.x)+sx,cy=Math.round(cam.y)+sy;
+  wc.drawImage(ground,cx,cy,W,H,0,0,W,H);
+  const tx0=Math.max(0,(cx/T)|0),ty0=Math.max(0,(cy/T)|0),tx1=Math.min(MW-1,((cx+W)/T)|0),ty1=Math.min(MH-1,((cy+H)/T)|0);
+  const lf=(time*3)|0,wf=(time*1.5)|0;
+  for(let y=ty0;y<=ty1;y++)for(let x=tx0;x<=tx1;x++){const t=grid[y][x];if(t!==LAVA&&t!==WATER)continue;
+    const px=x*T-cx,py=y*T-cy;
+    if(t===LAVA){tile(wc,'lava'+((lf+phase[y][x])&3),px,py);wc.fillStyle='rgba(24,4,2,0.28)';wc.fillRect(px,py,T,T);wc.fillStyle='rgba(8,4,3,0.62)';}
+    else{tile(wc,((wf+phase[y][x])&1)?'water1':'water2',px,py);if(((time*4+phase[y][x])|0)%5===0){wc.globalAlpha=0.5;tile(wc,'shallow2',px,py);wc.globalAlpha=1;}wc.fillStyle='rgba(180,220,255,0.18)';}
+    if(grid[y-1][x]!==t)wc.fillRect(px,py,T,3);if(grid[y+1][x]!==t)wc.fillRect(px,py+T-3,T,3);
+    if(grid[y][x-1]!==t)wc.fillRect(px,py,3,T);if(grid[y][x+1]!==t)wc.fillRect(px+T-3,py,3,T);
+  }
+  for(const p of props){const fr=ANIM[p.n];if(!fr)continue;const px=p.x*T-cx,py=p.y*T-cy;if(px<-T||py<-T||px>W||py>H)continue;tile(wc,fr[((time*5)|0)%fr.length],px,py);}
+  if(TH.runeCircle)runeCircle(MW*T/2+16-cx,MH*T/2+16-cy,52,0.55+0.15*Math.sin(time*2));
+  for(const e of motes){let x=e.x-cx,y=e.y-cy;if(TH.motes==='mote'){y=y-((time*6*e.s+e.p*10)%48);x+=Math.sin(time*e.s+e.p)*3;}if(x<0||y<0||x>=W||y>=H)continue;const a=0.35+0.65*Math.max(0,Math.sin(time*e.s*2+e.p));
+    wc.fillStyle=TH.motes==='mote'?`rgba(${200+((a*55)|0)},${220+((a*35)|0)},255,${a*0.7})`:`rgba(255,${110+((a*80)|0)},40,${a*0.8})`;wc.fillRect(x,y,1,1);}
+  for(const p of puddles){const a=p.t<0.3?p.t/0.3:1-Math.max(0,(p.t-p.life+2)/2);wc.globalAlpha=a*0.9;tile(wc,TH.boss.puddle[((time*6)|0)%3],p.x-cx-16,p.y-cy-16);wc.globalAlpha=1;}
+  for(const g of gems){const x=Math.round(g.x-cx),y=Math.round(g.y-cy-3+Math.sin(g.t*6)*1.5),s=g.v>1?2:1;wc.fillStyle=TH.gem[0];wc.fillRect(x,y-2*s,s,s);wc.fillRect(x-s,y-s,3*s,s);wc.fillRect(x-2*s,y,5*s,s);wc.fillRect(x-s,y+s,3*s,s);wc.fillRect(x,y+2*s,s,s);wc.fillStyle=TH.gem[1];wc.fillRect(x,y,s,s);}
+  const order=[];
+  for(const e of enemies)order.push({y:e.y,f:()=>drawEnemy(e,cx,cy)});
+  for(const a of allies)order.push({y:a.y,f:()=>{sprite(wc,TH.ally,a.x-cx,a.y-cy+Math.sin(a.bob)*1.2,a.flip,1,atlasMuted,0.9);}});
+  order.push({y:hero.y,f:()=>{sprite(wc,TH.heroS,hero.x-cx,hero.y-cy+(hero.vx||hero.vy?Math.sin(time*11)*1.2:0),hero.face,1,atlas);
+    if(hero.hurt>0){wc.globalCompositeOperation='lighter';wc.globalAlpha=0.5;wc.fillStyle='#e66c88';wc.fillRect(hero.x-cx-8,hero.y-cy-26,16,28);wc.globalAlpha=1;wc.globalCompositeOperation='source-over';}}});
+  if(boss)order.push({y:boss.y,f:()=>{sprite(wc,TH.boss.s,boss.x-cx,boss.y-cy+Math.sin(boss.bob)*2,boss.flip,2,atlas);
+    sprite(wc,TH.boss.orbit,boss.x-cx+Math.cos(boss.phase*2.2)*30,boss.y-cy-14+Math.sin(boss.phase*2.2)*12,false,1,atlas,0.85);
+    if(boss.hit>0){wc.globalCompositeOperation='lighter';sprite(wc,TH.boss.s,boss.x-cx,boss.y-cy+Math.sin(boss.bob)*2,boss.flip,2,atlas,0.6);wc.globalCompositeOperation='source-over';}}});
+  order.sort((a,b)=>a.y-b.y);for(const o of order)o.f();
+  for(const s of shots){const x=s.x-cx,y=s.y-cy;
+    if(s.boss){sprite(wc,TH.boss.shot,x,y+12,false,0.75,atlas);}
+    else{wc.globalAlpha=0.9;const f=TH.fx.shot[((s.t*14)|0)%4];wc.drawImage(atlas,MAP[f][0],MAP[f][1],T,T,Math.round(x-9),Math.round(y-9),18,18);wc.globalAlpha=1;}}
+  for(const f of fx){const k=f.t/f.life;if(f.t<0)continue;const x=f.x-cx,y=f.y-cy;
+    if(f.k==='puff'){wc.globalAlpha=0.6*(1-k);tile(wc,TH.fx.puff,x-16-8*k,y-16-8*k,32+16*k,32+16*k);}
+    else if(f.k==='hit'){wc.globalAlpha=0.9*(1-k);wc.globalCompositeOperation='lighter';tile(wc,TH.fx.hit[((f.t*20)|0)%4],x-8-6*k,y-8-6*k,16+12*k,16+12*k);wc.globalCompositeOperation='source-over';}
+    else if(f.k==='burst'){wc.globalAlpha=1-k;wc.globalCompositeOperation='lighter';tile(wc,TH.fx.burst[((f.t*12)|0)%3],x-16-10*k,y-16-10*k,32+20*k,32+20*k);wc.globalCompositeOperation='source-over';}
+    else if(f.k==='ring'){const s=20+140*k;wc.globalAlpha=0.85*(1-k);if(TH.runeCircle)wc.globalCompositeOperation='lighter';tile(wc,TH.fx.ring,x-s/2,y-s/2,s,s);wc.globalCompositeOperation='source-over';}
+    else if(f.k==='raise'){wc.globalAlpha=0.9*(1-k);wc.globalCompositeOperation='lighter';tile(wc,TH.allyFx,x-16,y-24-20*k);wc.globalCompositeOperation='source-over';}
+    else if(f.k==='levelup'){wc.globalAlpha=0.8*(1-k);wc.globalCompositeOperation='lighter';tile(wc,TH.fx.level,x-16-10*k,y-22-10*k,32+20*k,32+20*k);wc.globalCompositeOperation='source-over';}
+    wc.globalAlpha=1;}
+  // ---------- light layer ----------
+  if(showLight){
+    dc.globalCompositeOperation='source-over';dc.clearRect(0,0,W,H);dc.fillStyle=TH.ambient;dc.fillRect(0,0,W,H);
+    dc.globalCompositeOperation='destination-out';
+    punch(hero.x-cx,hero.y-cy-8,118,1);
+    for(let y=ty0;y<=ty1;y++)for(let x=tx0;x<=tx1;x++){const t=grid[y][x];if(t===LAVA)punch(x*T-cx+16,y*T-cy+16,40,0.5);else if(t===WATER)punch(x*T-cx+16,y*T-cy+16,36,0.3);}
+    for(const c of crystals){const x=c.x-cx,y=c.y-cy;if(x>-40&&y>-40&&x<W+40&&y<H+40)punch(x,y,34,0.5);}
+    for(const p of props){const x=p.x*T-cx+16,y=p.y*T-cy+16;if(x<-40||y<-40||x>W+40||y>H+40)continue;if(ANIM[p.n]||p.n==='portal'||p.n==='zotgate'||p.n==='bfount'||p.n==='pillar')punch(x,y,40,0.7);}
+    for(const g of gems)punch(g.x-cx,g.y-cy-3,12,0.8);
+    for(const s of shots)punch(s.x-cx,s.y-cy,s.boss?30:22,0.9);
+    for(const a of allies)punch(a.x-cx,a.y-cy-8,26,0.6);
+    for(const e of enemies){const l=enemyLight(e);punch(e.x-cx,e.y-cy-8,l?22:16,l?0.55:0.3);}
+    for(const p of puddles)punch(p.x-cx,p.y-cy,34,0.7);
+    for(const f of fx){const k=f.t/f.life;if(f.t<0)continue;punch(f.x-cx,f.y-cy,f.k==='ring'?20+80*k:40,1-k);}
+    if(boss)punch(boss.x-cx,boss.y-cy-16,90,1);
+    if(TH.runeCircle)punch(MW*T/2+16-cx,MH*T/2+16-cy,70,0.5);
+    wc.drawImage(dark,0,0);
+  }
+  if(showGlow){
+    gc.clearRect(0,0,W,H);
+    if(TH.moon){gc.fillStyle=TH.moon[0].replace(/1\)$/,TH.moon[1]+')');gc.fillRect(0,0,W,H);}
+    for(let y=ty0;y<=ty1;y++)for(let x=tx0;x<=tx1;x++){const t=grid[y][x];if(t===LAVA)tint(x*T-cx+16,y*T-cy+16,48,ORANGE,0.12+0.04*Math.sin(time*3+phase[y][x]));else if(t===WATER)tint(x*T-cx+16,y*T-cy+16,44,TEAL,0.08+0.03*Math.sin(time*2+phase[y][x]));}
+    for(const c of crystals){const x=c.x-cx,y=c.y-cy;if(x>-40&&y>-40&&x<W+40&&y<H+40)tint(x,y,36,TEAL,0.25+0.08*Math.sin(time*2+c.x));}
+    for(const p of props){const x=p.x*T-cx+16,y=p.y*T-cy+16;if(x<-40||y<-40||x>W+40||y>H+40)continue;if(p.n==='fount'||p.n==='bfount'||p.n==='portal')tint(x,y,40,AZURE,0.35);else if(p.n==='guard'||p.n==='zotgate'||p.n==='silver'||p.n==='gstatue'||p.n==='arch')tint(x,y,36,GOLD,0.35);else if(p.n==='pillar')tint(x,y,30,VIOLET,0.3);}
+    tint(hero.x-cx,hero.y-cy-8,70,TH.heroLight[0],TH.heroLight[1]);tint(hero.x-cx,hero.y-cy-8,40,TH.heroLight[2],TH.heroLight[3]);
+    for(const g of gems)tint(g.x-cx,g.y-cy-3,10,TH.gemLight,0.55);
+    for(const s of shots)tint(s.x-cx,s.y-cy,s.boss?26:18,s.boss?TH.boss.light:TH.magic,0.7);
+    for(const a of allies)tint(a.x-cx,a.y-cy-8,20,TH.allyLight,0.35);
+    for(const e of enemies){const l=enemyLight(e);if(l)tint(e.x-cx,e.y-cy-8,20,l,0.4);else tint(e.x-cx,e.y-cy-8,14,'rgba(150,120,200,1)',0.18);}
+    for(const p of puddles)tint(p.x-cx,p.y-cy,30,TH.boss.light,0.5);
+    for(const f of fx){const k=f.t/f.life;if(f.t<0)continue;const col=f.k==='burst'?TH.boss.light:f.k==='levelup'?CREAM:f.k==='raise'?TH.allyLight:TH.magic;tint(f.x-cx,f.y-cy,f.k==='ring'?20+80*k:36,col,(1-k)*0.8);}
+    if(boss)tint(boss.x-cx,boss.y-cy-16,90,TH.boss.light,0.45+0.1*Math.sin(time*6));
+    if(TH.runeCircle)tint(MW*T/2+16-cx,MH*T/2+16-cy,64,GOLD,0.18+0.06*Math.sin(time*2));
+    wc.globalCompositeOperation='lighter';wc.drawImage(glow,0,0);wc.globalCompositeOperation='source-over';
+  }
+  const bar=(x,y,w,h,v,c1,c2)=>{wc.fillStyle='#08070a';wc.fillRect(x-1,y-1,w+2,h+2);wc.fillStyle='#1b1820';wc.fillRect(x,y,w,h);wc.fillStyle=c2;wc.fillRect(x,y,Math.round(w*v),h);wc.fillStyle=c1;wc.fillRect(x,y,Math.round(w*v),1);};
+  bar(12,H-22,110,4,Math.max(0,hero.hp/hero.maxhp),'#ffb3c2','#b23a55');
+  bar(12,H-14,110,3,hero.xp/hero.next,TH.acc,themeName==='high'?'#2f5c8f':'#6b43a8');
+  if(boss){bar(W/2-90,10,180,4,Math.max(0,boss.hp/boss.max),'#ffd2a3','#c8541d');}
+  if(dead){wc.fillStyle='rgba(20,4,10,0.35)';wc.fillRect(0,0,W,H);}
+  ctx.drawImage(world,0,0);
+  document.getElementById('hud').innerHTML=`<b>Pixel Horde</b> · ${TH.label}<br>wave <b>${wave}</b> · <b>${Math.max(0,WAVE_LEN-waveT)|0}s</b> · horde <b>${enemies.length}</b><br>kills <b>${kills}</b> · level <i>${hero.lvl}</i> · summoned <i>${allies.length}/${raised}</i><br><span style="color:#5f5964">light ${showLight?'on':'off'} · glow ${showGlow?'on':'off'} · horde ${muted?'muted':'raw'}</span>`;
+}
+
+// ---------- loop ----------
+let last=0;
+function frame(t){const dt=Math.min(0.05,(t-last)/1000||0);last=t;update(dt);draw();requestAnimationFrame(frame);}
+atlas.onload=()=>{reset();for(let i=0;i<FF*60;i++)update(1/60);requestAnimationFrame(frame);};
+</script>
+</body>
+</html>

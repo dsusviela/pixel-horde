@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07070b">
+  <title>Pixel Horde — Path of Echoes POC</title>
+  <style>
+    :root{
+      --bg:#07070a;--panel:#0d0d12;--panel2:#121117;--line:#2b2930;--line2:#403949;
+      --cream:#e7d5a7;--paper:#b8afa9;--muted:#77727a;--violet:#b488ff;--violet2:#6b43a8;
+      --cyan:#9ee9ff;--white:#fffdf4;--orange:#e88954;--green:#617c49;
+    }
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#050507;color:var(--paper)}
+    body{font-family:"Courier New",ui-monospace,monospace;overflow:hidden;text-transform:uppercase}
+    button{font:inherit;text-transform:inherit}button:focus-visible{outline:1px solid var(--white);outline-offset:2px}
+    .board{height:100vh;padding:10px;display:grid;grid-template-columns:minmax(0,1fr) 328px;grid-template-rows:minmax(380px,1fr) 238px 82px;gap:9px;background:radial-gradient(circle at 46% 25%,#16131b 0,#09090d 48%,#050507 100%)}
+    .panel{position:relative;overflow:hidden;background:linear-gradient(145deg,rgba(20,19,25,.98),rgba(9,9,13,.98));border:1px solid var(--line);box-shadow:inset 0 0 0 1px rgba(255,255,255,.015),0 0 24px #000}
+    .panel:before,.panel:after{content:"";position:absolute;width:14px;height:14px;z-index:8;pointer-events:none}
+    .panel:before{left:4px;top:4px;border-left:1px solid #54445f;border-top:1px solid #54445f}
+    .panel:after{right:4px;bottom:4px;border-right:1px solid #54445f;border-bottom:1px solid #54445f}
+    .section-title{color:var(--cream);font-size:14px;letter-spacing:.05em;font-weight:400;margin:0}
+    .tiny{color:var(--muted);font-size:9px;line-height:1.45;text-transform:none}
+    .violet{color:var(--violet)}
+
+    .arena{grid-column:1;grid-row:1;background:#05060a}
+    .battle{position:absolute;inset:0;background:url('poc-assets/battle-echoes.png') center/cover no-repeat;image-rendering:pixelated;transition:filter .18s,transform .25s}
+    .battle.hit{filter:brightness(1.35) saturate(1.25);transform:scale(1.006)}
+    #fx{position:absolute;inset:0;width:100%;height:100%;z-index:3;image-rendering:pixelated;cursor:crosshair}
+    .top-fade{position:absolute;inset:0 0 auto;height:102px;z-index:4;background:linear-gradient(#07070be6,transparent);pointer-events:none}
+    .game-title{position:absolute;z-index:5;left:21px;top:18px;letter-spacing:.035em;text-shadow:2px 2px #08070a}
+    .game-title h1{font-size:25px;line-height:1;margin:0;color:#f4dfaa;font-weight:700}
+    .game-title h1 span{color:var(--violet)}
+    .game-title p{margin:9px 0 0;color:#938e90;font-size:10px;letter-spacing:.12em}
+    .tagline{position:absolute;z-index:5;left:22px;top:76px;color:#8b8689;font-size:9px;letter-spacing:.08em;text-transform:none}
+    .battle-status{position:absolute;right:18px;top:17px;z-index:5;display:flex;gap:7px}
+    .chip{padding:7px 9px;background:#0c0b10d9;border:1px solid #3a3440;color:#9e969f;font-size:9px;letter-spacing:.08em}
+    .chip strong{color:var(--cream);font-weight:400}.chip.danger strong{color:#e66c88}
+    .aim-note{position:absolute;z-index:5;right:17px;bottom:14px;padding:6px 8px;background:#08070ca8;border:1px solid #322b37;color:#aaa0aa;font-size:8px;letter-spacing:.08em;pointer-events:none}
+    .cast-label{position:absolute;z-index:6;left:50%;top:50%;transform:translate(-50%,-50%);font-size:17px;letter-spacing:.2em;color:var(--white);text-shadow:0 0 12px var(--violet),2px 2px #000;opacity:0;pointer-events:none}
+    .cast-label.show{animation:cast .8s ease-out}@keyframes cast{0%{opacity:0;transform:translate(-50%,-35%) scale(.8)}25%{opacity:1}100%{opacity:0;transform:translate(-50%,-75%) scale(1.06)}}
+    .wave-bar{position:absolute;z-index:5;left:22px;right:22px;bottom:15px;height:3px;background:#17151b;box-shadow:0 0 0 1px #08080b}
+    .wave-bar i{height:100%;width:73%;display:block;background:linear-gradient(90deg,#614293,#d8c1ff,#fff);box-shadow:0 0 8px #b685ff;transition:width .35s}
+
+    .rail{grid-column:2;grid-row:1;display:grid;grid-template-rows:144px 1fr 68px;gap:0;padding:0 13px}
+    .rail>section{position:relative;padding:15px 5px;border-bottom:1px solid #2a272e}.rail>section:last-child{border:0}
+    .hero-ref{display:grid;grid-template-columns:104px 1fr;gap:12px;align-items:center}
+    .hero-crop{height:100px;border:1px solid #332d39;background:url('poc-assets/battle-echoes.png') 18% 58%/440% no-repeat;image-rendering:pixelated;box-shadow:inset 0 0 18px #000}
+    .hero-copy h2{font-size:14px;color:var(--cream);font-weight:400;margin:0 0 8px}.hero-copy h2 small{font-size:9px;color:#827a82;display:block;margin-top:4px}
+    .hero-copy ul{list-style:none;margin:0;padding:0;color:#918991;font-size:9px;line-height:1.55;text-transform:none}.hero-copy li:before{content:"· ";color:var(--violet)}
+    .passives h2{margin-bottom:12px}.passive{display:grid;grid-template-columns:50px 1fr;gap:10px;padding:11px 0;border-top:1px solid #29262c;align-items:center}.passive:first-of-type{border-top:0}
+    .passive-icon{width:46px;height:46px;border:1px solid #554765;display:grid;place-items:center;position:relative;color:var(--white);font-size:21px;background:radial-gradient(circle,#7650a6 0,#20182c 48%,#0a0a0e 70%);box-shadow:inset 0 0 0 3px #0a090e,0 0 12px #65409a55}
+    .passive-icon.green{background:radial-gradient(circle,#8cad68 0,#2c3f25 48%,#090c09 70%);border-color:#4c5f40;box-shadow:inset 0 0 0 3px #0a0c09,0 0 12px #6a8e4b44}
+    .passive h3{font-size:11px;color:var(--violet);font-weight:400;margin:0 0 4px}.passive p{font-size:9px;color:#928a91;line-height:1.45;margin:0;text-transform:none}
+    .focus-row{display:flex;justify-content:space-between;align-items:center}.focus-row strong{font-size:19px;color:#f0e2bd;font-weight:400}.focus-row small{font-size:8px;color:#6e6870}.focus-track{height:3px;background:#242129;margin-top:8px}.focus-track i{display:block;width:100%;height:100%;background:linear-gradient(90deg,#7150ad,#cdb3ff);transition:width .15s}
+
+    .spells{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:repeat(5,1fr);gap:7px;background:transparent;overflow:visible;box-shadow:none;border:0}
+    .spell{--accent:#ad83e4;position:relative;overflow:hidden;padding:0;background:#0d0c11;border:1px solid #29262d;color:#a49da4;text-align:left;cursor:pointer;transition:transform .14s,border-color .14s,background .14s}
+    .spell:hover{transform:translateY(-3px);border-color:#5b4b68}.spell.active{border-color:var(--accent);background:#15111b;box-shadow:0 0 0 1px #0a090c,inset 0 0 22px #50346a33}
+    .spell-head{height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 11px;border-bottom:1px solid #27232a;color:var(--accent);font-size:11px;letter-spacing:.045em}.spell-head b{font-size:8px;color:#615b63;font-weight:400}
+    .spell-visual{height:112px;position:relative;overflow:hidden;background-image:url('poc-assets/battle-echoes.png');background-repeat:no-repeat;image-rendering:pixelated;border-bottom:1px solid #252229}
+    .spell:nth-child(1) .spell-visual{background-size:330%;background-position:28% 50%}
+    .spell:nth-child(2) .spell-visual{background-size:270%;background-position:58% 40%}
+    .spell:nth-child(3) .spell-visual{background-size:350%;background-position:67% 33%}
+    .spell:nth-child(4) .spell-visual{background-size:380%;background-position:21% 69%}
+    .spell:nth-child(5) .spell-visual{background-size:290%;background-position:80% 58%}
+    .spell-visual:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#07070ac7,transparent 40%,#09080b44),linear-gradient(0deg,#09090dd9,transparent 45%)}
+    .mini-fx{position:absolute;z-index:2;inset:0;display:grid;place-items:center;color:#fff;font-size:25px;text-shadow:0 0 8px #fff,0 0 16px var(--accent);transition:transform .2s}.spell:hover .mini-fx{transform:scale(1.22) rotate(4deg)}
+    .spell-copy{padding:10px 12px}.spell-copy p{font-size:9px;line-height:1.45;margin:0;color:#8d858d;text-transform:none;min-height:26px}.spell-copy span{font-size:8px;color:#665f68;display:block;margin-top:7px}.spell.active .spell-copy span{color:var(--accent)}
+
+    .footer{grid-column:1/-1;grid-row:3;display:grid;grid-template-columns:1.15fr 1fr .85fr;align-items:center;padding:10px 18px;gap:20px}
+    .footer-block{min-width:0;height:100%;display:flex;align-items:center;gap:15px;border-right:1px solid #2b282e}.footer-block:last-child{border:0;justify-content:flex-end}
+    .footer h3{font-size:11px;color:var(--cream);font-weight:400;white-space:nowrap;margin:0}.swatches{display:flex;gap:7px}.swatch{width:26px;height:26px;border:1px solid #07070a;box-shadow:0 0 0 1px #242128}
+    .legend{display:flex;gap:16px;font-size:8px;color:#817982;text-transform:none}.legend i{display:inline-block;width:8px;height:8px;margin-right:5px;box-shadow:0 0 8px currentColor}
+    .play-btn{background:#15111d;color:#ddc9ff;border:1px solid #5b426f;padding:10px 13px;cursor:pointer;min-width:104px}.play-btn:hover{background:#281a37}.play-btn strong{font-weight:400}.play-btn small{display:block;color:#706779;font-size:7px;margin-top:3px}
+    .scan{position:fixed;inset:0;pointer-events:none;z-index:50;background:repeating-linear-gradient(0deg,transparent 0 3px,#00000028 4px);mix-blend-mode:multiply;opacity:.36}
+    .noise{position:fixed;inset:0;pointer-events:none;z-index:49;box-shadow:inset 0 0 90px 25px #000}
+
+    @media(max-width:980px){body{overflow:auto}.board{height:auto;min-height:100vh;grid-template-columns:1fr;grid-template-rows:520px auto auto auto}.arena{grid-column:1;grid-row:1}.rail{grid-column:1;grid-row:2;grid-template-columns:1fr 1.4fr .7fr;grid-template-rows:1fr}.rail>section{border-bottom:0;border-right:1px solid #2a272e}.spells{grid-column:1;grid-row:3;grid-template-columns:repeat(2,1fr)}.footer{grid-column:1;grid-row:4}.hero-ref{grid-template-columns:80px 1fr}.spell:last-child{grid-column:1/-1}.scan,.noise{position:fixed}}
+    @media(max-width:620px){.board{padding:5px;grid-template-rows:420px auto auto auto}.rail{grid-template-columns:1fr}.rail>section{border-right:0;border-bottom:1px solid #2a272e}.spells{grid-template-columns:1fr}.spell:last-child{grid-column:auto}.spell-visual{height:135px}.footer{grid-template-columns:1fr}.footer-block{border-right:0;border-bottom:1px solid #2b282e;padding:7px 0}.game-title h1{font-size:18px}.battle-status{display:none}.tagline{display:none}}
+  </style>
+</head>
+<body>
+  <main class="board">
+    <section class="arena panel" aria-label="Playable battle scene">
+      <div id="battle" class="battle"></div><canvas id="fx"></canvas><div class="top-fade"></div>
+      <header class="game-title"><h1>PIXEL HORDE <span>· PATH OF ECHOES</span></h1><p>WEAVE LIGHT, REFLECTION, AND FALSEHOOD TO OUTWIT THE HORDE.</p></header>
+      <div class="tagline">Interactive combat study — choose a spell below, then click the battlefield to cast.</div>
+      <div class="battle-status"><div class="chip"><strong id="wave">WAVE 07</strong> / 10</div><div class="chip danger"><strong id="horde">86</strong> REMAIN</div></div>
+      <div id="castLabel" class="cast-label">ARC NEEDLE</div><div class="aim-note">CLICK FIELD TO CAST · KEYS 1—5</div><div class="wave-bar"><i id="waveFill"></i></div>
+    </section>
+
+    <aside class="rail panel">
+      <section class="hero-ref"><div class="hero-crop"></div><div class="hero-copy"><h2>THE WAYFARER<small>HERO · PATH OF ECHOES</small></h2><ul><li>masked chibi silhouette</li><li>prismatic trim language</li><li>floating mirror shard</li><li>astral duplicate</li></ul></div></section>
+      <section class="passives"><h2 class="section-title">PASSIVES</h2><article class="passive"><div class="passive-icon">◇</div><div><h3>MIRROR KIN</h3><p>A spectral copy repeats every fifth cast at reduced power.</p></div></article><article class="passive"><div class="passive-icon green">✦</div><div><h3>KNOWLEDGE RING</h3><p>Fragments inside your orbit are gathered from farther away.</p></div></article><article class="passive"><div class="passive-icon">⌁</div><div><h3>FALSE OPENING</h3><p>Enemies struck by two spells lose sight of you briefly.</p></div></article></section>
+      <section><div class="focus-row"><div><small>ASTRAL FOCUS</small><strong id="focusText">100%</strong></div><strong class="violet">◇</strong></div><div class="focus-track"><i id="focusFill"></i></div></section>
+    </aside>
+
+    <section class="spells" aria-label="Spell selection">
+      <button class="spell active" data-name="ARC NEEDLE" data-cost="9" data-mode="needle"><div class="spell-head">ARC NEEDLE <b>01</b></div><div class="spell-visual"><div class="mini-fx">──✦</div></div><div class="spell-copy"><p>Fire a precise thread of light that pierces the front line.</p><span>ACTIVE · 9 FOCUS</span></div></button>
+      <button class="spell" data-name="PRISM BLOOM" data-cost="18" data-mode="bloom"><div class="spell-head">PRISM BLOOM <b>02</b></div><div class="spell-visual"><div class="mini-fx">✦</div></div><div class="spell-copy"><p>Release a violent starburst that tears through a crowded area.</p><span>SELECT · 18 FOCUS</span></div></button>
+      <button class="spell" data-name="SHOCK THREAD" data-cost="14" data-mode="thread"><div class="spell-head">SHOCK THREAD <b>03</b></div><div class="spell-visual"><div class="mini-fx">ϟ</div></div><div class="spell-copy"><p>Chain raw light between three nearby bodies.</p><span>SELECT · 14 FOCUS</span></div></button>
+      <button class="spell" data-name="FALSE CHOIR" data-cost="22" data-mode="choir"><div class="spell-head">FALSE CHOIR <b>04</b></div><div class="spell-visual"><div class="mini-fx">♙ ♙</div></div><div class="spell-copy"><p>Summon mirror figures that taunt, scatter, and confuse.</p><span>SELECT · 22 FOCUS</span></div></button>
+      <button class="spell" data-name="PHANTOM LUNGE" data-cost="16" data-mode="lunge"><div class="spell-head">PHANTOM LUNGE <b>05</b></div><div class="spell-visual"><div class="mini-fx">⇢✦</div></div><div class="spell-copy"><p>Your duplicate crosses the field and strikes a single target.</p><span>SELECT · 16 FOCUS</span></div></button>
+    </section>
+
+    <footer class="footer panel">
+      <div class="footer-block"><h3>PALETTE <span class="tiny">(IN GAME)</span></h3><div class="swatches"><i class="swatch" style="background:#354a2a"></i><i class="swatch" style="background:#38264e"></i><i class="swatch" style="background:#7049a1"></i><i class="swatch" style="background:#a57ae0"></i><i class="swatch" style="background:#8dccdf"></i><i class="swatch" style="background:#c98350"></i><i class="swatch" style="background:#5b4f58"></i><i class="swatch" style="background:#1b1920"></i></div></div>
+      <div class="footer-block"><h3>LIGHT LANGUAGE</h3><div class="legend"><span><i style="background:#fff;color:#fff"></i>impact</span><span><i style="background:#a57ae0;color:#a57ae0"></i>illusion</span><span><i style="background:#8dccdf;color:#8dccdf"></i>knowledge</span></div></div>
+      <div class="footer-block"><span class="tiny" id="status">RITUAL ACTIVE<br>CASTS REGISTERED: 0</span><button id="play" class="play-btn"><strong>PAUSE</strong><small>SPACEBAR</small></button></div>
+    </footer>
+  </main>
+  <div class="scan"></div><div class="noise"></div>
+  <script>
+    (()=>{
+      const canvas=document.querySelector('#fx'),ctx=canvas.getContext('2d'),battle=document.querySelector('#battle');
+      const cards=[...document.querySelectorAll('.spell')],label=document.querySelector('#castLabel'),hordeEl=document.querySelector('#horde'),focusEl=document.querySelector('#focusText'),focusFill=document.querySelector('#focusFill'),waveFill=document.querySelector('#waveFill'),status=document.querySelector('#status'),play=document.querySelector('#play');
+      let current=cards[0],focus=100,horde=86,casts=0,paused=false,last=performance.now(),particles=[],bolts=[],rings=[];
+      const colors={needle:'#fffdf5',bloom:'#c29aff',thread:'#91e7ff',choir:'#9bbcff',lunge:'#e6d8ff'};
+      function resize(){const r=canvas.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);canvas.width=r.width*d;canvas.height=r.height*d;ctx.setTransform(d,0,0,d,0,0)}addEventListener('resize',resize);resize();
+      function select(card){current=card;cards.forEach(c=>{c.classList.toggle('active',c===card);const s=c.querySelector('.spell-copy span');s.textContent=(c===card?'ACTIVE':'SELECT')+' · '+c.dataset.cost+' FOCUS'})}
+      cards.forEach((c,i)=>c.addEventListener('click',()=>select(c)));
+      function addParticles(x,y,color,n=24,power=1){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=(30+Math.random()*170)*power;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.35+Math.random()*.5,max:.85,size:1+Math.random()*3,color})}}
+      function cast(x,y){if(paused)return;const cost=+current.dataset.cost;if(focus<cost){flash('FOCUS DEPLETED');return}focus-=cost;casts++;const mode=current.dataset.mode,color=colors[mode];
+        if(mode==='needle'){bolts.push({x1:canvas.clientWidth*.26,y1:canvas.clientHeight*.55,x2:x,y2:y,life:.45,color,width:2});addParticles(x,y,color,16,.8);horde-=2}
+        if(mode==='bloom'){rings.push({x,y,r:3,max:92,life:.75,color});addParticles(x,y,'#fff',38,1.45);horde-=8}
+        if(mode==='thread'){let px=canvas.clientWidth*.28,py=canvas.clientHeight*.54;for(let i=0;i<4;i++){let nx=i===3?x:px+(x-px)*.35+(Math.random()-.5)*80,ny=i===3?y:py+(y-py)*.35+(Math.random()-.5)*70;bolts.push({x1:px,y1:py,x2:nx,y2:ny,life:.62,color,width:3,jag:true});px=nx;py=ny}addParticles(x,y,color,20,1);horde-=4}
+        if(mode==='choir'){for(let i=0;i<3;i++)rings.push({x:x+(i-1)*52,y:y+Math.abs(i-1)*18,r:5,max:30,life:1.2,color});addParticles(x,y,color,24,.7);horde-=3}
+        if(mode==='lunge'){bolts.push({x1:canvas.clientWidth*.31,y1:canvas.clientHeight*.68,x2:x,y2:y,life:.75,color,width:8});rings.push({x,y,r:2,max:46,life:.55,color});addParticles(x,y,color,30,1.2);horde-=5}
+        horde=Math.max(0,horde);battle.classList.add('hit');setTimeout(()=>battle.classList.remove('hit'),140);flash(current.dataset.name);updateUi();
+      }
+      function flash(text){label.textContent=text;label.classList.remove('show');void label.offsetWidth;label.classList.add('show')}
+      function updateUi(){focusEl.textContent=Math.round(focus)+'%';focusFill.style.width=focus+'%';hordeEl.textContent=horde;waveFill.style.width=(100-horde/86*27)+'%';status.innerHTML='RITUAL '+(paused?'SUSPENDED':'ACTIVE')+'<br>CASTS REGISTERED: '+casts}
+      function point(e){const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+      canvas.addEventListener('pointerdown',e=>{const p=point(e);cast(p.x,p.y)});
+      addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();toggle()}const n=+e.key;if(n>=1&&n<=5)select(cards[n-1])});
+      play.addEventListener('click',toggle);function toggle(){paused=!paused;play.querySelector('strong').textContent=paused?'RESUME':'PAUSE';updateUi()}
+      function drawBolt(b){ctx.save();ctx.globalAlpha=Math.min(1,b.life*2);ctx.strokeStyle=b.color;ctx.shadowColor=b.color;ctx.shadowBlur=12;ctx.lineWidth=b.width;ctx.beginPath();ctx.moveTo(b.x1,b.y1);if(b.jag){const seg=9;for(let i=1;i<seg;i++){const t=i/seg;ctx.lineTo(b.x1+(b.x2-b.x1)*t+(Math.random()-.5)*12,b.y1+(b.y2-b.y1)*t+(Math.random()-.5)*12)}}ctx.lineTo(b.x2,b.y2);ctx.stroke();ctx.fillStyle='#fff';ctx.fillRect(b.x2-2,b.y2-2,4,4);ctx.restore()}
+      function loop(now){const dt=Math.min(.04,(now-last)/1000);last=now;const w=canvas.clientWidth,h=canvas.clientHeight;ctx.clearRect(0,0,w,h);if(!paused){focus=Math.min(100,focus+dt*5.5);for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.96;p.vy*=.96;p.life-=dt}for(const b of bolts)b.life-=dt;for(const r of rings){r.r+=(r.max-r.r)*dt*10;r.life-=dt}particles=particles.filter(p=>p.life>0);bolts=bolts.filter(b=>b.life>0);rings=rings.filter(r=>r.life>0)}
+        for(const r of rings){ctx.save();ctx.globalAlpha=Math.min(1,r.life*1.6);ctx.strokeStyle=r.color;ctx.shadowColor=r.color;ctx.shadowBlur=15;ctx.lineWidth=2;ctx.beginPath();ctx.arc(r.x,r.y,r.r,0,Math.PI*2);ctx.stroke();ctx.restore()}for(const b of bolts)drawBolt(b);for(const p of particles){ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=7;ctx.fillRect(Math.round(p.x),Math.round(p.y),p.size,p.size)}ctx.globalAlpha=1;focusEl.textContent=Math.round(focus)+'%';focusFill.style.width=focus+'%';requestAnimationFrame(loop)}requestAnimationFrame(loop);
+    })();
+  </script>
+</body>
+</html>

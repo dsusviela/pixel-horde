@@ -1,0 +1,269 @@
+<title>Grave Horde Playtest</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono&display=swap">
+<style>
+  :root{
+    --ink:#0d0c16; --panel:#15131e; --line:#2a2436; --bone:#d9d1c6; --mute:#8f879b;
+    --soul:#c04aff; --soul-soft:#7a4aa6; --rot:#6fe84a; --hero:#4aa6ff;
+    --display:'Pixelify Sans','Silkscreen',ui-monospace,monospace;
+    --body:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+  }
+  html{color-scheme:dark;}
+  body{margin:0;background:var(--ink);color:var(--bone);font-family:var(--body);font-size:15px;line-height:1.5;}
+  .wrap{max-width:1120px;margin:0 auto;padding:28px 20px 60px;}
+  header{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;}
+  h1{font-family:var(--display);font-weight:600;font-size:34px;line-height:1;margin:0;letter-spacing:0.5px;text-wrap:balance;}
+  h1 span{color:var(--soul);}
+  .sub{color:var(--mute);margin:0;max-width:62ch;}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0 10px;}
+  .grp{display:flex;gap:0;border:1px solid var(--line);border-radius:6px;overflow:hidden;}
+  .grp button{background:var(--panel);color:var(--bone);border:0;border-right:1px solid var(--line);padding:6px 12px;font:500 13px var(--body);cursor:pointer;}
+  .grp button:last-child{border-right:0;}
+  .grp button[aria-pressed="true"]{background:var(--soul-soft);color:#fff;}
+  .grp button:focus-visible,button.solo:focus-visible{outline:2px solid var(--soul);outline-offset:-2px;}
+  button.solo{background:var(--panel);color:var(--bone);border:1px solid var(--line);border-radius:6px;padding:6px 12px;font:500 13px var(--body);cursor:pointer;}
+  .lbl{font-family:var(--mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mute);margin-right:2px;}
+  .stage{position:relative;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#000;}
+  #stage{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;cursor:crosshair;}
+  .hud{position:absolute;left:10px;top:8px;font-family:var(--mono);font-size:11px;letter-spacing:1px;color:rgba(217,209,198,0.75);text-shadow:0 1px 0 #000;pointer-events:none;display:flex;gap:14px;}
+  .hint{position:absolute;right:10px;bottom:8px;font-family:var(--mono);font-size:11px;color:rgba(217,209,198,0.6);text-shadow:0 1px 0 #000;pointer-events:none;}
+  h2{font-family:var(--display);font-weight:400;font-size:22px;margin:34px 0 4px;letter-spacing:0.5px;}
+  .roster{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:12px;}
+  .mob{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px;}
+  .mob h3{font-family:var(--display);font-weight:600;font-size:20px;margin:0;display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+  .mob h3 small{font-family:var(--mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mute);font-weight:400;}
+  .mob p{margin:0;color:var(--mute);font-size:14px;}
+  .mob canvas{display:block;width:100%;height:auto;image-rendering:pixelated;border-radius:4px;}
+  .stats{display:grid;grid-template-columns:auto 1fr;gap:2px 14px;font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums;}
+  .stats dt{color:var(--mute);margin:0;}
+  .stats dd{margin:0;}
+  .rot{color:var(--rot);} .soul{color:var(--soul);}
+  footer{margin-top:34px;color:var(--mute);font-size:13px;max-width:70ch;}
+  footer code{font-family:var(--mono);font-size:12px;color:var(--bone);}
+  @media (prefers-reduced-motion:reduce){ .stage{cursor:default;} }
+</style>
+<div class="wrap">
+  <header>
+    <h1>Grave Horde <span>Playtest</span></h1>
+    <p class="sub">The five hand-drawn horde mobs in play on the real game grounds. Move the pointer, the horde follows. Toads keep their distance and spit, wretches sprint in and burst. Skins recolour the whole roster; the game swaps to the volcano skin on the descent.</p>
+  </header>
+
+  <div class="bar" role="toolbar" aria-label="stage controls">
+    <span class="lbl">Ground</span>
+    <div class="grp" id="biome">
+      <button aria-pressed="true" data-v="basalt">Volcano basalt</button>
+      <button aria-pressed="false" data-v="grass">Night meadow</button>
+    </div>
+    <span class="lbl">Zoom</span>
+    <div class="grp" id="zoom">
+      <button aria-pressed="false" data-v="2">2x</button>
+      <button aria-pressed="true" data-v="3">3x</button>
+      <button aria-pressed="false" data-v="4">4x</button>
+    </div>
+    <span class="lbl">Skin</span>
+    <div class="grp" id="skin">
+      <button aria-pressed="true" data-v="grave">Grave</button>
+      <button aria-pressed="false" data-v="charred">Charred</button>
+      <button aria-pressed="false" data-v="cinder">Cinder</button>
+      <button aria-pressed="false" data-v="slag">Slag</button>
+    </div>
+    <button class="solo" id="spawn">Spawn a wave</button>
+    <button class="solo" id="pause" aria-pressed="false">Pause</button>
+  </div>
+
+  <div class="stage">
+    <canvas id="stage" width="1080" height="600"></canvas>
+    <div class="hud"><span id="hud-count">0 mobs</span><span id="hud-fps"></span></div>
+    <div class="hint">pointer = hero · click to spawn there · skins recolour everything live</div>
+  </div>
+
+  <h2>Roster</h2>
+  <p class="sub">Every facing and frame in the selected skin, 6 texels per screen pixel, on basalt. Side facings are mirrored from one sheet.</p>
+  <div class="roster">
+    <section class="mob">
+      <h3>Ghoul <small>chaser</small></h3>
+      <canvas data-mob="chaser"></canvas>
+      <p>Shambles straight at you, head low between wide shoulders, claws hanging forward. The baseline body of the family.</p>
+      <dl class="stats"><dt>footprint</dt><dd>20×20 texels, hitbox r5</dd><dt>speed</dt><dd>42 u/s</dd><dt>frames</dt><dd>4 walk</dd><dt>eyes</dt><dd class="soul">violet soul-glow</dd></dl>
+    </section>
+    <section class="mob">
+      <h3>Skitter <small>swarm</small></h3>
+      <canvas data-mob="swarm"></canvas>
+      <p>A low four-legged grave-crawler, big skull head, hands planted. Fast and wide, so it silhouettes against the ghoul at a glance.</p>
+      <dl class="stats"><dt>footprint</dt><dd>16×12 texels, hitbox r3.5</dd><dt>speed</dt><dd>76 u/s</dd><dt>frames</dt><dd>4 walk</dd><dt>eyes</dt><dd class="soul">violet soul-glow</dd></dl>
+    </section>
+    <section class="mob">
+      <h3>Bile toad <small>spitter</small></h3>
+      <canvas data-mob="spitter"></canvas>
+      <p>Sits at range and spits. Frames are a hop cycle: sit, launch, air, land. It moves in bursts and lifts off the ground with a shadow.</p>
+      <dl class="stats"><dt>footprint</dt><dd>20×20 texels, hitbox r5</dd><dt>speed</dt><dd>38 u/s, in hops</dd><dt>frames</dt><dd>4 hop</dd><dt>grin</dt><dd class="rot">rot green, the bolt colour</dd></dl>
+    </section>
+    <section class="mob">
+      <h3>Grave hulk <small>tank</small></h3>
+      <canvas data-mob="tank"></canvas>
+      <p>A wall of shoulders over a belly, a small skull face sunk low, fists on the ground. Slow, and twice the ghoul's height.</p>
+      <dl class="stats"><dt>footprint</dt><dd>36×36 texels, hitbox r9</dd><dt>speed</dt><dd>22 u/s</dd><dt>frames</dt><dd>4 walk</dd><dt>scars</dt><dd class="soul">dark here, lava cracks in the volcano skins</dd></dl>
+    </section>
+    <section class="mob">
+      <h3>Ember wretch <small>bomber</small></h3>
+      <canvas data-mob="bomber"></canvas>
+      <p>A small jagged sprinter, arms out, a cracked chest glowing ember. Runs at you, crouches, and its core swells until it goes white-hot and bursts. The only hot-eyed body in the horde.</p>
+      <dl class="stats"><dt>footprint</dt><dd>18×18 texels, hitbox r4.5</dd><dt>speed</dt><dd>66 u/s</dd><dt>frames</dt><dd>4 run + 4 fuse</dd><dt>core</dt><dd style="color:#ff9a2e">ember, the danger colour</dd></dl>
+    </section>
+  </div>
+
+  <footer>Sprites are generated from part rigs in <code>tools/art/horde-gen.mjs</code> and landed into <code>playground.html</code> as text rows; the four skins are the same rows under a different palette, with the violet eyes turning ember. The grounds are the game's own baked chunks. Mob speeds, the spitter's range and the hop timing match the game; there is no damage here, only the crowd.</footer>
+</div>
+<script>
+const DATA=__SHEETS__;
+const GROUND_SRC={basalt:'__BASALT__',grass:'__GRASS__'};
+const TYPES={chaser:{sheet:'chaser',r:5,sp:42},swarm:{sheet:'swarm',r:3.5,sp:76},spitter:{sheet:'spitter',r:5,sp:38},tank:{sheet:'tank',r:9,sp:22},bomber:{sheet:'bomber',r:4.5,sp:66}};
+const DIRS=['down','up','left','right'];
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---- sprites: rows -> texel canvases, frames[dir][frame] like the game's atlasSheet ----
+function makeSprite(rows,pal){
+  const w=rows[0].length,h=rows.length,c=document.createElement('canvas');c.width=w;c.height=h;
+  const g=c.getContext('2d');
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const ch=rows[y][x];if(ch==='.')continue;g.fillStyle=pal[ch]||'#f0f';g.fillRect(x,y,1,1);}
+  c.uw=w/2;c.uh=h/2;return c;
+}
+const SHEETS={};
+function buildSheets(skin){
+  const {pal:p,map}=DATA.skins[skin],pal={...p,Y:'#ffd23e'};
+  const hot=r=>r.replace(/[DML]/g,'O').replace(/H/g,'Y'); // fuse frame 3: the body glows through
+  for(const [name,sheet] of Object.entries(DATA.mobs))SHEETS[name]=DIRS.map(d=>sheet[d].map((rows,i)=>makeSprite(rows.map(r=>{r=r.replace(/./g,ch=>map[ch]||ch);return name==='bombFuse'&&i===3?hot(r):r;}),pal)));
+}
+buildSheets('grave');
+function facing(fx,fy){return Math.abs(fx)>Math.abs(fy)?(fx<0?2:3):(fy<0?1:0);}
+
+// hero: a hooded figure in the player's sky blue, the one saturated thing on the ground (12x12 den 2)
+const HERO=makeSprite([
+'....KKKK....','...KBBBBK...','..KBBBBBBK..','..KBWWWWBK..','..KBWKKWBK..','..KBBWWBBK..',
+'.KBBBBBBBBK.','.KBBBBBBBBK.','.KBBBDDBBBK.','.KBBBDDBBBK.','..KBBKKBBK..','..KKK..KKK..'],
+{K:'#0d0c16',B:'#4aa6ff',W:'#e8f1ff',D:'#2a6fc0'});
+
+// ---- grounds ----
+const GROUND={};let groundsReady=0;
+for(const [k,src] of Object.entries(GROUND_SRC)){const im=new Image();im.onload=()=>{GROUND[k]=im;groundsReady++;};im.src=src;}
+
+// ---- stage sim (units: 1 unit = 1 px at 1x; sprites are 2 texels per unit) ----
+const cv=document.getElementById('stage'),ctx=cv.getContext('2d');
+const S={biome:'basalt',Z:3,paused:false,time:0,mobs:[],bolts:[],fx:[],hero:{x:0,y:0,tx:0,ty:0},nextId:1,spawnT:0};
+function viewUnits(){return {w:cv.width/S.Z,h:cv.height/S.Z};}
+function spawn(type,x,y){
+  const t=TYPES[type];S.mobs.push({type,x,y,r:t.r,sp:t.sp,id:S.nextId++,fx:0,fy:1,shootT:1+Math.random()*2,hopY:0,frameT:undefined,fuse:-1});
+}
+function spawnEdge(type){
+  const {w,h}=viewUnits(),side=Math.floor(Math.random()*4);
+  const x=side===0?-12:side===1?w+12:Math.random()*w,y=side===2?-12:side===3?h+12:Math.random()*h;
+  spawn(type,x,y);
+}
+function spawnWave(){for(let i=0;i<6;i++)spawnEdge('chaser');for(let i=0;i<8;i++)spawnEdge('swarm');for(let i=0;i<4;i++)spawnEdge('spitter');for(let i=0;i<2;i++)spawnEdge('tank');for(let i=0;i<4;i++)spawnEdge('bomber');}
+function reset(){const {w,h}=viewUnits();S.hero.x=S.hero.tx=w/2;S.hero.y=S.hero.ty=h/2;S.mobs.length=0;S.bolts.length=0;S.fx.length=0;spawnWave();}
+
+function tick(dt){
+  S.time+=dt;
+  const H=S.hero;H.x+=(H.tx-H.x)*Math.min(1,dt*10);H.y+=(H.ty-H.y)*Math.min(1,dt*10);
+  const {w,h}=viewUnits();
+  // trickle spawns so the crowd never dies out, capped
+  S.spawnT-=dt;if(S.spawnT<=0&&S.mobs.length<46){S.spawnT=1.1;spawnEdge(['chaser','swarm','swarm','spitter','bomber','tank'][Math.floor(Math.random()*6)]);}
+  for(const e of S.mobs){
+    const dx=H.x-e.x,dy=H.y-e.y,dd=Math.hypot(dx,dy)||1,vx=dx/dd,vy=dy/dd;
+    let sp=e.sp;
+    if(e.type==='spitter'){
+      if(dd<130)sp=-sp*0.6;else if(dd<160)sp=0;
+      e.shootT-=dt;
+      if(e.shootT<=0&&dd<260){e.shootT=2.2;S.bolts.push({x:e.x,y:e.y,vx:vx*125,vy:vy*125,life:2.6});}
+      // bile toad hop: bursts on the launch/air frames, lifted; sit on frame 0 while still
+      const ph=((S.time*7+e.id)%4+4)%4,air=ph>=1&&ph<3;
+      if(sp!==0){sp=air?sp*2:0;e.hopY=air?6*Math.sin(Math.PI*(ph-1)/2):0;e.frameT=undefined;}
+      else{e.hopY=0;e.frameT=0;}
+    }else if(e.type==='bomber'){
+      if(e.fuse>=0){sp=0;e.fuse-=dt;e.frameT=Math.min(3,Math.floor((1-e.fuse/0.6)*4));if(e.fuse<=0){e.dead=true;S.fx.push({x:e.x,y:e.y,t:0.5,boom:true});}}
+      else if(dd<30)e.fuse=0.6;
+    }else if(dd<e.r+8)sp=0; // the crowd presses in and stops at the hero
+    let mx=vx*sp*dt,my=vy*sp*dt;
+    // soft separation so mobs do not stack
+    for(const o of S.mobs){if(o===e)continue;const ox=e.x-o.x,oy=e.y-o.y,d=Math.hypot(ox,oy),min=e.r+o.r;if(d>0&&d<min){const push=(min-d)*0.5;mx+=ox/d*push;my+=oy/d*push;}}
+    if(mx||my){e.fx=mx;e.fy=my;}
+    e.x+=mx;e.y+=my;
+    e.x=Math.max(-20,Math.min(w+20,e.x));e.y=Math.max(-20,Math.min(h+20,e.y));
+  }
+  S.mobs=S.mobs.filter(e=>!e.dead);
+  for(const b of S.bolts){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;if(Math.hypot(b.x-H.x,b.y-H.y)<8){b.life=0;S.fx.push({x:b.x,y:b.y,t:0.35});}}
+  S.bolts=S.bolts.filter(b=>b.life>0);
+  for(const f of S.fx)f.t-=dt;S.fx=S.fx.filter(f=>f.t>0);
+}
+function drawSprite(g,spr,x,y,Z){ // centred on (x,y) in units, feet handled by the caller
+  const w=spr.uw*Z,h=spr.uh*Z;g.drawImage(spr,Math.round((x-spr.uw/2)*Z),Math.round((y-spr.uh/2)*Z),Math.round(w),Math.round(h));
+}
+function render(){
+  const Z=S.Z,{w,h}=viewUnits();
+  ctx.imageSmoothingEnabled=false;
+  const gr=GROUND[S.biome];
+  if(gr){const gw=gr.width/2,gh=gr.height/2;for(let y=0;y<h;y+=gh)for(let x=0;x<w;x+=gw)ctx.drawImage(gr,0,0,gr.width,gr.height,Math.round(x*Z),Math.round(y*Z),Math.round(gw*Z),Math.round(gh*Z));}
+  else{ctx.fillStyle='#1a1620';ctx.fillRect(0,0,cv.width,cv.height);}
+  const order=S.mobs.slice().sort((a,b)=>(a.y+a.r)-(b.y+b.r));
+  for(const e of order){
+    const spr=SHEETS[e.type==='bomber'&&e.fuse>=0?'bombFuse':TYPES[e.type].sheet][facing(e.fx,e.fy)][e.frameT!==undefined?e.frameT:(Math.floor(S.time*7+e.id))&3];
+    if(e.type==='bomber'&&e.fuse>=0){const fk=1-e.fuse/0.6,BR=46;ctx.globalAlpha=0.35;ctx.strokeStyle='#ff7a1f';ctx.lineWidth=Math.max(1,Z/2);ctx.beginPath();ctx.arc(e.x*Z,e.y*Z,BR*Z,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=0.16+0.3*fk;ctx.fillStyle=fk>0.85?'#fff6d6':'#ff7a1f';ctx.beginPath();ctx.arc(e.x*Z,e.y*Z,BR*fk*Z,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
+    if(e.hopY>1){ctx.globalAlpha=0.3;ctx.fillStyle='#000';ctx.beginPath();ctx.ellipse(e.x*Z,(e.y+e.r*0.4)*Z,e.r*Z,e.r*0.5*Z,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
+    const yy=e.y-(spr.uh/2-e.r)-(e.hopY||0);
+    drawSprite(ctx,spr,e.x,yy,Z);
+  }
+  drawSprite(ctx,HERO,S.hero.x,S.hero.y-2,Z);
+  for(const b of S.bolts){ctx.fillStyle='#6fe84a';ctx.beginPath();ctx.arc(b.x*Z,b.y*Z,2.5*Z,0,Math.PI*2);ctx.fill();ctx.fillStyle='#d8ffc8';ctx.fillRect(Math.round(b.x*Z)-Z/2,Math.round(b.y*Z)-Z/2,Z,Z);}
+  for(const f of S.fx){
+    if(f.boom){const p=1-f.t/0.5;ctx.globalAlpha=1-p;ctx.fillStyle='#ff7a1f';ctx.beginPath();ctx.arc(f.x*Z,f.y*Z,46*Z,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff2c0';ctx.beginPath();ctx.arc(f.x*Z,f.y*Z,(4+14*p)*Z,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;continue;}
+    ctx.globalAlpha=f.t/0.35;ctx.strokeStyle='#6fe84a';ctx.lineWidth=Z;ctx.beginPath();ctx.arc(f.x*Z,f.y*Z,(0.35-f.t)*40*Z+3,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
+}
+let last=performance.now(),acc=0,frames=0,fpsT=0;
+function loop(now){
+  let dt=Math.min(0.05,(now-last)/1000);last=now;
+  if(!S.paused)tick(dt);
+  render();
+  frames++;fpsT+=dt;if(fpsT>0.5){document.getElementById('hud-fps').textContent=Math.round(frames/fpsT)+' fps';frames=0;fpsT=0;}
+  document.getElementById('hud-count').textContent=S.mobs.length+' mobs';
+  requestAnimationFrame(loop);
+}
+// ---- controls ----
+function pointerToUnits(ev){const r=cv.getBoundingClientRect();return [(ev.clientX-r.left)/r.width*cv.width/S.Z,(ev.clientY-r.top)/r.height*cv.height/S.Z];}
+cv.addEventListener('pointermove',ev=>{const [x,y]=pointerToUnits(ev);S.hero.tx=x;S.hero.ty=y;});
+cv.addEventListener('pointerdown',ev=>{const [x,y]=pointerToUnits(ev);spawn(['chaser','swarm','spitter','tank','bomber'][Math.floor(Math.random()*5)],x,y);});
+function group(id,onPick){const el=document.getElementById(id);el.addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;for(const o of el.querySelectorAll('button'))o.setAttribute('aria-pressed',o===b?'true':'false');onPick(b.dataset.v);});}
+group('biome',v=>{S.biome=v;});
+group('skin',v=>{buildSheets(v);});
+group('zoom',v=>{const old=S.Z;S.Z=+v;const k=old/S.Z;S.hero.x*=k;S.hero.y*=k;S.hero.tx*=k;S.hero.ty*=k;for(const e of S.mobs){e.x*=k;e.y*=k;}});
+document.getElementById('spawn').addEventListener('click',spawnWave);
+const pauseBtn=document.getElementById('pause');
+pauseBtn.addEventListener('click',()=>{S.paused=!S.paused;pauseBtn.setAttribute('aria-pressed',String(S.paused));pauseBtn.textContent=S.paused?'Resume':'Pause';});
+
+// ---- roster strips: 4 facings x 4 frames on basalt, animated at the game's 7 fps ----
+const strips=[];
+for(const c of document.querySelectorAll('canvas[data-mob]')){
+  const name=c.dataset.mob,sheet=SHEETS[name],tw=sheet[0][0].width,th=sheet[0][0].height,Z=6,pad=6;
+  const cellW=tw+pad*2,cellH=th+pad*2+4;
+  c.width=cellW*4*Z;c.height=cellH*Z; // Z px per texel
+  strips.push({c,g:c.getContext('2d'),tw,th,Z,pad,cellW,cellH,name});
+}
+function renderStrips(){
+  for(const s of strips){
+    const {g,Z}=s;g.imageSmoothingEnabled=false;
+    const gr=GROUND.basalt;
+    if(gr){g.drawImage(gr,0,0,gr.width,gr.height,0,0,gr.width*Z,gr.height*Z);}
+    else{g.fillStyle='#1a1620';g.fillRect(0,0,s.c.width,s.c.height);}
+    for(let d=0;d<4;d++){
+      const f=SHEETS[s.name][d][Math.floor(S.time*7)&3];
+      g.drawImage(f,(d*s.cellW+s.pad)*Z,(s.pad+4)*Z,f.width*Z,f.height*Z);
+      g.fillStyle='rgba(217,209,198,0.7)';g.font='600 '+(2.2*Z)+'px "Pixelify Sans", monospace';g.textBaseline='top';
+      g.fillText(DIRS[d],(d*s.cellW+s.pad)*Z,2*Z);
+    }
+  }
+  requestAnimationFrame(renderStrips);
+}
+if(reduced){S.paused=true;pauseBtn.setAttribute('aria-pressed','true');pauseBtn.textContent='Resume';}
+reset();
+requestAnimationFrame(loop);
+requestAnimationFrame(renderStrips);
+</script>

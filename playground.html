@@ -2185,7 +2185,13 @@ function bankedLevels(){
   return {banked:k,frac:clamp(xp/nd,0,1)};
 }
 function hpScale(){
-  if(isCampaign())return 1+(effWave()-1)*0.55+(G.level-1)*0.10;
+  // v7 (owner, 2026-09-13: "the survivors feel falls off from the first
+  // round"): the wave-1 break hands every player a school kit worth 3-10x the
+  // peashooter while wave 2's flow was 1.4x wave 1's and hp 1.55x, so from
+  // wave 2 the horde died on the screen edge (4p probe: touched 153/min in
+  // wave 1, 2.5/min in wave 2). Steeper hp per wave, and a party term: a mob
+  // has one bar and n shooters, so 4p at solo hp died 35% faster than solo.
+  if(isCampaign()){const n=Math.max(1,G.players.length);return (1+(effWave()-1)*0.70+(G.level-1)*0.10)*(1+0.3*(n-1));}
   return 1+G.time*0.012+(G.level-1)*0.06;
 }
 function dmgScale(){
@@ -2370,10 +2376,10 @@ function resetRun(){startRun(G.mode);}
 // None of these pattern ids are used by index.html.
 const CLASSIC_WAVES=[
 {n:55,dur:34,mix:{chaser:1},elite:0,lv:{b:1,x:0}},
-{n:105,dur:45,mix:{chaser:0.9,swarm:0.6},elite:0,pattern:'cinderfall',lv:{b:0.75,x:0.25}},
-{n:120,dur:48,mix:{chaser:0.8,swarm:0.6,spitter:0.2},elite:0,pattern:'obsidianbloom',lv:{b:0.75,x:0.25}},
-{n:135,dur:50,mix:{chaser:0.7,swarm:0.9,spitter:0.25},elite:0,pattern:'embermoths',lv:{b:0.5,x:0.65}},
-{n:150,dur:52,mix:{chaser:0.7,swarm:0.8,spitter:0.3,bomber:0.15},elite:0,pattern:'sunshrines',lv:{b:0.75,x:0.25}},
+{n:120,dur:45,mix:{chaser:0.9,swarm:0.6},elite:0,pattern:'cinderfall',lv:{b:0.75,x:0.25}},
+{n:140,dur:48,mix:{chaser:0.8,swarm:0.6,spitter:0.2},elite:0,pattern:'obsidianbloom',lv:{b:0.75,x:0.25}},
+{n:155,dur:50,mix:{chaser:0.7,swarm:0.9,spitter:0.25},elite:0,pattern:'embermoths',lv:{b:0.5,x:0.65}},
+{n:170,dur:52,mix:{chaser:0.7,swarm:0.8,spitter:0.3,bomber:0.15},elite:0,pattern:'sunshrines',lv:{b:0.75,x:0.25}},
 {n:165,dur:55,mix:{chaser:0.65,swarm:0.9,spitter:0.4,bomber:0.2},elite:0.02,pattern:'runerun',lv:{b:1,x:0.15}},
 {n:150,dur:58,mix:{ghost:1},elite:0,pattern:'crystalmaze',lv:{b:1,x:0}},
 {n:200,dur:60,mix:{chaser:0.55,swarm:1,spitter:0.5,bomber:0.3},elite:0.04,pattern:'treasurestorm',lv:{b:0.75,x:0.45}},
@@ -4672,7 +4678,7 @@ function tickBossFx(dt,alive){
 function spawnSlagPup(x,y){
   const e=spawnEnemy('swarm',x,y);
   e.spr=slagPupSprite;e.r=4;e.hp=16*hpScale();e.maxhp=e.hp;
-  e.sp=58+Math.random()*10;e.dmg=addDmg(7);e.xp=2;e.life=26;
+  e.sp=92+Math.random()*12;e.dmg=addDmg(7);e.xp=2;e.life=26; // faster than a walking player (85): the P1/P2 add that catches you
   return e;
 }
 // Slag offering (Ragnaros' Sons of Flame): crawls from the arena edge straight
@@ -4723,10 +4729,23 @@ function bossHeal(e,pct){
   const mul=ttk&&e.def?clamp((e.def.dur||100)/ttk,0,1):1;
   e.hp=Math.min(e.maxhp,e.hp+e.maxhp*pct*mul);
 }
-function armSlam(e,dur,r){
+// v7: the boss walked 40 against a player's 85 and only slammed within 78px,
+// so nobody who kept walking was ever hit (owner: "no challenge"). Now OUT
+// for the slam means it: given a landing point it crosses to it during the
+// wind-up (slagmaw tick) and the disc is drawn where it lands
+const SLAG_LUNGE=230,SLAG_IN_SPD=105; // lunge reach; inward-ring bullet speed (player 85)
+function slagLungeTarget(e,t,dur){
+  // half a lead on the target's heading: a walker meets the disc, a turn escapes it
+  const v=t.moving?t.speed*t.speedMul:0,lead=v*dur*0.82*0.5;
+  let x=t.x+(t.faceX||0)*lead,y=t.y+(t.faceY||0)*lead;
+  const A=G.arena;if(A){x=clamp(x,A.x-A.w/2+40,A.x+A.w/2-40);y=clamp(y,A.y-A.h/2+36,A.y+A.h/2-36);}
+  return {x,y};
+}
+function armSlam(e,dur,r,tx,ty){
   bossCast(e,'slam','MOLTEN SLAM',dur);
   e.ai.slamR=r;
-  pushTel(e,e.x,e.y,r,dur,0.22,'#ff7a1f',slamWarnSprite,null);
+  e.ai.lunge=tx!=null?{x:tx,y:ty,x0:e.x,y0:e.y}:null;
+  pushTel(e,tx!=null?tx:e.x,ty!=null?ty:e.y,r,dur,0.22,'#ff7a1f',slamWarnSprite,null);
   e.ai.telRef=G.fx[G.fx.length-1];
   e.ai.telRef.pct=0; // the boss resolves the hit itself so the safe disc reads correctly
 }
@@ -4950,6 +4969,11 @@ const SLAGMAW={
       const p=rig.M((Math.random()-0.5)*24,(16.5-SLAG_H)*2);
       if(G.particles.length<900)G.particles.push({x:p.x,y:p.y,vx:(Math.random()-0.5)*10,vy:-10-Math.random()*20,t:0.4+Math.random()*0.4,col:e.phase>=3?VOLC.lava:'#fff0a0',size:1,drag:1.5,spark:Math.random()<0.3});
     }}
+   if(a.cast==='slam'&&a.lunge){ // OUT for the slam: the body crosses to the landing disc under the raised hammer
+     const L=a.lunge,k=clamp(e.castP/0.82,0,1),ease=k*k*(3-2*k);
+     e.x=L.x0+(L.x-L.x0)*ease;e.y=L.y0+(L.y-L.y0)*ease;
+     if(k<1&&Math.random()<dt*24)addParticles(e.x+(Math.random()-0.5)*20,e.y+8,'#7a6e8f',1,30);
+   }else if(a.cast!=='slam')a.lunge=null;
    if(a.cast==='slam'){ // the held-high hammer sheds white sparks; the swing sheds a trail (drawn by the hook)
      const k=clamp(e.castP,0,1);
      if(k>0.55&&Math.random()<dt*(6+18*k))addSparkles(rig.head.x,rig.head.y,k<0.85?VOLC.burst:'#fff8d0',1,50);
@@ -5004,7 +5028,7 @@ const SLAGMAW={
        a.fedN=(a.fedN||0)+1;
        a.chompT=0.18; // the jaw shuts on it: the chomp is the heal's readout
        addParticles(o.x,o.y,'#ffd85a',6,90);
-       if(a.fedN%4===0)ringVolley(e,6,VOLC.burst,80,Math.random()*TAU);
+       if(a.fedN%4===0)ringVolley(e,6,VOLC.burst,105,Math.random()*TAU);
        if(Math.random()<0.5)sfx('vent');G.shake=Math.max(G.shake,2);
      }
    }
@@ -5050,8 +5074,9 @@ sfx('vent');
      a.cyc++;
      if(a.next==='slam'){
        // only commit within reach: a slam nobody is near teaches nothing
-       if(t&&Math.hypot(t.x-e.x,t.y-e.y)>120){a.walk=0.25;a.cyc--;return;}
-       a.next='ring';armSlam(e,a.cyc===1?2.2:1.7,78);
+       if(t&&Math.hypot(t.x-e.x,t.y-e.y)>SLAG_LUNGE){a.walk=0.25;a.cyc--;return;}
+       a.next='ring';
+       {const dur=a.cyc===1?2.2:1.7,L=t?slagLungeTarget(e,t,dur):{x:e.x,y:e.y};armSlam(e,dur,78,L.x,L.y);}
     }
     else{a.next='slam';armRing(e,a.cyc===2?3.0:2.4,72,1);}
    }else if(e.phase===2){
@@ -5085,7 +5110,7 @@ sfx('vent');
        bossCast(e,'vent','SLAG VENT',1.2);
        G.fx.push({kind:'vent',ground:1,boss:e,x:e.x,y:e.y,r:34,t:1.2,dur:1.2});
      }else if(s===1){a.step++;armRing(e,2.4,72,1);}
-     else if(dt2<92){a.step++;armSlam(e,1.5,78);}
+     else if(dt2<SLAG_LUNGE){a.step++;const L=slagLungeTarget(e,t,1.5);armSlam(e,1.5,78,L.x,L.y);}
      else a.walk=0.25; // not lined up yet: keep walking
    }
  },
@@ -5129,10 +5154,10 @@ sfx('vent');
        after(0.4,()=>{if(!e.dead)cinderRingAt(e,R,95,24,VOLC.burst,Math.PI/24);});
        a.ringSafeT=1.1;
      }else{
-       pushRing(e,e.x,e.y,{rmax:R,spd:70,dir:-1,gaps:0,pct:0.16,w:14,dur:R/70,t:R/70,col:VOLC.burst});
+       pushRing(e,e.x,e.y,{rmax:R,spd:SLAG_IN_SPD,dir:-1,gaps:0,pct:0.16,w:14,dur:R/SLAG_IN_SPD,t:R/SLAG_IN_SPD,col:VOLC.burst});
        for(let i=0;i<28;i++){
          const an=i*TAU/28;
-         G.ebullets.push({x:e.x+Math.cos(an)*R,y:e.y+Math.sin(an)*R,vx:-Math.cos(an)*70,vy:-Math.sin(an)*70,r:3,dmg:e.dmg*0.4,life:R/70+0.4,col:VOLC.burst,boss:1});
+         G.ebullets.push({x:e.x+Math.cos(an)*R,y:e.y+Math.sin(an)*R,vx:-Math.cos(an)*SLAG_IN_SPD,vy:-Math.sin(an)*SLAG_IN_SPD,r:3,dmg:e.dmg*0.4,life:R/SLAG_IN_SPD+0.4,col:VOLC.burst,boss:1});
        }
      }
      if(e.phase===1)armSlam(e,1.5,78); else a.walk=1.4;
@@ -10179,7 +10204,7 @@ function nextWave(){
     const n=Math.max(1,G.players.length);
     // More players cover more angles and erase edge spawns sooner. Scale the
     // stream harder than hp: solo is authored, then +65% per extra player.
-    G.waveQuota=Math.round(def.n*(1+0.65*(n-1)));
+    G.waveQuota=Math.round(def.n*(1+0.80*(n-1)));
     // a pattern wave thins the base drip and drops the generic SURGE pulses:
     // the pattern IS the choreography
     if(G.mode==='classic'&&def.pattern){

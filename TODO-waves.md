@@ -1,5 +1,102 @@
 # Wave variety — requirements & status
 
+## Done (v7 — waves that feel like waves, 2026-09-13, playground.html only)
+
+Owner: "the waves just feel like a stop from the action, not like waves". The
+probe confirmed it: every timed wave was a metronome (4-5 spawns per 2s from
+all four sides for the whole clock) and the only shape was the SPAWNS ENDED stop.
+
+- [x] SETS (`planSets`, `tickSets`, `dripRate`): every timed wave is 2-4 sets
+      (`round(dur/17)`), each a SWELL (drip rises 0.4x → 1.6x of base from all
+      sides), a CREST (a FRONT: 32% of the set — 42% for the last — arrives in
+      2.2s as one ragged line from ONE side, golden-ratio spread along the
+      edge, 70% one type, may crowd to 1.4x maxAlive) and an EBB (0.3x). The
+      last crest lands at 86% of the clock so the clear phase is its ebb. The
+      envelope integrates to the quota; set waves carry `SET_QUOTA_MUL` (1.15)
+      more bodies because a front dies faster to AoE than trickle (A/B probe:
+      ~25% less mean pressure at the same count without the bump; with it,
+      hits/min and near-count at or above the old baseline at 1/2/4p).
+- [x] Telegraph 1.6s ahead (`SET_TELL`): edge tide on the front's side
+      (`renderWaveTide`, stepped bands, volcano orange / surface gold), rising
+      rumble, 'telegraph' sfx; the break: white edge flash, shake 4, 'slam'.
+      The side prefers where the party walks (60%), never repeats.
+- [x] HUD: set pips (`drawSetPips`) replace the seconds countdown (the current
+      pip fills with the swell, flashes white at the break); waves without sets
+      keep the timer. SPAWNS ENDED / SPAWNS STOPPED are gone — the clear line
+      reads THE WAVE EBBS — N LEFT; WAVE N SURVIVED stays. Pre 1.25 → 0.9s,
+      SOFT_WAVE_MAX 8 → 6. One-time subFlash THE WAVE BREAKS on the run's
+      first crest. ES strings added.
+- [x] Music: `G.setK` (swell progress) lifts the drums/hats/crackle toward each
+      crest and drops them in the ebb (actStep + volcanoStep).
+- [x] Probes in the session scratchpad: probe-shape (spawns per 2s timeline),
+      probe-feel (on-camera / within-110px / hits per min / kills per min per
+      wave, boss TTK and damage by source). Promote if the tuning loop recurs.
+- [ ] Owner playtest: do the fronts read as a wave on the TV; is the ebb a
+      breather or dead air; 4p front size (53 bodies at wave 9) legibility.
+- [ ] Port to index.html once the owner reacts (index still has the old
+      SURGE pulses at 0.35/0.70).
+
+## Done (v7b — pressure from wave 2, Slagmaw lunge, 2026-09-13, playground.html only)
+
+Owner: "the survivors feel falls off from the first round" and "the damage from
+Slagmaw drops, the boss does not present any challenge". Both measured, then
+changed the same day (owner: "can you make the changes?").
+
+- [x] The wave-2 cliff (probe, circling bot, random real kit): at 4p the party
+      was touched 153/min in wave 1 and 2.5/min in wave 2 (near-count 28 → 3);
+      the wave-1 break hands every player a school kit worth 3-10x the
+      peashooter while wave 2's flow was 1.4x wave 1's and mob hp 1.55x.
+      Levers pulled: `hpScale` campaign slope 0.55 → 0.70 per wave plus a
+      party term ×(1+0.3(n-1)) (a mob has one bar and n shooters); quota slope
+      +65% → +80% per extra player; authored `n` for waves 2-5 105/120/135/150
+      → 120/140/155/170. Probe after (hits/min, wave 1 → 2 → 3): solo 4 → 21 →
+      32, 2p 33 → 99 → 93, 4p 155 → 200 → 177 — rising from wave 1, no cliff.
+      A dmgMul-2 bot (a decent kit) still levels on schedule (solo L9, 2p L11
+      at wave 9). Side effect to watch: more bodies roll more elites, so a
+      strong party arrives at Slagmaw ~2 levels higher (L10 vs L7 at dmgMul
+      3.5); the boss's level term absorbed it (TTK 129s solo / 133s 2p, in the
+      96-144 band).
+- [x] Slagmaw could not touch a walking player: speed 85 outran the boss (40 /
+      rooted / 38), pups 58-68, inward-ring bullets 70; the slam needed the
+      boss within 78px. Probe: 0 slams landed on a moving bot in a 374s fight.
+      Now: the slam is a LUNGE — `armSlam(e,dur,r,tx,ty)` takes a landing
+      point (`slagLungeTarget`: the target plus half a lead on its heading,
+      clamped to the arena), the disc is drawn there and the body crosses to
+      it under the raised hammer during the wind-up (eased, done at 82% of the
+      cast); P1 commits from `SLAG_LUNGE` (230px) instead of 120, P3 from 230
+      instead of 92. Pups 92-104 (faster than a player), inward-ring bullets
+      and the feed volley `SLAG_IN_SPD` 105. Probe: 6 slams landed on the
+      mover in 129s. P2 stays rooted; its pressure is now the faster pups from
+      the vent and the brand pools.
+- [ ] Owner playtest: is the lunge readable (the disc appears away from the
+      boss — does the raised hammer sell the crossing); are waves 2-3 at 2p now
+      exhausting rather than tense (the weak bot hit the on-screen cap there);
+      pup speed vs a speed-charmed party.
+- [ ] Port v7 + v7b to index.html together once the owner reacts.
+
+## Done (v7c — spawn direction: the pressure clock, 2026-09-13, playground.html only)
+
+Owner: the horde read as a torrent from wherever the player faced (the old
+rule sent 60% of drip spawns and most fronts from the edge the party walked
+toward). `tools/probe-spawn.mjs` measured it: a runner bot saw >=60% of spawns
+ahead in a third of all 8s windows, and half its windows repeated the last
+dominant direction.
+
+- [x] `spawnClock` / `spawnAngle` / `wedgeFill` / `edgePointAt` replace the
+      side lean: a phase every 2.5-4.5s (AHEAD front-quarter ±26°+noise one
+      side per phase 44%, FLANK alternating 26%, BEHIND 12%, AROUND 18%, never
+      twice), a 7s held heading forces BEHIND (<= every 12s), 20% halo, and
+      the rest pick the thinnest of 3 phase candidates + 1 uniform (mobs
+      within 300 px of the party centre). `frontSide` quantises the same angle.
+- [x] Probe verdict (5 seeds x 240s, 3 bots): runner torrent windows 32% -> 8%,
+      stale 49% -> 25%, hits/min 23 -> 16; circle bot hits/min unchanged
+      (12.6 -> 12.8), trapped% unchanged; kiter hits/min 5.0 -> 3.1 (the pure
+      phase clock without gap-seeking made kiting free at 2.3). Variants kept
+      in the probe (`legacy`, `clock`, `weave`, `w2-w6`, `g4`, `g6`, `g4b`).
+- [ ] Owner playtest: does the pressure feel like it moves around you rather
+      than walling the way you walk; is the BEHIND pincer readable or cheap.
+- [ ] Port with v7/v7b to index.html.
+
 ## Done (v6 — playground visual revamp, 2026-09-02)
 
 - Density 2 buffer with one `ctx.setTransform(DEN)` per frame; `den` tags on

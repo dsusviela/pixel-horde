@@ -21,6 +21,8 @@
 //   --terrain T       setTerrain(T): pressure (lava rivers everywhere) | null
 //   --lava            a hand-carved lava band under the party (G.lava overlay)
 //   --gems            12 gems around player 1
+//   --hp F            player 1 at F x maxhp (low-hp HUD/vignette state)
+//   --hurt F          hit player 1 for F x maxhp from the right (hurtPlayer), --hurtage N update frames later
 //   --bossnear [DX]   move the live boss to DX units right of player 1 (default 60)
 //   --arena           openArena() around the party (pillars + torches)
 // Output
@@ -142,6 +144,8 @@ export async function runFrame(o){
   if(o.arena)ev('openArena')();
   if(o.lava){G.lava=new Set();const p=G.players[0];for(let i=-14;i<14;i++){const tx=Math.floor(p.x/16)+i,ty=Math.floor(p.y/16)+3+Math.round(Math.sin(i*0.5)*2);for(let w=0;w<3;w++)G.lava.add(tx+','+(ty+w));}}
   if(o.bossnear&&G.boss){const p=G.players[0];G.boss.x=p.x+(+o.bossnear||60);G.boss.y=p.y-8;} // drag the live boss beside player 1
+  if(o.hp){const p=G.players[0];p.hp=p.maxhp*+o.hp;p.hpGhost=p.hp;} // player 1 at this fraction of maxhp (low-hp state)
+  if(o.hurt){const p=G.players[0];p.hurtCd=0;p.invuln=0;ev('hurtPlayer')(p,p.maxhp*+o.hurt,p.x+30,p.y);for(let i=0;i<(+o.hurtage||0);i++)ev('update')(1/60);} // hit player 1 for this fraction of maxhp from the right, then --hurtage frames later
   if(o.gems){const p=G.players[0];for(let i=0;i<12;i++)G.gems.push({x:p.x+Math.cos(i)*60*(1+i%3),y:p.y+Math.sin(i*1.7)*40*(1+i%2),v:i%5===0?4:1,t:i,dead:false});}
   G.shake=0;
   const t0=Date.now();ev('render')();

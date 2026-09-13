@@ -734,7 +734,7 @@ function noiseHit(dur,vol,freq){
 function seq(list,gap,dur,type,vol,slide){
   list.forEach((f,i)=>setTimeout(()=>beep(f,dur,type||'square',slide||0,vol||0.12),i*gap));
 }
-const SFX_GAP={shoot:60,hit:40,gem:50,zap:90,boom:120,die:70,hurt:110,emberpop:70,slag:120,telegraph:90,crate:80,pickup:60,
+const SFX_GAP={shoot:60,hit:40,gem:50,zap:90,boom:120,die:70,hurt:110,hurtbig:150,heartbeat:400,emberpop:70,slag:120,telegraph:90,crate:80,pickup:60,
   arcbolt:70,shadowbolt:70,ablast:110,lavaray:110,plaguecast:100,mirage:160,inflict:120};
 function sfx(name){
   if(!AC)return;
@@ -750,6 +750,8 @@ function sfx(name){
     case 'boom':noiseHit(0.4,0.26,400);beep(90,0.35,'triangle',-50,0.18);break;
     case 'hit':beep(300,0.05,'square',-120,0.05);break;
     case 'hurt':beep(180,0.18,'sawtooth',-90,0.16);noiseHit(0.12,0.10,700);break;
+    case 'hurtbig':beep(130,0.26,'sawtooth',-80,0.2);noiseHit(0.22,0.16,480);beep(60,0.3,'sine',-25,0.24);break; // a fifth of the bar or more: lower, longer, with a body thump
+    case 'heartbeat':beep(95,0.13,'sine',-50,0.12);setTimeout(()=>beep(80,0.13,'sine',-45,0.08),150);break; // under 30% hp: a quiet lub-dub under everything
     case 'die':beep(220,0.4,'sawtooth',-180,0.16);noiseHit(0.4,0.14,500);break;
     case 'gem':beep(880,0.06,'square',300,0.05);break;
     case 'pickup':beep(520,0.09,'square',260,0.1);beep(780,0.12,'square',260,0.08);break;
@@ -1552,6 +1554,19 @@ function reloadChord(pads){
   reloadHold=-1e18;
   const u=new URL(location.href);u.searchParams.set('r',Date.now().toString(36));location.replace(u.href);
 }
+// pad haptics: the pad that took the hit shakes (Chromium dual-rumble; silently
+// nothing on the keyboard pad, online guests, or browsers without it)
+const rumbleLast={};
+function rumble(p,ms,strong,weak){
+  let pad=null;
+  try{const l=navigator.getGamepads?navigator.getGamepads():[];for(const q of l)if(q&&q.index===p.padIndex){pad=q;break;}}catch(e){}
+  const act=pad&&(pad.vibrationActuator||(pad.hapticActuators&&pad.hapticActuators[0]));
+  if(!act||!act.playEffect)return;
+  const now=performance.now();
+  if(rumbleLast[p.padIndex]&&now-rumbleLast[p.padIndex]<60)return;
+  rumbleLast[p.padIndex]=now;
+  try{act.playEffect('dual-rumble',{startDelay:0,duration:ms,strongMagnitude:Math.min(1,strong),weakMagnitude:Math.min(1,weak)});}catch(e){}
+}
 function pollPads(){
   // some browsers throw a SecurityError here on insecure (plain-http) origins
   // instead of returning an empty list — never let that kill the game loop
@@ -2131,7 +2146,7 @@ const flameRad=w=>28+wlv(w)*5+(w.evo?12:0);
 // ---------- state ----------
 const G={
   state:'title', mode:'endless', modeSel:0, rushStart:1, time:0, shake:0,
-  pflash:0, pflashCol:null,
+  pflash:0, pflashCol:null, hurtV:0, lowBeat:0,
   players:[], enemies:[], bullets:[], ebullets:[], gems:[], pickups:[], crates:[],
   particles:[], texts:[], fx:[], timers:[],
   xp:0, level:1, kills:0,
@@ -2237,7 +2252,7 @@ function makePlayer(idx,padIndex,x,y){
     idx, padIndex, x, y, r:5, col:freeCol(colPref(padIndex)),
     hp:100, maxhp:100, dead:false, reviveP:0,
     speed:85, speedMul:1, regen:0, dmgMul:1, magnet:34,
-    hurtCd:0, invuln:2, acidT:0, faceX:1, faceY:0, anim:0,
+    hurtCd:0, invuln:2, acidT:0, hpGhost:-1, hpGhostT:0, barFlash:0, faceX:1, faceY:0, anim:0,
     weapons:{blaster:{lv:1,t:0.3,ang:Math.random()*TAU}},
     relics:{},
     school:null, pas:{}, crReady:0, dtReady:0, leechWin:0, leechAcc:0,
@@ -2294,7 +2309,7 @@ function startRun(mode){
   if(!pads.length)pads=live.slice(0,4);
   G.players=[];G.enemies=[];G.bullets=[];G.ebullets=[];G.gems=[];G.pickups=[];
   G.crates=[];G.particles=[];G.texts=[];G.fx=[];G.timers=[];G.hitRef=0;G.dpsT=0;
-  G.xp=0;G.level=1;G.kills=0;G.time=0;G.shake=0;
+  G.xp=0;G.level=1;G.kills=0;G.time=0;G.shake=0;G.hurtV=0;G.lowBeat=0;
   G.spawnT=1;G.surgeT=45;G.bossT=150;G.bossIdx=0;G.boss=null;G.bossTint='#e33';
   G.levelupPicks=null;G.levelupT=0;G.levelupFree=false;G.freeLevels=0;G.podDebt=0;G.podEvery=1;G.relics=[];
   G.spawnedChunks=new Set();
@@ -3001,7 +3016,7 @@ function explode(x,y,radius,dmg,owner,hurtPlayers){
   if(hurtPlayers){
     for(const p of G.players){
       if(p.dead||p.invuln>0)continue;
-      if(dist2(x,y,p.x,p.y)<radius*radius)hurtPlayer(p,hurtPlayers);
+      if(dist2(x,y,p.x,p.y)<radius*radius)hurtPlayer(p,hurtPlayers,x,y);
     }
   }
   for(const c of G.crates)if(!c.dead&&dist2(x,y,c.x,c.y)<radius*radius)breakCrate(c);
@@ -3046,12 +3061,34 @@ function killPlayer(p){
   flash('P'+(p.idx+1)+' DOWN! STAND ON THEM!');
   if(G.players.every(q=>q.dead)){G.state='gameover';G.overSince=G.time;recordRun('wipe');}
 }
-function hurtPlayer(p,dmg){
+function hurtPlayer(p,dmg,sx,sy){
   if(p.dead||p.invuln>0||p.hurtCd>0)return;
-  p.hp-=dmg;p.hurtCd=0.5;p.flash=0.15;
-  sfx('hurt');
-  G.shake=Math.max(G.shake,2);
+  p.hp-=dmg;p.hurtCd=0.5;
+  hurtFx(p,dmg,sx,sy);
   if(p.hp<=0)killPlayer(p);
+}
+// Everything a hit says, in one place (touch, bullets, blasts, boss scripts):
+// the hero pops white then bleeds red, recoils a few px from the source, the
+// screen edge flushes, the HUD bar leaves a draining ghost, the pad rumbles,
+// and a red number says how much. Sized by the hit's share of maxhp, so a
+// grubling nibble and a Slagmaw slam never feel the same; a fifth of the bar
+// or more is "big": hitstop, a heavier sound, a white outlined number.
+function hurtFx(p,dmg,sx,sy){
+  const frac=clamp(dmg/Math.max(1,p.maxhp),0,1),big=frac>=0.2;
+  p.flash=0.25;p.barFlash=0.12;
+  if(p.hpGhost<p.hp+dmg)p.hpGhost=Math.min(p.maxhp,p.hp+dmg);
+  p.hpGhostT=0.35;
+  if(sx!==undefined&&!(p.shoveT>0)&&!(p.kbT>0)){
+    // a recoil, not a shove: 3-12 px through the same collided kb path shovePlayer uses
+    const a=Math.atan2(p.y-sy,p.x-sx),d=3+9*frac;
+    p.kbx=Math.cos(a)*d/0.085;p.kby=Math.sin(a)*d/0.085;p.kbT=0.12; // /0.085: the decay integrates to ~d over 0.12s
+  }
+  G.hurtV=Math.max(G.hurtV,0.45+0.55*frac);
+  G.shake=Math.max(G.shake,2+8*frac);
+  if(big)setSlow(0.07);
+  sfx(big?'hurtbig':'hurt');
+  rumble(p,big?220:110,0.35+0.6*frac,0.2+0.5*frac);
+  if(G.texts.length<160)G.texts.push({x:p.x,y:p.y-14,str:'-'+fmtDmg(dmg),col:big?'#ffffff':'#ff4d6d',t:big?1.1:0.8,dur:big?1.1:0.8,vy:-24,size:big?12:8,big:big?2:1});
 }
 // boss adds speak the same percentage language as their masters: base reads as
 // % of the party's average max hp, so a grubling stays a threat at boss 20.
@@ -3072,8 +3109,8 @@ function bossHit(p,pct){
   // pct 0 telegraphs (armSlam/armLeap let the boss resolve the hit itself)
   // must not fire the hurt flash/sfx as a phantom hit
   if(pct<=0||p.dead||p.invuln>0)return;
-  p.hp-=p.maxhp*pct*BOSS_DMG_MUL*bossFury();p.flash=0.15;sfx('hurt');
-  G.shake=Math.max(G.shake,2);
+  const dmg=p.maxhp*pct*BOSS_DMG_MUL*bossFury();
+  p.hp-=dmg;hurtFx(p,dmg);
   if(p.hp<=0)killPlayer(p);
 }
 function breakCrate(c){
@@ -8629,7 +8666,7 @@ function cinderTick(P,dt,alive){
   if(C.t<=0&&C.left>0&&!active){C.t=P.id==='treasurestorm'?5.4:3.4;cinderSpawn(P,alive);}
   for(const m of C.marks){
     m.t-=dt;if(m.t>0||m.done)continue;m.done=1;
-    for(const p of alive)if(dist2(p.x,p.y,m.x,m.y)<(m.r+p.r)*(m.r+p.r))hurtPlayer(p,11*dmgScale());
+    for(const p of alive)if(dist2(p.x,p.y,m.x,m.y)<(m.r+p.r)*(m.r+p.r))hurtPlayer(p,11*dmgScale(),m.x,m.y);
     const e=playTarget('tank',m.x,m.y,cinderCoreSprite,52*hpScale(),patXp(P),'#ff9040');
     e.r=10;e.scale=1.65;e.life=7;e.cinderCore=1;
     G.fx.push({kind:'boom',col:'#ff9040',x:m.x,y:m.y,r:m.r,t:0.32,dur:0.32});
@@ -10588,6 +10625,9 @@ function update(dt){
   }
   if(G.shake>0)G.shake=Math.max(0,G.shake-dt*14);
   if(G.pflash>0)G.pflash=Math.max(0,G.pflash-dt*2.6);
+  if(G.hurtV>0)G.hurtV=Math.max(0,G.hurtV-dt*3);
+  // low on health: a slow heartbeat while any live player is under 30%
+  if(G.players.some(p=>!p.dead&&p.hp<p.maxhp*0.3)){G.lowBeat-=dt;if(G.lowBeat<=0){G.lowBeat=1.1;sfx('heartbeat');}}else G.lowBeat=0;
   if(G.vacuumT>0)G.vacuumT-=dt;
 
   for(let i=G.timers.length-1;i>=0;i--){
@@ -10605,6 +10645,10 @@ function update(dt){
     if(p.invuln>0)p.invuln-=dt;
     if(p.flash>0)p.flash-=dt;
     if(p.shoveT>0)p.shoveT-=dt;
+    if(p.barFlash>0)p.barFlash-=dt;
+    // the HUD ghost holds for a beat after the hit, then drains to the real bar
+    if(p.hpGhost<p.hp)p.hpGhost=p.hp;
+    if(p.hpGhostT>0)p.hpGhostT-=dt;else if(p.hpGhost>p.hp)p.hpGhost=Math.max(p.hp,p.hpGhost-p.maxhp*dt*1.6);
     if(p.dead)continue;
 
     const pad=pads.find(x=>x.index===p.padIndex);
@@ -10677,7 +10721,7 @@ function update(dt){
         // Exception: while a CINDER RING's safe disc is live the boss IS the
         // refuge, so its body must not bite (ringSafeT, see SLAGMAW)
         else if(!e.noTouch&&!(e.boss&&e.def&&e.def===WORLDEATER&&e.phase===4)&&!(e.boss&&e.ai&&e.ai.ringSafeT>0))
-          hurtPlayer(p,e.boss?Math.max(e.dmg,p.maxhp*0.12)*BOSS_DMG_MUL*bossFury():e.dmg);
+          hurtPlayer(p,e.boss?Math.max(e.dmg,p.maxhp*0.12)*BOSS_DMG_MUL*bossFury():e.dmg,e.x,e.y);
       }
     });
   }
@@ -10932,7 +10976,7 @@ function update(dt){
           // in wave 2 before P3 uses the shove to put you in the lava
           for(const p of alive){
             const d=Math.hypot(p.x-e.x,p.y-e.y);
-            if(d<R)(raid?bossHit(p,0.22):hurtPlayer(p,e.dmg*1.6));
+            if(d<R)(raid?bossHit(p,0.22):hurtPlayer(p,e.dmg*1.6,e.x,e.y));
             const RR=raid?R+50:R+20;
             if(d<RR&&!p.dead&&!(p.shoveT>0))shovePlayer(p,Math.atan2(p.y-e.y,p.x-e.x),raid?(d<R?120:72):(d<R?40:24));
           }
@@ -11117,7 +11161,7 @@ function update(dt){
       const rr=p.r+b.r;
       // boss bullets floor at 6% maxhp: flat dmg goes stale once charm-stacked
       // hp pools grow, and regen out-heals it into an AFK-able fight
-      if(dist2(b.x,b.y,p.x,p.y)<rr*rr){hurtPlayer(p,b.boss?Math.max(b.dmg,p.maxhp*0.06)*BOSS_DMG_MUL*bossFury():b.dmg);b.dead=true;break;}
+      if(dist2(b.x,b.y,p.x,p.y)<rr*rr){hurtPlayer(p,b.boss?Math.max(b.dmg,p.maxhp*0.06)*BOSS_DMG_MUL*bossFury():b.dmg,b.x,b.y);b.dead=true;break;}
     }
   }
 
@@ -11359,6 +11403,16 @@ function fmtTime(t){
 function drawSpriteC(g,spr,x,y,scale){
   const s=scale||1,uw=(spr.uw||spr.width)*s,uh=(spr.uh||spr.height)*s,q=SUBPX?DEN:1;
   g.drawImage(spr,Math.round((x-uw/2)*q)/q,Math.round((y-uh/2)*q)/q,Math.round(uw),Math.round(uh));
+}
+// a solid-colour silhouette of a frame, cached per frame+colour: the hero's hurt flash
+const tintCache=new WeakMap();
+function tintFrame(spr,col){
+  let m=tintCache.get(spr);if(!m){m={};tintCache.set(spr,m);}
+  let c=m[col];if(c)return c;
+  c=document.createElement('canvas');c.width=spr.width;c.height=spr.height;c.den=spr.den;c.uw=spr.uw;c.uh=spr.uh;
+  const g=c.getContext('2d');g.drawImage(spr,0,0);
+  g.globalCompositeOperation='source-in';g.fillStyle=col;g.fillRect(0,0,c.width,c.height);
+  m[col]=c;return c;
 }
 function hexRgb(h){
   const n=parseInt(h.slice(1),16);
@@ -12231,8 +12285,10 @@ function render(){
     const q=W2V(p.x,p.y),x=q[0],y=q[1];
     if(p.invuln>0&&Math.floor(G.time*10)%2===0)continue;
     const walkB=(p.anim%1)>=0.5; // den-2 walk frame B stands in for the old 1 px bob
-    if(p.flash>0){ctx.fillStyle='rgba(255,80,80,0.6)';ctx.fillRect(x-6,y-8,12,14);}
-    drawSpriteC(ctx,heroFrame(p),x,y-2);
+    const hf=heroFrame(p);
+    drawSpriteC(ctx,hf,x,y-2);
+    // hit: the hero pops white for the first frames, then a red tint drains off the sprite
+    if(p.flash>0){const fk=p.flash/0.25;ctx.globalAlpha=fk>0.68?0.95:0.85*fk;drawSpriteC(ctx,tintFrame(hf,fk>0.68?'#ffffff':'#ff4d6d'),x,y-2);ctx.globalAlpha=1;}
     // path accents: transparent 12x12 overlays on the bare hero (the robe colour never changes)
     if(p.school==='destro'){glow(x,y+5,6,'#ff9040',0.12);}
     else if(p.school==='illusion'){glow(x,y+5,6,'#c9a4ff',0.12);}
@@ -12515,6 +12571,7 @@ function render(){
   // low-res buffer and upscaled is unreadable.
   uiBegin(w,h);
   renderPrismFlash(w,h);
+  renderHurt(w,h);
   renderWaveTide(w,h);
   renderWeMood(w,h);
   for(const p of G.players){
@@ -12658,6 +12715,20 @@ function renderWeMood(vw,vh){
     ctx.globalAlpha=1;
   }
 }
+// what a hit does to the screen: the edge flushes red for a third of a second
+// (deeper for a bigger hit), and while any live player is under 30% it keeps
+// breathing slowly, so the danger is never only a small bar in the corner
+function renderHurt(vw,vh){
+  if(G.state==='title'||G.state==='modesel')return;
+  const low=G.players.some(p=>!p.dead&&p.hp<p.maxhp*0.3);
+  const a=(G.hurtV>0?0.6*G.hurtV:0)+(low?0.14+0.08*Math.sin(G.time*5.5):0);
+  if(a<=0.01)return;
+  const ctx=sctx,m=Math.min(vw,vh);
+  const rg=ctx.createRadialGradient(vw/2,vh/2,m*0.3,vw/2,vh/2,m*0.78);
+  rg.addColorStop(0,'rgba(170,16,32,0)');
+  rg.addColorStop(1,'rgba(170,16,32,'+Math.min(0.7,a).toFixed(3)+')');
+  ctx.fillStyle=rg;ctx.fillRect(0,0,vw,vh);
+}
 function renderHUD(vw,vh){
   const ctx=sctx; // UI draws on the native-res screen canvas (see uiBegin)
   const k=vw/680; // keep the HUD a constant size on screen as the camera zooms
@@ -12667,13 +12738,17 @@ function renderHUD(vw,vh){
     const x=5*k,y=(5+i*17)*k;
     ctx.fillStyle='rgba(26,15,8,0.55)';
     ctx.fillRect(x-1,y-1,104*k,15*k);
+    const lowHp=!p.dead&&p.hp<p.maxhp*0.3;
+    if(lowHp){ctx.fillStyle='rgba(255,40,60,'+(0.12+0.10*Math.sin(G.time*5.5)).toFixed(3)+')';ctx.fillRect(x-1,y-1,104*k,15*k);}
     ctx.fillStyle=PCOLORS[p.col];
     ctx.fillRect(x,y,4*k,13*k);
     text(ctx,'P'+(p.idx+1),x+7*k,y+k,F(7),PCOLORS[p.col]);
     if(p.dead)text(ctx,'DOWN',x+24*k,y+k,F(7),'#ff4d6d');
     else{
       ctx.fillStyle='#3a1218';ctx.fillRect(x+24*k,y+2*k,44*k,4*k);
-      ctx.fillStyle='#ff4d6d';ctx.fillRect(x+24*k,y+2*k,Math.max(0,44*k*p.hp/p.maxhp),4*k);
+      if(p.hpGhost>p.hp){ctx.fillStyle='#ffd6a0';ctx.fillRect(x+24*k,y+2*k,Math.max(0,44*k*Math.min(1,p.hpGhost/p.maxhp)),4*k);}
+      ctx.fillStyle=p.barFlash>0?'#ffffff':(lowHp&&Math.floor(G.time*4)%2===0)?'#ff8a9a':'#ff4d6d';
+      ctx.fillRect(x+24*k,y+2*k,Math.max(0,44*k*p.hp/p.maxhp),4*k);
     }
     text(ctx,p.kills+'k',x+24*k,y+7*k,F(6),'#b3a184');
     // live DPS (3s window) — the bigger the share of the party's peak, the

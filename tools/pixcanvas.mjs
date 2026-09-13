@@ -1,6 +1,6 @@
 // A tiny software Canvas2D: enough of the API for the game's sprite and boss
 // draw code (fillRect, arc/ellipse fill+stroke, drawImage with transforms,
-// globalAlpha, globalCompositeOperation 'source-over' | 'lighter' | 'screen' | 'destination-out',
+// globalAlpha, globalCompositeOperation 'source-over' | 'lighter' | 'screen' | 'destination-out' | 'source-in',
 // nearest or bilinear drawImage per imageSmoothingEnabled — default false,
 // matching the game's explicit settings) to rasterise into an RGBA buffer,
 // plus a PNG writer (canvas.png()) and reader (readPng(buffer) -> PixCanvas).
@@ -8,6 +8,7 @@ import zlib from 'node:zlib';
 
 function parseColor(c){
   if(!c)return [0,0,0,1];
+  if(typeof c!=='string')return [0,0,0,0]; // gradient/pattern stubs paint nothing
   if(c[0]==='#'){
     if(c.length===4)return [parseInt(c[1]+c[1],16),parseInt(c[2]+c[2],16),parseInt(c[3]+c[3],16),1];
     return [parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16),c.length>=9?parseInt(c.slice(7,9),16)/255:1];
@@ -29,6 +30,7 @@ export class PixCanvas{
     const i=(y*this.width+x)*4,d=this.data;
     if(op==='lighter'){d[i]=Math.min(255,d[i]+r*a);d[i+1]=Math.min(255,d[i+1]+g*a);d[i+2]=Math.min(255,d[i+2]+b*a);d[i+3]=Math.min(1,d[i+3]+a);return;}
     if(op==='destination-out'){d[i+3]=d[i+3]*(1-a);return;}
+    if(op==='source-in'){d[i]=r;d[i+1]=g;d[i+2]=b;d[i+3]=d[i+3]*a;return;} // keep the source colour only where the canvas already has alpha (tintFrame)
     if(op==='screen'){d[i]=255-(255-d[i])*(255-r*a)/255;d[i+1]=255-(255-d[i+1])*(255-g*a)/255;d[i+2]=255-(255-d[i+2])*(255-b*a)/255;d[i+3]=Math.min(1,d[i+3]+a);return;}
     const oa=d[i+3],na=a+oa*(1-a);
     if(na<=0)return;

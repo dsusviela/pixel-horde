@@ -887,13 +887,14 @@ function actStep(t){
     if(s%4===0){const n=c.lead[s];if(n!=null)musNote(semiF(c.root,n),t,dur*6,'triangle',0.03);}
     return dur;
   }
-  if(c.kick.indexOf(s)>=0)musThump(t,s===0?0.30:0.22);
-  if(w>=1&&c.hat.indexOf(s)>=0)musHiss(t,0.05,6000);
+  const set=G.setK||0; // the swell: drums lift toward each crest, drop in the ebb
+  if(c.kick.indexOf(s)>=0)musThump(t,(s===0?0.30:0.22)+0.06*set);
+  if((w>=1||set>0.5)&&c.hat.indexOf(s)>=0)musHiss(t,0.05+0.04*set,6000);
   const b=c.bass[s];
   if(b!=null){
     const f=semiF(c.root,b);
     musNote(f,t,dur*1.8,'sawtooth',0.05);
-    if(w>=3)musNote(f*1.4983,t,dur*1.6,'sawtooth',0.024); // grim fifth
+    if(w>=3||set>0.8)musNote(f*1.4983,t,dur*1.6,'sawtooth',0.024); // grim fifth
   }
   if(w>=2){const l=c.lead[s];if(l!=null)musNote(semiF(c.root*2,l),t,dur*1.9,'square',0.028);}
   if(s===0)musNote(c.root/2,t,dur*16,'sine',0.045); // sub drone, one per bar
@@ -916,14 +917,14 @@ function volcanoStep(t){
   const c=VOLC_MUS,w=clamp(G.wave-1,0,3); // 1=wave2 .. 3=wave4 (0 = the descent)
   const fight=G.waveState==='fight';
   const def=waveDef(G.wave);
-  const heat=fight?clamp(G.waveT/Math.max(1,def.dur||60),0,1):0;
+  const heat=fight?clamp(G.waveT/Math.max(1,def.dur||60),0,1):0,set=fight?(G.setK||0):0;
   const bpm=[84,92,104,118][w]+(fight?8*heat:0);
   const s=MUS.step%16,bar=(MUS.step/16)|0,dur=60/bpm/4;
   // the mountain: rumble every bar, a sub drone, the ash
   if(s===0)musRumble(t,0.05+0.03*w+0.03*heat,dur*16,140+30*w);
   if(s===0)musNote(c.root/2,t,dur*16,'sine',0.05+0.01*w);
   if(s===8&&(w>=1||bar%2))musNote(semiF(c.root/2,1),t,dur*8,'sine',0.02+0.01*w); // the flatted second under it
-  const crk=fight?(0.10+0.25*w+0.35*heat):0.06;
+  const crk=fight?(0.10+0.25*w+0.35*heat+0.3*set):0.06;
   if(Math.random()<crk&&s%2===1)musCrackle(t,0.05+0.03*heat,1400+Math.random()*1800);
   if(!fight||w===0){
     // breathers and the descent: the lead as a slow, far arp, nothing else
@@ -934,8 +935,8 @@ function volcanoStep(t){
   // stage 1+: the stomp
   const gallop=w>=2;
   if(s===0||s===8)musThump(t,s===0?0.30:0.24);
-  if(gallop&&(s===6||s===14))musThump(t,0.16+0.06*heat);
-  if((w>=3||heat>0.5)&&(s===4||s===12))musHiss(t,0.04+0.04*heat,6000);
+  if(gallop&&(s===6||s===14))musThump(t,0.16+0.06*heat+0.06*set);
+  if((w>=3||heat>0.5||set>0.7)&&(s===4||s===12))musHiss(t,0.04+0.04*heat,6000);
   // stage 2+: the riff (and its fifth once the wave is hot or in wave 4)
   if(w>=2){
     const b=c.bass[s];
@@ -1217,7 +1218,7 @@ const ES={
   '(START/ESC) RUN IT AGAIN     (BACK/BACKSPACE) TITLE':'(START/ESC) OTRA RONDA     (BACK/RETROCESO) TÍTULO',
   '(START/ESC) RUN IT BACK     (BACK/BACKSPACE) TITLE':'(START/ESC) REVANCHA     (BACK/RETROCESO) TÍTULO',
   // flashes
-  'SURGE INCOMING!':'¡LLEGA UN ALUVIÓN!','SURGE!':'¡ALUVIÓN!','BOSS DOWN!':'¡JEFE ABATIDO!',
+  'SURGE INCOMING!':'¡LLEGA UN ALUVIÓN!','SURGE!':'¡ALUVIÓN!','THE WAVE BREAKS':'ROMPE LA OLA','BOSS DOWN!':'¡JEFE ABATIDO!',
   'THE PARTY RALLIES':'EL GRUPO SE REAGRUPA','THE HORDE IS BROKEN':'LA HORDA ESTÁ ROTA',
   'HUNTING THE LAST OF THEM':'CAZANDO A LOS ÚLTIMOS','THE WORLDEATER FALLS':'EL DEVORAMUNDOS CAE',
   'OBLIVION':'OLVIDO','UNMADE — 30 SECONDS':'DESHECHO — 30 SEGUNDOS',
@@ -1469,6 +1470,7 @@ const ES_RX=[
   [/^WAVE (\d+) CLEAR$/,m=>'OLEADA '+m[1]+' SUPERADA'],
   [/^NEXT WAVE IN (\d+)$/,m=>'SIGUIENTE OLEADA EN '+m[1]],
   [/^(\d+) LEFT$/,m=>'QUEDAN '+m[1]],
+  [/^THE WAVE EBBS — (\d+) LEFT$/,m=>'LA OLA SE RETIRA — QUEDAN '+m[1]],
   [/^!! (.+) !!$/,m=>'¡¡ '+tr(m[1])+' !!'],
   [/^UNMADE — (\d+) SECONDS$/,m=>'DESHECHO — '+m[1]+' SEGUNDOS'],
   [/^(.+) AWAKENS$/,m=>tr(m[1])+' DESPIERTA'],
@@ -2142,6 +2144,7 @@ const G={
   overSince:0, flashMsg:null, flashT:0, subFlash:null, subFlashT:0,
   wave:0, startWave:1, waveState:'fight', waveT:0, interLen:8,
   waveQuota:0, waveSpawned:0, waveSpawnT:0, waveSpawnGap:0, wavePulses:[], cleanT:0, wavePat:null,
+  sets:null, front:null, swell:null, setK:0, lastSide:-1, crestTaught:0,
   softTransitions:0, softOverlaps:0, softCrumbled:0,
   bankSeen:0, bankFlash:0,
   mobDmgAcc:0, fightT:0, waveDPS:0, killsWave:0,
@@ -2296,6 +2299,7 @@ function startRun(mode){
   G.arena=null;G.creep=null;G.voidTiles=null;G.cleanT=0;G.wavePat=null;
   G.lava=null;G.descent=null;G.fade=0;G.smCasting=0;G.biome='surface';G.camLock=null;G.preVolc=null;G.rumbleT=0;
   setTerrain(null);G.ventChunks=null;G.moveX=0;G.moveY=0;G.spawnDir=null;
+  G.sets=null;G.front=null;G.swell=null;G.setK=0;G.lastSide=-1;G.crestTaught=0;
   G.bankSeen=0;G.bankFlash=0;
   G.mobDmgAcc=0;G.fightT=0;G.waveDPS=0;G.killsWave=0;
   G.softTransitions=0;G.softOverlaps=0;G.softCrumbled=0;
@@ -10031,7 +10035,107 @@ function renderWavePattern(ctx,W2V,vw,vh){
 }
 
 // ---------- wave machine ----------
-const SOFT_WAVE_MIN=1.25,SOFT_WAVE_MAX=8,SOFT_CRUMBLE_AFTER=14;
+const SOFT_WAVE_MIN=1.25,SOFT_WAVE_MAX=6,SOFT_CRUMBLE_AFTER=14;
+// ---- SETS: a wave is not a metronome. Every timed wave is 2-4 sets, and a
+// set is a SWELL (the drip rises from all sides), a CREST (a FRONT — a third
+// of the set arrives inside ~2s as one ragged line from ONE side, told 1.6s
+// ahead by the edge tide, a rising rumble and the swell pip) and an EBB (the
+// drip thins, so the front is what you are fighting). The last crest is the
+// biggest and lands near the end of the clock: the clear phase is its ebb,
+// and the next wave's first swell rises out of that lull instead of a stop.
+// The wave's quota is unchanged — the envelope integrates to the same count.
+function planSets(def){
+  const S=clamp(Math.round(def.dur/17),2,4),P=def.dur/S,sets=[];
+  for(let i=0;i<S;i++){
+    const last=i===S-1,cp=last?0.86:0.68;
+    sets.push({t0:i*P,P,cp,crest:i*P+P*cp,share:last?0.42:0.32,side:-1,told:false,broken:false});
+  }
+  return sets;
+}
+const SET_TELL=1.6,FRONT_DUR=2.2,SET_QUOTA_MUL=1.15; // telegraph before a front; how long a front takes to arrive; extra bodies for set waves
+const setEnv=(u,cp)=>u<cp?0.4+1.2*Math.pow(u/cp,1.6):0.3;
+const setEnvInt=cp=>cp*(0.4+1.2/2.6)+(1-cp)*0.3;
+function curSet(){const S=G.sets;if(!S)return null;for(const s of S)if(G.waveT<s.t0+s.P)return s;return S[S.length-1];}
+// the drip's spawns per second at this moment of the clock
+function dripRate(){
+  const s=curSet();if(!s)return G.waveQuota/Math.max(1,waveDef(G.wave).dur||1);
+  const u=clamp((G.waveT-s.t0)/s.P,0,1),q=G.waveQuota/G.sets.length*(1-s.share);
+  return q/s.P*setEnv(u,s.cp)/setEnvInt(s.cp);
+}
+// which edge the front comes from: the pressure clock's angle (spawnAngle),
+// quantised to a side — never the same side twice running
+function frontSide(){
+  const a=spawnAngle();
+  let side=Math.abs(Math.cos(a))>Math.abs(Math.sin(a))?(Math.cos(a)>0?1:0):(Math.sin(a)>0?3:2);
+  if(side===G.lastSide){let t=0;do side=(Math.random()*4)|0;while(side===G.lastSide&&++t<8);}
+  G.lastSide=side;return side;
+}
+// the j-th body of a front: golden-ratio spread along the edge (a ragged
+// line that fills in everywhere at once, not a wipe), jittered depth
+function frontPoint(side,j){
+  const c=G.cam,m=Math.max(40,c.w*0.08)+Math.random()*24;
+  const a=(((j*0.618034)%1)-0.5)*0.92;
+  if(side===0)return {x:c.x-c.w/2-m,y:c.y+a*c.h};
+  if(side===1)return {x:c.x+c.w/2+m,y:c.y+a*c.h};
+  if(side===2)return {x:c.x+a*c.w,y:c.y-c.h/2-m};
+  return {x:c.x+a*c.w,y:c.y+c.h/2+m};
+}
+function tickSets(dt,maxAlive){
+  const S=G.sets;if(!S)return;
+  const s=curSet(),u=clamp((G.waveT-s.t0)/s.P,0,1);
+  G.setK=u<s.cp?u/s.cp:1-(u-s.cp)/(1-s.cp);
+  if(!s.told&&G.waveT>=s.crest-SET_TELL){
+    s.told=true;s.side=frontSide();
+    G.swell={side:s.side,t:0,dur:SET_TELL,broke:false};
+    sfx('telegraph');
+  }
+  if(G.swell){
+    const w=G.swell;w.t+=dt;
+    if(!w.broke)G.shake=Math.max(G.shake,0.4+1.6*clamp(w.t/w.dur,0,1));
+    else if(w.t>w.dur+1.0)G.swell=null;
+  }
+  if(!s.broken&&G.waveT>=s.crest){
+    s.broken=true;
+    const n=Math.min(G.waveQuota-G.waveSpawned,Math.max(3,Math.round(G.waveQuota/S.length*s.share)));
+    G.front={side:s.side,n,j:0,acc:0,type:pickEnemyType()};
+    if(G.swell){G.swell.broke=true;G.swell.t=G.swell.dur;}
+    G.shake=Math.max(G.shake,4);sfx('slam');
+    if(!G.crestTaught){G.crestTaught=1;subFlash('THE WAVE BREAKS',1.6);}
+  }
+  const F=G.front;
+  if(F){
+    F.acc+=dt*F.n/FRONT_DUR;
+    while(F.acc>=1&&F.j<F.n){
+      F.acc-=1;
+      // a front may crowd past the cap (it IS the crest), but not without limit
+      if(G.enemies.length<maxAlive*1.4&&G.waveSpawned<G.waveQuota){
+        let pt=frontPoint(F.side,F.j);if(solidAt(pt.x,pt.y))pt=spawnPoint();
+        if(pt)spawnWaveMob(pt,Math.random()<0.7?F.type:pickEnemyType());
+      }
+      F.j++;
+    }
+    if(F.j>=F.n)G.front=null;
+  }
+}
+// one body of the timed wave, drip or front: the elite roll and the wave's
+// xp accounting (dripBonus / dripKeep / pattern drip) in one place
+function spawnWaveMob(pt,type){
+  const def=waveDef(G.wave);
+  const e=spawnEnemy(type,pt.x,pt.y,Math.random()<def.elite?2.6:1);G.waveSpawned++;
+  if(G.wavePat&&G.wavePat.caldera&&e.type==='smasher')e.calderaSmasher=1;
+  // drip-carried patterns (lava mix, pressure) ride their budget on the drip
+  if(G.wavePat&&G.wavePat.dripXp)e.xp+=patXp(G.wavePat);
+  else if(G.dripBonus){G.dripAcc+=G.dripBonus;const bx=Math.floor(G.dripAcc);if(bx>0){e.xp+=bx;G.dripAcc-=bx;}}
+  else if(G.dripKeep<1&&!e.elite&&!e.eventBounty){
+    // Deterministic thinning: the old random roll changed every
+    // later combat roll when XP was tuned, making progression tests
+    // select entirely different builds. The accumulator pays the
+    // same long-run share without perturbing combat RNG.
+    G.dripKeepAcc+=G.dripKeep;
+    if(G.dripKeepAcc<1)e.xp=0;else G.dripKeepAcc-=1;
+  } // bounty bodies always pay; other chaff keeps the budget honest
+  return e;
+}
 function softLiveCount(){
   let n=0;for(const e of G.enemies)if(!e.dead&&!e.boss&&!e.playAnchor)n++;return n;
 }
@@ -10055,7 +10159,8 @@ function closeTimedWave(){
   if(G.shards)crystalClear();
   markSoftStragglers();
   G.waveState='clear';G.waveT=0;G.cleanT=0;G.wavePat=null;G.softTransitions++;
-  sfx('wavecomplete');flash('SPAWNS ENDED');
+  G.sets=null;G.front=null;G.swell=null;G.setK=0;
+  sfx('wavecomplete');
   if(G.mode==='classic'&&G.wave===1&&schoolsOn()&&G.players.some(p=>!p.school))grantLevels(1);
 }
 function nextWave(){
@@ -10068,6 +10173,7 @@ function nextWave(){
   if(G.shards)crystalClear();
   G.wavePat=null;
   G.mobDmgAcc=0;G.fightT=0;G.killsWave=0;G.slotChest=null;G.reel=null;
+  G.sets=def.boss!==undefined?null:planSets(def);G.front=null;G.swell=null;G.setK=0;
   if(def.boss!==undefined)G.waveQuota=0;
   else{
     const n=Math.max(1,G.players.length);
@@ -10082,6 +10188,11 @@ function nextWave(){
     }
     // A timer owns the wave. Quota is the expected number of spawn attempts
     // across that duration, never a kill requirement.
+    // sets (see planSets): a front arrives as one line and dies faster to
+    // AoE than four-sided trickle does — A/B probes read ~25% less mean
+    // pressure for the same body count — so set waves carry more bodies.
+    // The xp budget below is computed AFTER this, so the extra are chaff.
+    if(G.sets)G.waveQuota=Math.round(G.waveQuota*SET_QUOTA_MUL);
     G.waveSpawnGap=def.dur/G.waveQuota;
     G.waveSpawnT=0;
     // No quota-consuming surge shortcut: spawning continues for the complete
@@ -10214,7 +10325,7 @@ function updateClassicWaves(dt){
   const maxAlive=Math.round((26+G.wave*3)*(0.65+0.35*n))+(G.wavePat?G.wavePat.capBonus:0);
   switch(G.waveState){
     case 'pre':
-      if(G.waveT>=(def.boss!==undefined?2.0:1.25)){
+      if(G.waveT>=(def.boss!==undefined?2.0:0.9)){
         G.waveT=0;
         if(def.boss!==undefined){openArena();spawnClassicBoss(def.boss);G.waveState='boss';}
         else{
@@ -10232,26 +10343,14 @@ function updateClassicWaves(dt){
       // The playground's authored opportunities own bonus XP. The inherited
       // repeatable lucky chest could add several surprise levels and erase the
       // taper before Slagmaw, so it is intentionally absent here.
+      // the sets: swell, telegraph, front, ebb (and the drip's envelope)
+      tickSets(dt,maxAlive);
       if(G.waveT<def.dur&&G.waveSpawned<G.waveQuota&&G.enemies.length<maxAlive){
-        G.waveSpawnT-=dt;
-        if(G.waveSpawnT<=0){
-          G.waveSpawnT=G.waveSpawnGap;
+        G.waveSpawnT+=dt*dripRate();
+        for(let i=0;i<3&&G.waveSpawnT>=1;i++){
+          G.waveSpawnT-=1;
           const pt=spawnPoint();
-          if(pt){
-            const e=spawnEnemy(pickEnemyType(),pt.x,pt.y,Math.random()<def.elite?2.6:1);G.waveSpawned++;
-            if(G.wavePat&&G.wavePat.caldera&&e.type==='smasher')e.calderaSmasher=1;
-            // drip-carried patterns (lava mix, pressure) ride their budget on the drip
-            if(G.wavePat&&G.wavePat.dripXp)e.xp+=patXp(G.wavePat);
-            else if(G.dripBonus){G.dripAcc+=G.dripBonus;const bx=Math.floor(G.dripAcc);if(bx>0){e.xp+=bx;G.dripAcc-=bx;}}
-            else if(G.dripKeep<1&&!e.elite&&!e.eventBounty){
-              // Deterministic thinning: the old random roll changed every
-              // later combat roll when XP was tuned, making progression tests
-              // select entirely different builds. The accumulator pays the
-              // same long-run share without perturbing combat RNG.
-              G.dripKeepAcc+=G.dripKeep;
-              if(G.dripKeepAcc<1)e.xp=0;else G.dripKeepAcc-=1;
-            } // bounty bodies always pay; other chaff keeps the budget honest
-          }
+          if(pt)spawnWaveMob(pt,pickEnemyType());
         }
       }
       if(G.wavePulses.length&&G.waveSpawned/Math.max(1,G.waveQuota)>=G.wavePulses[0]){
@@ -12391,6 +12490,7 @@ function render(){
   // low-res buffer and upscaled is unreadable.
   uiBegin(w,h);
   renderPrismFlash(w,h);
+  renderWaveTide(w,h);
   renderWeMood(w,h);
   for(const p of G.players){
     if(!p.dead)continue;
@@ -12451,6 +12551,41 @@ function uiEnd(){
 // across it — the pixel-art stand-in for a bloom pass, since this renderer has
 // no additive blending and no shaders. Kept under 22% alpha at full strength so
 // it reads as light, never as a whiteout you have to play through.
+// the edge tide: the side a front will break from glows while the set
+// swells, flashes white at the break, then washes out — the horde's direction,
+// readable from the couch before a single body is on screen
+function renderWaveTide(vw,vh){
+  const w=G.swell;if(!w||G.waveState!=='fight')return;
+  const ctx=sctx,col=G.biome==='volcano'?'255,122,31':'255,233,74';
+  let a,d;
+  if(!w.broke){const p=clamp(w.t/w.dur,0,1);a=0.30*p*(0.75+0.25*Math.sin(G.time*14));d=0.16+0.06*p;}
+  else{const p=clamp((w.t-w.dur)/1.0,0,1);a=0.5*(1-p);d=0.22+0.16*p;}
+  if(a<=0.01)return;
+  // stepped bands, not a gradient: it reads as pixel art and the software
+  // canvas the frame tool renders with has no gradients
+  const s=w.side,horiz=s<=1,len=(horiz?vw:vh)*d,N=6;
+  const rgb=w.broke&&w.t-w.dur<0.25?'255,255,255':col;
+  for(let i=0;i<N;i++){
+    const l0=len*i/N,l1=len*(i+1)/N,al=a*(1-i/N)*(1-i/N);
+    ctx.fillStyle='rgba('+rgb+','+al.toFixed(3)+')';
+    if(s===0)ctx.fillRect(l0,0,l1-l0,vh);else if(s===1)ctx.fillRect(vw-l1,0,l1-l0,vh);
+    else if(s===2)ctx.fillRect(0,l0,vw,l1-l0);else ctx.fillRect(0,vh-l1,vw,l1-l0);
+  }
+}
+// the set pips under the wave header: one per set, the current one filling
+// with the swell, white the instant it breaks, spent ones dimmed
+function drawSetPips(ctx,cx,y,k,w){
+  const S=G.sets,n=S.length,pw=w*k,ph=3*k,gap=2*k,x0=cx-(n*pw+(n-1)*gap)/2,cur=curSet();
+  for(let i=0;i<n;i++){
+    const s=S[i],x=x0+i*(pw+gap);
+    ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(x-1,y-1,pw+2,ph+2);
+    ctx.fillStyle='#3a2a1a';ctx.fillRect(x,y,pw,ph);
+    const f=s.broken?1:s===cur?clamp((G.waveT-s.t0)/(s.P*s.cp),0,1):0;
+    const hot=s.broken&&G.waveT-s.crest<0.5;
+    ctx.fillStyle=hot?'#ffffff':s.broken?'#b3a184':'#ffe94a';
+    ctx.fillRect(x,y,Math.round(pw*f),ph);
+  }
+}
 function renderPrismFlash(vw,vh){
   if(G.pflash<=0.01)return;
   const ctx=sctx,a=G.pflash*G.pflash;
@@ -12548,13 +12683,17 @@ function renderHUD(vw,vh){
     text(ctx,fmtTime(G.time),vw/2+48*k,5*k,F(9),'#fff','right');
     if(G.waveState==='fight'){
       const left=Math.max(0,Math.ceil(waveDef(G.wave).dur-G.waveT))+'s';
+      // the set pips replace the countdown: a wave is sets that break, not
+      // seconds to wait out (the bare timer stays for waves without sets)
       if(G.objective){
         // the wave's standing lesson, in its colour, for the whole fight
         text(ctx,G.objective,vw/2,17*k,F(7),G.objectiveCol||'#57e86b','center');
-        text(ctx,left,vw/2+48*k,17*k,F(6),'#b3a184','right');
-      }else text(ctx,left,vw/2,17*k,F(6),'#b3a184','center');
+        if(G.sets)drawSetPips(ctx,vw/2+40*k,18.5*k,k,6);
+        else text(ctx,left,vw/2+48*k,17*k,F(6),'#b3a184','right');
+      }else if(G.sets)drawSetPips(ctx,vw/2,18.5*k,k,12);
+      else text(ctx,left,vw/2,17*k,F(6),'#b3a184','center');
     }
-    else if(G.waveState==='clear')text(ctx,'SPAWNS STOPPED — '+softLiveCount()+' REMAIN',vw/2,17*k,F(7),'#57e86b','center');
+    else if(G.waveState==='clear')text(ctx,'THE WAVE EBBS — '+softLiveCount()+' LEFT',vw/2,17*k,F(7),'#57e86b','center');
     else if(G.waveState==='descent')text(ctx,G.descent&&G.descent.dir==='up'?'ASCENDING...':'DESCENDING...',vw/2,17*k,F(7),'#ff7a1f','center');
     else if(G.waveState==='inter'){
       // announce the coming wave's pattern: the break is the anticipation beat

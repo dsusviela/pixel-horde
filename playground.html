@@ -2295,7 +2295,7 @@ function startRun(mode){
   G.bossDmgAcc=0;G.bossVulnT=0;G.lastBossDPS=0;
   G.arena=null;G.creep=null;G.voidTiles=null;G.cleanT=0;G.wavePat=null;
   G.lava=null;G.descent=null;G.fade=0;G.smCasting=0;G.biome='surface';G.camLock=null;G.preVolc=null;G.rumbleT=0;
-  setTerrain(null);G.ventChunks=null;G.moveX=0;G.moveY=0;
+  setTerrain(null);G.ventChunks=null;G.moveX=0;G.moveY=0;G.spawnDir=null;
   G.bankSeen=0;G.bankFlash=0;
   G.mobDmgAcc=0;G.fightT=0;G.waveDPS=0;G.killsWave=0;
   G.softTransitions=0;G.softOverlaps=0;G.softCrumbled=0;
@@ -2529,23 +2529,76 @@ function spawnEnemy(type,x,y,eliteMul){
   }
   return e;
 }
-function spawnPoint(){
-  const c=G.cam;
-  const m=Math.max(40,c.w*0.08);
-  // 60% of spawns come from the side the party is walking toward, so moving
-  // is walking INTO the horde rather than away from it
+// ---- spawn direction: the pressure clock ----
+// The old rule sent 60% of spawns from the edge the party walked toward, which
+// read as a torrent from wherever you faced (probe: a third of all 8s windows
+// had >=60% of spawns ahead of a runner). Now a PHASE changes every 2.5-4.5s
+// — AHEAD (a front-quarter, heading ± ~26°+noise, one side per phase, so
+// walking curves you away instead of into a wall), FLANK (left/right
+// alternating), BEHIND (the pincer) or AROUND — never the same phase twice;
+// holding one heading for 7s forces a BEHIND (at most every 12s). Every
+// spawn: 20% ignore the phase (a halo, so the ring never empties), the rest
+// pick from three phase candidates plus one uniform the angle where the horde
+// is thinnest within 300 px of the party — the phase proposes, the gap
+// disposes — so a kiter's empty side gets contested and a runner's full front
+// spills to the flanks. Fronts (tickSets) quantise the same angle to an edge.
+// Tuned with tools/probe-spawn.mjs (variant g4): runner torrent 32% → 8%,
+// circle-bot hits/min unchanged, kiter 5.0 → 3.1 (was 2.3 without the gap).
+const SPAWN_PHASES=[['ahead',0.44],['flank',0.26],['behind',0.12],['around',0.18]];
+const SPAWN_DUR=[2.5,2],SPAWN_AHEAD=0.45,SPAWN_HALO=0.2,SPAWN_HOLD=7,SPAWN_PINCER_CD=12,SPAWN_GAP=4;
+function spawnClock(){
+  const D=G.spawnDir||(G.spawnDir={phase:'around',until:0,h:0,holdA:0,holdT:0,sign:1,pincerT:-99});
   const hx=G.moveX||0,hy=G.moveY||0,hl=Math.hypot(hx,hy);
-  let lean=-1;
-  if(hl>0.3)lean=Math.abs(hx)>Math.abs(hy)?(hx>0?1:0):(hy>0?3:2);
-  for(let tries=0;tries<10;tries++){
-    const side=(lean>=0&&Math.random()<0.6)?lean:(Math.random()*4)|0;
-    let x,y;
-    if(side===0){x=c.x-c.w/2-m;y=c.y+(Math.random()-0.5)*c.h;}
-    else if(side===1){x=c.x+c.w/2+m;y=c.y+(Math.random()-0.5)*c.h;}
-    else if(side===2){x=c.x+(Math.random()-0.5)*c.w;y=c.y-c.h/2-m;}
-    else {x=c.x+(Math.random()-0.5)*c.w;y=c.y+c.h/2+m;}
-    if(!solidAt(x,y))return {x,y};
+  if(hl>0.3)D.h=Math.atan2(hy,hx);
+  // how long the party has held one heading (within ~35°); standing still resets it
+  if(hl>0.3){const d=Math.abs(((D.h-D.holdA+Math.PI*3)%(Math.PI*2))-Math.PI);if(d>0.6){D.holdA=D.h;D.holdT=G.time;}}
+  else{D.holdA=D.h;D.holdT=G.time;}
+  if(G.time>=D.until){
+    let next;
+    if(G.time-D.holdT>SPAWN_HOLD&&G.time-D.pincerT>SPAWN_PINCER_CD&&D.phase!=='behind'){next='behind';D.pincerT=G.time;D.holdT=G.time;}
+    else{
+      let tot=0;const pool=SPAWN_PHASES.filter(p=>p[0]!==D.phase);for(const p of pool)tot+=p[1];
+      let r=Math.random()*tot;next=pool[pool.length-1][0];
+      for(const p of pool){r-=p[1];if(r<=0){next=p[0];break;}}
+    }
+    D.phase=next;D.until=G.time+SPAWN_DUR[0]+Math.random()*SPAWN_DUR[1];D.sign=Math.random()<0.5?-1:1;
   }
+  return D;
+}
+const tri=()=>Math.random()+Math.random()-1; // triangular noise in [-1,1]
+function phaseAngle(D){
+  const h=D.h;
+  if(D.phase==='ahead')return h+D.sign*SPAWN_AHEAD+tri()*0.6;
+  if(D.phase==='behind')return h+Math.PI+tri()*1.0;
+  if(D.phase==='flank'){D.sign=-D.sign;return h+D.sign*Math.PI/2+tri()*0.7;}
+  return Math.random()*TAU;
+}
+// how thick the horde already is in the 60° wedge around angle a (live mobs within 300 px of the party's centre)
+function wedgeFill(a){
+  let cx=0,cy=0,n=0;for(const p of G.players)if(!p.dead){cx+=p.x;cy+=p.y;n++;}
+  if(!n)return 0;cx/=n;cy/=n;let f=0;
+  for(const e of G.enemies){if(e.dead||e.boss||e.playAnchor)continue;const dx=e.x-cx,dy=e.y-cy,d2=dx*dx+dy*dy;if(d2>300*300)continue;
+    const d=Math.abs(((Math.atan2(dy,dx)-a+Math.PI*3)%TAU)-Math.PI);if(d<Math.PI/6)f++;}
+  return f;
+}
+function spawnAngle(){
+  const D=spawnClock();
+  if(Math.random()<SPAWN_HALO)return Math.random()*TAU;
+  let best=phaseAngle(D),bf=wedgeFill(best);
+  for(let i=1;i<SPAWN_GAP;i++){const a=i<SPAWN_GAP-1?phaseAngle(D):Math.random()*TAU,f=wedgeFill(a);if(f<bf){bf=f;best=a;}}
+  return best;
+}
+// the off-screen point on the ray from the camera centre at angle ang
+function edgePointAt(ang){
+  const c=G.cam,m=Math.max(40,c.w*0.08),W=c.w/2+m,H=c.h/2+m;
+  const cs=Math.cos(ang),sn=Math.sin(ang);
+  const t=Math.min(W/Math.max(1e-6,Math.abs(cs)),H/Math.max(1e-6,Math.abs(sn)));
+  return {x:c.x+cs*t,y:c.y+sn*t};
+}
+function spawnPoint(){
+  const a=spawnAngle();
+  for(let tries=0;tries<8;tries++){const p=edgePointAt(a+(tries?tri()*0.5*tries:0));if(!solidAt(p.x,p.y))return p;}
+  for(let tries=0;tries<6;tries++){const p=edgePointAt(Math.random()*TAU);if(!solidAt(p.x,p.y))return p;}
   return null;
 }
 function spawnPointArena(){
